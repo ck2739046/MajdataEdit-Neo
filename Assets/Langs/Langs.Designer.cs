@@ -367,6 +367,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 Speed 的本地化字符串。
+        /// </summary>
+        internal static string Gui_PlaybackSpeed {
+            get {
+                return ResourceManager.GetString("Gui_PlaybackSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Record 的本地化字符串。
         /// </summary>
         internal static string Gui_Record {
@@ -753,6 +762,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static string Set_ResizeBg {
             get {
                 return ResourceManager.GetString("Set_ResizeBg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Show Autoplay&apos;s Hand 的本地化字符串。
+        /// </summary>
+        internal static string Set_ShowHand {
+            get {
+                return ResourceManager.GetString("Set_ShowHand", resourceCulture);
             }
         }
         

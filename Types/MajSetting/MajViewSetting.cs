@@ -48,30 +48,26 @@ public class MajViewSetting
     public BgInfoDisplay ComboStatusType { get; set; } = BgInfoDisplay.Combo;
 
 
-    [Display(Name = nameof(Langs.Set_JudgeDisplayMode))]
-    [SettingControl(SettingControlType.Selection,
-        Values = new object[] { JudgeDisplayMode.None,
-                                JudgeDisplayMode.FastLate,
-                                JudgeDisplayMode.Level,
-                                JudgeDisplayMode.Both },
-        Labels = new[] {        "None",
-                                "Fast/Late Only",
-                                "Level Only",
-                                "Both" })]
-    public JudgeDisplayMode JudgeDisplayMode { get; set; } = JudgeDisplayMode.Both;
-
-
     [Display(Name = nameof(Langs.Set_AutoMode))]
     [SettingControl(SettingControlType.Selection,
         Values = new object[] { AutoPlayMode.Enable,
-                                AutoPlayMode.DJAuto,
+                                AutoPlayMode.DJAutoButton,
+                                AutoPlayMode.DJAutoSensor,
+                                AutoPlayMode.MuriDX,
                                 AutoPlayMode.Random,
                                 AutoPlayMode.Disable },
         Labels = new[] {        "Enable",
+                                "DJAuto (Btn)",
                                 "DJAuto",
+                                "MuriDX",
                                 "Random",
                                 "Disable" })]
     public AutoPlayMode AutoMode { get; set; } = AutoPlayMode.Enable;
+
+
+    [Display(Name = nameof(Langs.Set_ShowHand))]
+    [SettingControl(SettingControlType.Toggle)]
+    public bool ShowHand { get; set; } = false;
 
 
     [Display(Name = nameof(Langs.Set_OutputFps))]
