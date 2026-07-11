@@ -10,17 +10,20 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types.MajWs;
 using MajSimai;
+using MajdataEdit_Neo.ViewModels;
 using Types;
 
 namespace ViewModels.SubModels;
 
 public partial class PlaybackModel : ViewModelBase
 {
-    private readonly FileSessionModel _doc;
+    private readonly IReadOnlyDocument _doc;
+    private readonly Func<string> _getMaidataDir;
 
-    public PlaybackModel(FileSessionModel doc)
+    public PlaybackModel(IReadOnlyDocument doc, Func<string> getMaidataDir)
     {
         _doc = doc;
+        _getMaidataDir = getMaidataDir;
         _playerConnection.OnPlayStarted += OnPlayStarted;
         _playerConnection.OnPlayStopped += OnPlayStopped;
         _playerConnection.OnLoadRequired += OnLoadRequired;
@@ -161,24 +164,24 @@ public partial class PlaybackModel : ViewModelBase
 
     public void SetCaretTime(double caretTime, float offset, bool setTrackTime)
     {
-        if (_doc.Doc.CurrentChartData is null) return;
+        if (_doc.CurrentChartData is null) return;
         CaretTime = caretTime + offset;
-        
-        var notes = _doc.Doc.CurrentChartData.NoteTimings;
+
+        var notes = _doc.CurrentChartData.NoteTimings;
         var currentCombo = 0;
         foreach (var note in notes)
         {
             if (note.Timing < caretTime) currentCombo++;
         }
         CurrentCombo = currentCombo;
-        
+
         if (setTrackTime)
             TrackTime = CaretTime;
     }
 
     public async void SetCaretTime(int rawPosition, bool setTrackTime)
     {
-        var chartData = _doc.Doc.CurrentChartData;
+        var chartData = _doc.CurrentChartData;
         if (chartData is null) return;
 
         var timings = chartData.CommaTimings;
@@ -403,7 +406,7 @@ public partial class PlaybackModel : ViewModelBase
     {
         CurrentViewState = ViewStatus.Playing;
         IsPlayControlEnabled = true;
-        
+
         await Task.Run(async () =>
         {
 #if DEBUG
@@ -423,13 +426,13 @@ public partial class PlaybackModel : ViewModelBase
                     TrackTime = mmvAudioTime.ReadSingle(0);
                     if (IsFollowCursor)
                     {
-                        var chartData = _doc.Doc.CurrentChartData;
+                        var chartData = _doc.CurrentChartData;
                         if (chartData is not null)
                         {
-                                                        dynamic nearestNote = null;
-                            foreach(var o in chartData.CommaTimings)
+                            SimaiTimingPoint? nearestNote = null;
+                            foreach (var o in chartData.CommaTimings)
                             {
-                                if (TrackTime - (o.Timing + _doc.Doc.Offset) > 0)
+                                if (TrackTime - (o.Timing + _doc.Offset) > 0)
                                 {
                                     nearestNote = o;
                                 }
@@ -466,7 +469,7 @@ public partial class PlaybackModel : ViewModelBase
 
     private async void OnLoadRequired(object? sender, EventArgs e)
     {
-        await EditorLoad(_doc.MaidataDir);
+        await EditorLoad(_getMaidataDir());
     }
 
     private void OnStopRequired(object? sender, EventArgs e)
@@ -489,6 +492,11 @@ public partial class PlaybackModel : ViewModelBase
         CurrentViewState = e;
     }
 }
+
+
+
+
+
 
 
 

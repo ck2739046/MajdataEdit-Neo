@@ -1,4 +1,4 @@
-using Avalonia.Platform.Storage;
+﻿using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MajdataEdit_Neo.Assets.Langs;
@@ -47,11 +47,10 @@ public partial class FileSessionModel : ViewModelBase
         Doc = new DocumentModel();
 
         // Inject readonly interfaces to sub-models
-        Playback = new PlaybackModel(this);
+        Playback = new PlaybackModel(this.Doc, () => this.MaidataDir);
         // Note: Currently PlaybackModel uses global MainWindowViewModel.Ins.Session.Doc or maybe it doesn't? 
         // We will refactor PlaybackModel to accept IReadOnlyDocument soon.
 
-        Tools = new ToolsModel(_mainWindow, this, Doc);
         AutoSave = new AutoSaveModel();
         DiscordRpc = new DiscordRpcModel();
 
@@ -277,6 +276,7 @@ public partial class FileSessionModel : ViewModelBase
         AutoSave.IsFileChanged = false;
     }
 }
+
 
 
 
