@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -64,6 +64,8 @@ public partial class PlaybackModel : ViewModelBase
     internal bool _isLastPlayIncludeOp = false;
 
     public event EventHandler? LoadRequired;
+    public event Action<Point>? RequestSeekToDocPos;
+
 
     public bool IsConnected => _playerConnection.IsConnected;
 
@@ -402,30 +404,56 @@ public partial class PlaybackModel : ViewModelBase
         CurrentViewState = ViewStatus.Playing;
         IsPlayControlEnabled = true;
         
-        MemoryMappedFile mmv = null!;
-        MemoryMappedViewAccessor mmvAudioTime = null!;
-
-        try
+        await Task.Run(async () =>
         {
-            mmv = MemoryMappedFile.OpenExisting("majdata_audioTime");
-            mmvAudioTime = mmv.CreateViewAccessor(0, 4);
-
-            while (_playerConnection.ViewSummary.State == ViewStatus.Playing &&
-                   _playerConnection.IsConnected)
+#if DEBUG
+            var mmfAudioTimePath = Path.Combine("/Users/re_poem/repos/MajdataViewX", "majdata_time.dat");
+#else
+            var mmfAudioTimePath = Path.Combine(MajdataEdit_Neo.Base.MajEnv.MajBase, "majdata_time.dat");
+#endif
+            MemoryMappedFile mmfAudioTime = null!;
+            MemoryMappedViewAccessor mmvAudioTime = null!;
+            try
             {
-                TrackTime = mmvAudioTime.ReadSingle(0);
-                await Task.Delay(16);
+                mmfAudioTime = MemoryMappedFile.CreateFromFile(mmfAudioTimePath, FileMode.Open);
+                mmvAudioTime = mmfAudioTime.CreateViewAccessor();
+                while (_playerConnection.ViewSummary.State == ViewStatus.Playing &&
+                       _playerConnection.IsConnected)
+                {
+                    TrackTime = mmvAudioTime.ReadSingle(0);
+                    if (IsFollowCursor)
+                    {
+                        var chartData = _doc.Doc.CurrentChartData;
+                        if (chartData is not null)
+                        {
+                                                        dynamic nearestNote = null;
+                            foreach(var o in chartData.CommaTimings)
+                            {
+                                if (TrackTime - (o.Timing + _doc.Doc.Offset) > 0)
+                                {
+                                    nearestNote = o;
+                                }
+                            }
+                            if (nearestNote != null)
+                            {
+                                var point = new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY - 1);
+                                RequestSeekToDocPos?.Invoke(point);
+                            }
+                        }
+                    }
+                    await Task.Delay(16);
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Start Read Play Time MMV Err:{ex}");
-        }
-        finally
-        {
-            mmvAudioTime?.Dispose();
-            mmv?.Dispose();
-        }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Start Read Play Time MMV Err:{ex}");
+            }
+            finally
+            {
+                mmvAudioTime?.Dispose();
+                mmfAudioTime?.Dispose();
+            }
+        });
     }
 
     private async void OnPlayStopped(object sender, MajWsResponseType e)
@@ -461,6 +489,7 @@ public partial class PlaybackModel : ViewModelBase
         CurrentViewState = e;
     }
 }
+
 
 
 

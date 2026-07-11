@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -166,7 +166,7 @@ public partial class MainWindow : Window
             Process.Start(viewPath);
         }
 
-        // 补全 Mac 常见的环境变量路径（Homebrew �?Intel �?Apple Silicon 的路径不同）
+        // 琛ュ叏 Mac 甯歌鐨勭幆澧冨彉閲忚矾寰勶紙Homebrew 鍦?Intel 鍜?Apple Silicon 鐨勮矾寰勪笉鍚岋級
         if (isMac)
         {
             var currentPath = Environment.GetEnvironmentVariable("PATH");
@@ -474,7 +474,26 @@ public partial class MainWindow : Window
         editor.ScrollTo((int)position.Y + 1, (int)position.X);
         editor.Focus();
     }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.Session.Playback.RequestSeekToDocPos -= Playback_RequestSeekToDocPos;
+            vm.Session.Playback.RequestSeekToDocPos += Playback_RequestSeekToDocPos;
+        }
+    }
+
+    private void Playback_RequestSeekToDocPos(Avalonia.Point point)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            SeekToDocPos(point, textEditor);
+        });
+    }
 }
+
 
 
 
