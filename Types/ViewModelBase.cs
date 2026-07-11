@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace MajdataEdit_Neo.ViewModels;
+namespace Types;
 
 public class ViewModelBase : ObservableObject
 {

@@ -5,7 +5,7 @@ internal readonly struct MajWsRequestBase
     public MajWsRequestType requestType { get; init; }
     public object? requestData { get; init; }
 }
-public enum MajWsRequestType 
+public enum MajWsRequestType
 {
     Setting,
     Load,

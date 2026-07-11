@@ -47,44 +47,44 @@
             </ExperimentalAcrylicBorder.Material>
         </ExperimentalAcrylicBorder>
         <Grid RowDefinitions="20,100,*,60,100,20"
-              ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
+              ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding Session.Doc.IsLoaded}">
             <Menu Grid.Row="0" Grid.ColumnSpan="4">
                 <MenuItem Header="{local:I18N Gui_File}" >
-                    <MenuItem Header="{local:I18N Gui_New}" Command="{Binding NewFile}"/>
-                    <MenuItem Header="{local:I18N Gui_Open}" Command="{Binding OpenFile}"/>
-                    <MenuItem Header="{local:I18N Gui_Save}" Command="{Binding SaveFile}"/>
+                    <MenuItem Header="{local:I18N Gui_New}" Command="{Binding Session.NewFileCommand}"/>
+                    <MenuItem Header="{local:I18N Gui_Open}" Command="{Binding Session.OpenFileCommand}"/>
+                    <MenuItem Header="{local:I18N Gui_Save}" Command="{Binding Session.SaveFileCommand}"/>
                     <Separator/>
-                    <MenuItem Header="{local:I18N Gui_ExportVideo}" Command="{Binding PlayRecord}" CommandParameter="{Binding #Editor}"/>
+                    <MenuItem Header="{local:I18N Gui_ExportVideo}" Click="PlayRecord_Click"/>
                 </MenuItem>
                 <MenuItem Header="{local:I18N Gui_Edit}">
-                    <MenuItem Header="{local:I18N Gui_MirrorHorizontally}" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
+                    <MenuItem Header="{local:I18N Gui_MirrorHorizontally}" Click="MirrorHorizontal_Click">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource mirror_h}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_MirrorVertically}" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}">
+                    <MenuItem Header="{local:I18N Gui_MirrorVertically}" Click="MirrorVertical_Click">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource mirror_v}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_Mirror180}" CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}">
+                    <MenuItem Header="{local:I18N Gui_Mirror180}" Click="Mirror180_Click">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource mirror_180}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_Rotate45}" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}">
+                    <MenuItem Header="{local:I18N Gui_Rotate45}" Click="Turn45_Click">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource rotate_r}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_RotateNeg45}" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}">
+                    <MenuItem Header="{local:I18N Gui_RotateNeg45}" Click="TurnNegative45_Click">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource rotate_l}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_Subdivide1p5x}" CommandParameter="{Binding #Editor}" Command="{Binding Subdivide1p5x}">
+                    <MenuItem Header="{local:I18N Gui_Subdivide1p5x}" Click="Subdivide1p5x_Click">
                     </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_Subdivide2x}" CommandParameter="{Binding #Editor}" Command="{Binding Subdivide2x}">
+                    <MenuItem Header="{local:I18N Gui_Subdivide2x}" Click="Subdivide2x_Click">
                     </MenuItem>
                     <Separator/>
                     <MenuItem Header="{local:I18N Gui_ChartInfo}" Command="{Binding OpenChartInfoWindow}"/>
@@ -93,24 +93,24 @@
                 </MenuItem>
                 <MenuItem Header="{local:I18N Gui_Setting}">
                     <MenuItem Header="{local:I18N Gui_Setting}" Command="{Binding OpenSettingsWindow}"/>
-                    <MenuItem Header="{local:I18N Gui_CheckUpdate}" Command="{Binding CheckUpdateAsync}" CommandParameter="false"/>
+                    <MenuItem Header="{local:I18N Gui_CheckUpdate}" Command="{Binding Update.CheckUpdateAsync}" CommandParameter="false"/>
                 </MenuItem>
                 <MenuItem Header="{local:I18N Gui_Tools}">
                     <MenuItem Header="{local:I18N Gui_BpmTap}" Command="{Binding OpenBpmTapWindow}"/>
-                    <MenuItem Header="{local:I18N Gui_CompressBgVideo}" Command="{Binding CompressBgVideo}"/>
+                    <MenuItem Header="{local:I18N Gui_CompressBgVideo}" Command="{Binding Session.Tools.CompressBgVideoCommand}"/>
                     <Separator/>
                     <MenuItem Name="MediaQuickProcessMenuItem" Header="{local:I18N Gui_MediaQuickProcess}">
                         <StackPanel Width="200" Margin="5">
                             <TextBlock Text="{local:I18N Gui_MediaQuickProcessDesc}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0 0 0 10"/>
                             <DockPanel Margin="0 0 0 5">
                                 <Label DockPanel.Dock="Left" Content="{local:I18N Gui_BeatsCount}" VerticalAlignment="Center"/>
-                                <NumericUpDown Name="BeatsCountBox" Value="4" Minimum="1" Maximum="32" Margin="10 0 0 0"/>
+                                <NumericUpDown Name="BeatsCountBox" Value="{Binding Session.Tools.MediaQuickProcessBeatsCount}" Minimum="1" Maximum="32" Margin="10 0 0 0"/>
                             </DockPanel>
-                            <CheckBox Name="FreezeFrameCheckBox" Content="{local:I18N Gui_FreezeFrame}" Margin="0 0 0 10"/>
-                            <Button Content="{local:I18N Gui_Confirm}" HorizontalAlignment="Stretch" Click="MediaQuickProcess_Click"/>
+                            <CheckBox Name="FreezeFrameCheckBox" Content="{local:I18N Gui_FreezeFrame}" Margin="0 0 0 10" IsChecked="{Binding Session.Tools.MediaQuickProcessFreezeFrame}"/>
+                            <Button Content="{local:I18N Gui_Confirm}" HorizontalAlignment="Stretch" Command="{Binding Session.Tools.MediaQuickProcessCommand}"/>
                         </StackPanel>
                     </MenuItem>
-                    <MenuItem Name="NewChartFromVideoMenuItem" Header="{local:I18N Gui_NewChartFromVideo}" Click="NewChartFromVideo_Click"/>
+                    <MenuItem Name="NewChartFromVideoMenuItem" Header="{local:I18N Gui_NewChartFromVideo}" Command="{Binding Session.Tools.NewChartFromVideoCommand}"/>
                 </MenuItem>
                 <MenuItem Header="{local:I18N Gui_About}">
                     <MenuItem Header="Discord" Command="{Binding AboutButtonClicked}" CommandParameter="0"/>
@@ -125,13 +125,13 @@
                         Margin="6 0 8 0" Width="116">
 
                 <Label Height="90" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Content="{Binding DisplayTime}" Padding="0 30 0 0"/>
+                       Content="{Binding Session.Playback.DisplayTime}" Padding="0 30 0 0"/>
                 <Label Height="30" Name="LineCombo" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Content="{Binding DisplayLineComboText}" Padding="0 0 0 0"/>
+                       Content="{Binding Session.Doc.DisplayLineComboText}" Padding="0 0 0 0"/>
 
                 <ComboBox Name="Difficulty"
                           Width="116" VerticalAlignment="Center"
-                          SelectedIndex="{Binding SelectedDifficulty}">
+                          SelectedIndex="{Binding Session.Doc.SelectedDifficulty}">
                     <ComboBoxItem Content="EASY" />
                     <ComboBoxItem Content="BASIC" />
                     <ComboBoxItem Content="ADVANCED" />
@@ -143,84 +143,84 @@
 
                 <DockPanel Margin="0 8 0 0">
                     <Label VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Level}"/>
-                    <TextBox Name="Level" Text="{Binding Level}" Margin="10 0 0 0"/>
+                    <TextBox Name="Level" Text="{Binding Session.Doc.Level}" Margin="10 0 0 0"/>
                 </DockPanel>
 
                 <DockPanel Margin="0 8 0 0">
                     <Label  VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Designer}"/>
-                    <TextBox  Name="Designer" Text="{Binding Designer}" Margin="20 0 0 0"/>
+                    <TextBox  Name="Designer" Text="{Binding Session.Doc.Designer}" Margin="20 0 0 0"/>
                 </DockPanel>
 
                 <DockPanel Margin="0 8 0 0">
                     <Label  VerticalAlignment="Center" Margin="0 10 0 0" Content="{local:I18N Gui_Offset}"/>
-                    <NumericUpDown Name="First" Value="{Binding Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
+                    <NumericUpDown Name="First" Value="{Binding Session.Doc.Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
                 </DockPanel>
 
                 <DockPanel Margin="0 20 0 0" LastChildFill="True">
                     <Label Content="{local:I18N Gui_Error}" DockPanel.Dock="Left" />
-                    <Label Name="ErrorCountLabel" Content="{Binding SimaiDiagnosticsCount}" HorizontalAlignment="Center"/>
+                    <Label Name="ErrorCountLabel" Content="{Binding Session.Doc.SimaiDiagnosticsCount}" HorizontalAlignment="Center"/>
                 </DockPanel>
 
                 <DockPanel Margin="0 10 0 0">
                     <Label VerticalAlignment="Center" Content="{local:I18N Gui_PlaybackSpeed}"/>
                     <NumericUpDown Name="Speed" Margin="3 0 0 0"
-                                   Value="{Binding PlaybackSpeed}"
+                                   Value="{Binding Session.Playback.PlaybackSpeed}"
                                    Minimum="0.1" Increment="0.1"
                                    FormatString="0.##"
                                    ShowButtonSpinner="False"/>
                 </DockPanel>
 
                 <CheckBox Grid.Row="8" Margin="0 10 0 0"
-                          IsChecked="{Binding IsFollowCursor}" FontSize="12" Content="{local:I18N Gui_FollowCursor}"/>
+                          IsChecked="{Binding Session.Playback.IsFollowCursor}" FontSize="12" Content="{local:I18N Gui_FollowCursor}"/>
                 <StackPanel Orientation="Horizontal" Margin="9 0 0 0">
-                    <CheckBox IsChecked="{Binding IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
-                    <Button IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+z"
-                            CommandParameter="{Binding #Editor}" Command="{Binding PlayIncludeOp}" Width="64" Content="{local:I18N Gui_Record}"/>
+                    <CheckBox IsChecked="{Binding Session.Playback.IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
+                    <Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+z"
+                            Click="PlayIncludeOp_Click" Width="64" Content="{local:I18N Gui_Record}"/>
                 </StackPanel>
                 <Label Content="{local:I18N Gui_Connected}" FontSize="8" Margin="-4 -11 0 0"/>
             </StackPanel>
 
 
 
-            <Button IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+z" Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
-                    CommandParameter="true" Command="{Binding Stop}">
+            <Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+z" Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
+                    Click="Stop_Click">
                 <PathIcon Width="13" Data="{StaticResource stop}"/>
             </Button>
 
-            <Button IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+x" Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
-                    CommandParameter="{Binding #Editor}" Command="{Binding PlayPause}">
+            <Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+x" Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
+                    Click="PlayPause_Click">
                 <PathIcon Data="{StaticResource play_pause}"/>
             </Button>
 
             <AvaloniaEdit:TextEditor Grid.Column="3" Grid.Row="1" Grid.RowSpan="3"
-                                     Document="{Binding FumenDocument}"
+                                     Document="{Binding Session.Doc.FumenDocument}"
                                      Name="Editor" BorderBrush="#50FFFFFF" BorderThickness="0.5"
                                      ShowLineNumbers="True" Margin="5 5 5 5" Padding="5" WordWrap="False"
                                      FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                                     FontSize="{Binding FontSize}">
+                                     FontSize="{Binding Settings.FontSize}">
                 <AvaloniaEdit:TextEditor.ContextFlyout>
                     <MenuFlyout>
-                        <MenuItem Header="{local:I18N Gui_MirrorHorizontally}" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
+                        <MenuItem Header="{local:I18N Gui_MirrorHorizontally}" Click="MirrorHorizontal_Click">
                             <MenuItem.Icon>
                                 <PathIcon Data="{StaticResource mirror_h}"/>
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{local:I18N Gui_MirrorVertically}" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}">
+                        <MenuItem Header="{local:I18N Gui_MirrorVertically}" Click="MirrorVertical_Click">
                             <MenuItem.Icon>
                                 <PathIcon Data="{StaticResource mirror_v}"/>
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{local:I18N Gui_Mirror180}"  CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}">
+                        <MenuItem Header="{local:I18N Gui_Mirror180}"  Click="Mirror180_Click">
                             <MenuItem.Icon>
                                 <PathIcon Data="{StaticResource mirror_180}"/>
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{local:I18N Gui_Rotate45}" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}">
+                        <MenuItem Header="{local:I18N Gui_Rotate45}" Click="Turn45_Click">
                             <MenuItem.Icon>
                                 <PathIcon Data="{StaticResource rotate_r}"/>
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="{local:I18N Gui_RotateNeg45}" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}">
+                        <MenuItem Header="{local:I18N Gui_RotateNeg45}" Click="TurnNegative45_Click">
                             <MenuItem.Icon>
                                 <PathIcon Data="{StaticResource rotate_l}"/>
                             </MenuItem.Icon>
@@ -234,10 +234,10 @@
 
             <controls:SimaiVisualizerControl Name="SimaiVisual"
                                              Height="100" Grid.Row="4" Grid.ColumnSpan="4"
-                                             Time="{Binding TrackTime}" TrackIf="{Binding SongTrackInfo}"
-                                             ZoomLevel="{Binding TrackZoomLevel}" SimaiChart="{Binding CurrentChartData}"
-                                             Offset="{Binding Offset}" CaretTime="{Binding CaretTime}"
-                                             IsAnimated ="{Binding IsAnimated}" Signatures="{Binding Signatures}"/>
+                                             Time="{Binding Session.Playback.TrackTime}" TrackIf="{Binding Session.SongTrackInfo}"
+                                             ZoomLevel="{Binding Session.Playback.TrackZoomLevel}" SimaiChart="{Binding Session.Doc.CurrentChartData}"
+                                             Offset="{Binding Session.Doc.Offset}" CaretTime="{Binding Session.Playback.CaretTime}"
+                                             IsAnimated ="{Binding Settings.IsAnimated}" Signatures="{Binding Session.Doc.Signatures}"/>
             <DockPanel Grid.Row="4" >
                 <Button Name="ZoomOut" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
                     <PathIcon Width="8" Data="{StaticResource zoom_out}"/>
@@ -253,8 +253,8 @@
                     <TextBlock.Text>
                         <MultiBinding Converter="{x:Static conv:StatusBarConverter.Instance}">
                             <Binding Path="StatusBarMessage"/>
-                            <Binding Path="CurrentViewState"/>
-                            <Binding Path="IsConnected"/>
+                            <Binding Path="Session.Playback.CurrentViewState"/>
+                            <Binding Path="Session.Playback.IsConnected"/>
                             <Binding Path="Culture" Source="{x:Static local:I18N.Ins}"/>
                         </MultiBinding>
                     </TextBlock.Text>
@@ -262,38 +262,38 @@
             </Border>
         </Grid>
 
-        <Grid RowDefinitions="120,*" ColumnDefinitions="*,*,*" Margin="150" ZIndex="5" IsVisible="{Binding !IsLoaded}">
+        <Grid RowDefinitions="120,*" ColumnDefinitions="*,*,*" Margin="150" ZIndex="5" IsVisible="{Binding !Session.Doc.IsLoaded}">
             <Button Grid.Column="0" Grid.Row="0" Height="120" Width="120" HorizontalAlignment="Center"
-                    Command="{Binding NewFile}">
+                    Command="{Binding Session.NewFileCommand}">
                 <PathIcon Data="{StaticResource new}"/>
             </Button>
             <Button Grid.Column="1" Grid.Row="0" Height="120" Width="120" HorizontalAlignment="Center"
-                    Command="{Binding OpenFile}">
+                    Command="{Binding Session.OpenFileCommand}">
                 <PathIcon Data="{StaticResource open}"/>
             </Button>
             <Button Grid.Column="2" Grid.Row="0" Height="120" Width="120" HorizontalAlignment="Center"
-                    Click="NewChartFromVideo_Click">
+                    Command="{Binding Session.Tools.NewChartFromVideoCommand}">
                 <PathIcon Data="{StaticResource video}"/>
             </Button>
             <TextBlock Grid.Column="0" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_New}"/>
             <TextBlock Grid.Column="1" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_Open}"/>
             <TextBlock Grid.Column="2" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_NewChartFromVideo}" TextWrapping="Wrap" TextAlignment="Center"/>
-            <Button IsVisible="False" HotKey="Ctrl+J" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}"/>
-            <Button IsVisible="False" HotKey="Ctrl+K" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}"/>
-            <Button IsVisible="False" HotKey="Ctrl+L" CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}"/>
-            <Button IsVisible="False" HotKey="Ctrl+U" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}"/>
-            <Button IsVisible="False" HotKey="Ctrl+I" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}"/>
-            <Button IsVisible="False" HotKey="Ctrl+S"  Command="{Binding SaveFile}"/>
-            <Button IsVisible="False" HotKey="Ctrl+O" Command="{Binding IncreasePlaybackSpeed}"/>
-            <Button IsVisible="False" HotKey="Ctrl+P" Command="{Binding DecreasePlaybackSpeed}"/>
-            <Button IsVisible="False" IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+C" Command="{Binding PlayStop}" CommandParameter="{Binding #Editor}"/>
+            <Button IsVisible="False" HotKey="Ctrl+J" Click="MirrorHorizontal_Click"/>
+            <Button IsVisible="False" HotKey="Ctrl+K" Click="MirrorVertical_Click"/>
+            <Button IsVisible="False" HotKey="Ctrl+L" Click="Mirror180_Click"/>
+            <Button IsVisible="False" HotKey="Ctrl+U" Click="Turn45_Click"/>
+            <Button IsVisible="False" HotKey="Ctrl+I" Click="TurnNegative45_Click"/>
+            <Button IsVisible="False" HotKey="Ctrl+S"  Command="{Binding Session.SaveFileCommand}"/>
+            <Button IsVisible="False" HotKey="Ctrl+O" Command="{Binding Session.Playback.IncreasePlaybackSpeed}"/>
+            <Button IsVisible="False" HotKey="Ctrl+P" Command="{Binding Session.Playback.DecreasePlaybackSpeed}"/>
+            <Button IsVisible="False" IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+C" Click="PlayStop_Click"/>
         </Grid>
         <DockPanel >
             <Image DockPanel.Dock="Right"
                    HorizontalAlignment="Right"
                    Margin="0 0 -30 100" ZIndex="-9999"
                    Opacity="0.5"
-                   Source="{Binding BackgroundImage}"></Image>
+                   Source="{Binding Settings.BackgroundImage}"></Image>
         </DockPanel>
 
     </Panel>

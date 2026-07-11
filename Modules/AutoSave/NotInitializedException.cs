@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace MajdataEdit_Neo.Modules.AutoSave;
+
 public class NotInitializedException : Exception
 {
 

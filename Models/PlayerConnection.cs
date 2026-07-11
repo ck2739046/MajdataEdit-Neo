@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -16,6 +16,7 @@ using MajSimai;
 using System.Collections.Generic;
 
 namespace MajdataEdit_Neo.Models;
+
 internal class PlayerConnection : IDisposable
 {
     public bool IsConnected => _client?.IsAlive ?? false;
@@ -36,7 +37,7 @@ internal class PlayerConnection : IDisposable
     Task _listenerTask = Task.CompletedTask;
     WebSocket? _client;
     ConcurrentQueue<MessageEventArgs> _playerMessages = new();
-    
+
     readonly static JsonSerializerOptions JSON_READER_OPTIONS = new()
     {
         Converters =
@@ -71,14 +72,14 @@ internal class PlayerConnection : IDisposable
                     token.ThrowIfCancellationRequested();
                     await Task.Yield();
                 }
-                if(_listenerTask.IsCompleted)
+                if (_listenerTask.IsCompleted)
                     _listenerTask = Task.Run(StartToListenWebSocket);
             });
             return true;
         }
         catch
         {
-            _client.Close();
+            _client?.Close();
             return false;
         }
     }
@@ -161,14 +162,14 @@ internal class PlayerConnection : IDisposable
         };
         await SendAsync(req);
     }
-    public async Task ParseAndPlayAsync(PlaybackMode mode, 
-        double startAt, float speed, 
-        string title, string artist, float offset, 
-        string designer, string level, string fumen, 
+    public async Task ParseAndPlayAsync(PlaybackMode mode,
+        double startAt, float speed,
+        string title, string artist, float offset,
+        string designer, string level, string fumen,
         IList<SimaiCommand> commands, int difficulty, string? maidataPath = null)
     {
         if (ViewSummary.State == ViewStatus.Error) await StopAsync();
-        
+
         if (ViewSummary.State != ViewStatus.Loaded)
         {
             if (ViewSummary.State is ViewStatus.Paused or ViewStatus.Playing)
@@ -220,7 +221,7 @@ internal class PlayerConnection : IDisposable
     {
         EnsureConnectedToPlayer();
         var json = JsonSerializer.Serialize(req, JSON_READER_OPTIONS);
-        await Task.Run(() => _client.Send(json));
+        await Task.Run(() => _client?.Send(json));
     }
     void EnsureConnectedToPlayer()
     {
@@ -230,11 +231,11 @@ internal class PlayerConnection : IDisposable
     }
     async Task StartToListenWebSocket()
     {
-        while(IsConnected)
+        while (IsConnected)
         {
             try
             {
-                while(_playerMessages.TryDequeue(out var args))
+                while (_playerMessages.TryDequeue(out var args))
                 {
                     //Debug.WriteLine(args.Data);
                     var resp = JsonSerializer.Deserialize<MajWsResponseBase>(args.Data, JSON_READER_OPTIONS);
@@ -273,7 +274,8 @@ internal class PlayerConnection : IDisposable
                         case MajWsResponseType.Error:
                             OnViewStateChanged?.Invoke(this, _viewSummary.State);
                             //TODO: Move this to View model through event
-                            await Dispatcher.UIThread.Invoke(async () => {
+                            await Dispatcher.UIThread.Invoke(async () =>
+                            {
                                 await MessageBox.ShowAsync(resp.responseData.ToString() ?? "Unknown Error", "Error", icon: Icon.Error);
                             });
                             break;
@@ -291,7 +293,7 @@ internal class PlayerConnection : IDisposable
     }
     public void Dispose()
     {
-        _client.Close();
+        _client?.Close();
     }
 }
 internal class PlayerNotConnectedException : Exception

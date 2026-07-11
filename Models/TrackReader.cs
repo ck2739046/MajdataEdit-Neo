@@ -36,15 +36,15 @@ class TrackReader : IDisposable
         return Bass.ChannelBytes2Seconds(bgmStream, Bass.ChannelGetPosition(bgmStream));
     }
 
-    public bool isPlaying { get { return Bass.ChannelIsActive(bgmStream)==PlaybackState.Playing; } }
+    public bool isPlaying { get { return Bass.ChannelIsActive(bgmStream) == PlaybackState.Playing; } }
 
-    int bgmStream =0;
-    public TrackInfo ReadTrack (string dirpath)
+    int bgmStream = 0;
+    public TrackInfo ReadTrack(string dirpath)
     {
         var useOgg = File.Exists(dirpath + "/track.ogg");
         var filePath = dirpath + "/track" + (useOgg ? ".ogg" : ".mp3");
-        if(bgmStream is not 0)
-        Bass.StreamFree(bgmStream);
+        if (bgmStream is not 0)
+            Bass.StreamFree(bgmStream);
         var bgmDecode = Bass.CreateStream(filePath, 0L, 0L, BassFlags.Decode);
         bgmStream = Bass.CreateStream(filePath, 0, 0, BassFlags.Prescan);
         var bgmSample = Bass.SampleLoad(filePath, 0, 0, 1, BassFlags.Default);

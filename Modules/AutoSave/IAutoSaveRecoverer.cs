@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 
 namespace MajdataEdit_Neo.Modules.AutoSave;
+
 public interface IAutoSaveRecoverer
 {
     /// <summary>

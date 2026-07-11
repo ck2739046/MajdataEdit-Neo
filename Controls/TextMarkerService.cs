@@ -51,7 +51,7 @@ public class TextMarkerService(TextDocument document, TextView textView) : IBack
             // 只绘制当前可见区域内的标记
             foreach (var line in visualLines)
             {
-                if (line.StartOffset > marker.EndOffset || 
+                if (line.StartOffset > marker.EndOffset ||
                     line.StartOffset + line.VisualLength < marker.StartOffset)
                     continue;
 

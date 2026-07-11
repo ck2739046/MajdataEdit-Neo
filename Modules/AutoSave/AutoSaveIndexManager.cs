@@ -10,6 +10,7 @@ using System.IO;
 using System.Text.Json;
 
 namespace MajdataEdit_Neo.Modules.AutoSave;
+
 internal class AutoSaveIndexManager : IAutoSaveIndexManager
 {
     string? _curPath;

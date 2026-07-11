@@ -24,7 +24,7 @@ internal class AutoSaveIndex
     public List<AutoSaveFileInfo> FilesInfo { get; set; } = new();
 }
 
-[JsonSerializable(typeof(AutoSaveIndex))] 
+[JsonSerializable(typeof(AutoSaveIndex))]
 internal partial class AutoSaveIndexJsonContext : JsonSerializerContext
 {
 }

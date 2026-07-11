@@ -1,4 +1,4 @@
-﻿using Avalonia.Media.Imaging;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -13,6 +13,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using Types;
 
 namespace MajdataEdit_Neo.ViewModels;
 
@@ -32,15 +33,16 @@ partial class ChartInfoViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(Cover))]
     private string? maidataDir;
 
-    public Bitmap Cover { 
+    public Bitmap Cover
+    {
         get
         {
             var coverPath = MaidataDir + "/bg.png";
-            if(File.Exists(coverPath)) return new Bitmap(coverPath);
+            if (File.Exists(coverPath)) return new Bitmap(coverPath);
             coverPath = MaidataDir + "/bg.jpg";
             if (File.Exists(coverPath)) return new Bitmap(coverPath);
             return new Bitmap(AssetLoader.Open(new Uri("avares://MajdataEdit-Neo/Assets/dummy.png")));
-        } 
+        }
     }
 
     public void AddNewCommand()
@@ -92,7 +94,7 @@ partial class ChartInfoViewModel : ViewModelBase
                     MsBox.Avalonia.Enums.ButtonEnum.YesNo, MsBox.Avalonia.Enums.Icon.Warning);
                 if (result == MsBox.Avalonia.Enums.ButtonResult.Yes)
                 {
-                    await MainWindowViewModel.Ins.CompressBgVideo();
+                    await MainWindowViewModel.Ins.Session.Tools.CompressBgVideoAsync();
                 }
             }
         }

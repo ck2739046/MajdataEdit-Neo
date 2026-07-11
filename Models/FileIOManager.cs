@@ -21,10 +21,10 @@ class FileIOManager
                 fptype = new FilePickerFileType("Maidata") { Patterns = ["maidata.txt"], MimeTypes = ["text/plain"] };
                 break;
             case FileOpenerType.Track:
-                fptype = new FilePickerFileType("Track") { Patterns = ["track.mp3","track.ogg"], MimeTypes = ["audio/mpeg", "audio/ogg"] };
+                fptype = new FilePickerFileType("Track") { Patterns = ["track.mp3", "track.ogg"], MimeTypes = ["audio/mpeg", "audio/ogg"] };
                 break;
             case FileOpenerType.Image:
-                fptype = new FilePickerFileType("Image") { Patterns = ["*.jpg","*.png"], MimeTypes = ["image/jpeg", "image/png"] };
+                fptype = new FilePickerFileType("Image") { Patterns = ["*.jpg", "*.png"], MimeTypes = ["image/jpeg", "image/png"] };
                 break;
             case FileOpenerType.Video:
                 fptype = new FilePickerFileType("Image") { Patterns = ["*.mp4"], MimeTypes = ["video/mp4"] };
@@ -36,7 +36,7 @@ class FileIOManager
 
         var files = await provider.OpenFilePickerAsync(new FilePickerOpenOptions()
         {
-            Title = $"Open {Enum.GetName(typeof(FileOpenerType),type)}",
+            Title = $"Open {Enum.GetName(typeof(FileOpenerType), type)}",
             FileTypeFilter = [fptype],
             AllowMultiple = false
         });

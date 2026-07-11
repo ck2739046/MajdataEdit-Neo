@@ -8,7 +8,7 @@ namespace MajdataEdit_Neo.Utils;
 [JsonSerializable(typeof(MajWsRequestPlay))]
 [JsonSerializable(typeof(MajWsRequestSetting))]
 [JsonSerializable(typeof(MajWsResponseBase))]
-[JsonSerializable(typeof(ViewSummary))] 
+[JsonSerializable(typeof(ViewSummary))]
 internal partial class MajWsJsonContext : JsonSerializerContext
 {
 }

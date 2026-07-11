@@ -23,7 +23,7 @@ class SimaiVisualizerControl : Control
     AvaloniaProperty.RegisterDirect<SimaiVisualizerControl, double>(
         nameof(Time),
         o => o.Time,
-        (o,v)=>o.Time = v,
+        (o, v) => o.Time = v,
         defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
     private double _time;
     public double Time
@@ -32,14 +32,14 @@ class SimaiVisualizerControl : Control
         set { SetAndRaise(TimeProperty, ref _time, value); }
     }
 
-    public static readonly DirectProperty<SimaiVisualizerControl, TrackInfo> TrackIfProperty =
-    AvaloniaProperty.RegisterDirect<SimaiVisualizerControl, TrackInfo>(
+    public static readonly DirectProperty<SimaiVisualizerControl, TrackInfo?> TrackIfProperty =
+    AvaloniaProperty.RegisterDirect<SimaiVisualizerControl, TrackInfo?>(
         nameof(TrackIf),
         o => o.TrackIf,
         (o, v) => o.TrackIf = v,
         defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
-    private TrackInfo _track;
-    public TrackInfo TrackIf
+    private TrackInfo? _track;
+    public TrackInfo? TrackIf
     {
         get { return _track; }
         set { SetAndRaise(TrackIfProperty, ref _track, value); }
@@ -58,27 +58,27 @@ class SimaiVisualizerControl : Control
         set { SetAndRaise(ZoomLevelProperty, ref _zoomLevel, value); }
     }
 
-    public static readonly DirectProperty<SimaiVisualizerControl, SimaiChart> SimaiChartProperty =
-    AvaloniaProperty.RegisterDirect<SimaiVisualizerControl, SimaiChart>(
+    public static readonly DirectProperty<SimaiVisualizerControl, SimaiChart?> SimaiChartProperty =
+    AvaloniaProperty.RegisterDirect<SimaiVisualizerControl, SimaiChart?>(
         nameof(SimaiChart),
         o => o.SimaiChart,
         (o, v) => o.SimaiChart = v,
         defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
-    private SimaiChart _simaiChart;
-    public SimaiChart SimaiChart
+    private SimaiChart? _simaiChart;
+    public SimaiChart? SimaiChart
     {
         get { return _simaiChart; }
         set { SetAndRaise(SimaiChartProperty, ref _simaiChart, value); }
     }
 
-    public static readonly DirectProperty<SimaiVisualizerControl, List<(double, int, int)>> SignaturesProperty =
-    AvaloniaProperty.RegisterDirect<SimaiVisualizerControl, List<(double, int, int)>>(
-    nameof(Signatures),
-    o => o.Signatures,
-    (o, v) => o.Signatures = v,
-    defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
-    private List<(double, int, int)> _signatures;
-    public List<(double, int, int)> Signatures
+    public static readonly DirectProperty<SimaiVisualizerControl, List<(double, int, int)>?> SignaturesProperty =
+    AvaloniaProperty.RegisterDirect<SimaiVisualizerControl, List<(double, int, int)>?>(
+        nameof(Signatures),
+        o => o.Signatures,
+        (o, v) => o.Signatures = v,
+        defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
+    private List<(double, int, int)>? _signatures;
+    public List<(double, int, int)>? Signatures
     {
         get { return _signatures; }
         set { SetAndRaise(SignaturesProperty, ref _signatures, value); }
@@ -200,9 +200,9 @@ class SimaiVisualizerControl : Control
             CursorPath.Close();
         }
 
-        public CustomDrawOp(Rect bounds, 
-            TrackInfo trackInfo, double time, float zoomLevel,SimaiChart simaiChart, List<(double, int, int)> signatures,
-            float offset, double caretTime,bool isAnimated)
+        public CustomDrawOp(Rect bounds,
+            TrackInfo trackInfo, double time, float zoomLevel, SimaiChart simaiChart, List<(double, int, int)> signatures,
+            float offset, double caretTime, bool isAnimated)
         {
             _trackInfo = trackInfo;
             _time = time;
@@ -214,7 +214,7 @@ class SimaiVisualizerControl : Control
             _isAnimated = isAnimated;
             Bounds = bounds;
         }
-        public void Dispose(){}
+        public void Dispose() { }
         public Rect Bounds { get; }
         public bool HitTest(Point p) => true;
         public bool Equals(ICustomDrawOperation? other) => false;
@@ -292,7 +292,7 @@ class SimaiVisualizerControl : Control
                 {
                     if (timing.Bpm != lastbpm)
                     {
-                        BpmChangeTimes.Add(timing.Timing+_offset);
+                        BpmChangeTimes.Add(timing.Timing + _offset);
                         BpmChangeValues.Add(timing.Bpm);
                         lastbpm = timing.Bpm;
                     }
@@ -372,12 +372,12 @@ class SimaiVisualizerControl : Control
                     time = note.Timing + _offset;
                     if (time - currentTime > deltatime) continue;
                     var x = ((float)(time / step) - startindex) * linewidth;
-                    canvas.DrawLine((float)x, (float)height -10, (float)x, (float)height, paint);
+                    canvas.DrawLine((float)x, (float)height - 10, (float)x, (float)height, paint);
                 }
 
                 paint.Color = CaretColor;
                 paint.StrokeWidth = 2;
-                canvas.DrawLine((float)width / 2, 15, (float)width / 2, (float)height-15, paint);
+                canvas.DrawLine((float)width / 2, 15, (float)width / 2, (float)height - 15, paint);
 
                 paint.Style = SKPaintStyle.Stroke;
                 // Draw notes
@@ -499,7 +499,7 @@ class SimaiVisualizerControl : Control
                                               slideCount >= 2 ? EachColor :
                                               SlideBodyColor;
                                 paint.PathEffect = DashEffect;
-                                var xSlide = (float)((noteD.SlideStartTime+_offset) / step - startindex) * linewidth;
+                                var xSlide = (float)((noteD.SlideStartTime + _offset) / step - startindex) * linewidth;
                                 var xSlideRight = (float)(noteD.SlideTime / step) * linewidth + xSlide;
 
                                 if (!float.IsNormal(xSlideRight)) xSlideRight = ushort.MaxValue;

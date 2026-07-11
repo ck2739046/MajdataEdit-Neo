@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 
 namespace MajdataEdit_Neo.Modules.AutoSave;
+
 internal class AutoSaveRecoverer : IAutoSaveRecoverer
 {
     readonly IAutoSaveContext _globalContext;
@@ -16,11 +17,11 @@ internal class AutoSaveRecoverer : IAutoSaveRecoverer
     readonly IAutoSaveIndexManager _localIndex;
 
     readonly static IReadOnlyCollection<AutoSaveFileInfo> EMPTY_COLLECTION = new List<AutoSaveFileInfo>(0);
-    public AutoSaveRecoverer(IAutoSaveContext localContext,IAutoSaveContext globalContext)
+    public AutoSaveRecoverer(IAutoSaveContext localContext, IAutoSaveContext globalContext)
     {
         _localContext = localContext;
         _globalContext = globalContext;
-        _localIndex = new AutoSaveIndexManager(localContext,AutoSaveManager.LOCAL_AUTOSAVE_MAX_COUNT);
+        _localIndex = new AutoSaveIndexManager(localContext, AutoSaveManager.LOCAL_AUTOSAVE_MAX_COUNT);
         try
         {
             _localIndex.ChangePath(_localContext.WorkingPath);
@@ -29,7 +30,7 @@ internal class AutoSaveRecoverer : IAutoSaveRecoverer
         {
         }
 
-        _globalIndex = new AutoSaveIndexManager(globalContext,AutoSaveManager.GLOBAL_AUTOSAVE_MAX_COUNT);
+        _globalIndex = new AutoSaveIndexManager(globalContext, AutoSaveManager.GLOBAL_AUTOSAVE_MAX_COUNT);
         _globalIndex.ChangePath(_globalContext.WorkingPath);
     }
 
@@ -46,7 +47,7 @@ internal class AutoSaveRecoverer : IAutoSaveRecoverer
         var result = new List<AutoSaveFileInfo>();
 
         result.AddRange(_localIndex.GetFileInfos());
-        result.Sort(delegate(AutoSaveFileInfo f1, AutoSaveFileInfo f2)
+        result.Sort(delegate (AutoSaveFileInfo f1, AutoSaveFileInfo f2)
         {
             return f2.SavedTime.CompareTo(f1.SavedTime);
         });
@@ -58,7 +59,7 @@ internal class AutoSaveRecoverer : IAutoSaveRecoverer
     {
         var result = new List<AutoSaveFileInfo>();
         result.AddRange(_globalIndex.GetFileInfos());
-        result.Sort(delegate(AutoSaveFileInfo f1, AutoSaveFileInfo f2)
+        result.Sort(delegate (AutoSaveFileInfo f1, AutoSaveFileInfo f2)
         {
             return f2.SavedTime.CompareTo(f1.SavedTime);
         });

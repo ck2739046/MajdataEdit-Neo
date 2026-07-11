@@ -1,4 +1,4 @@
-﻿using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MajdataEdit_Neo.Assets.Langs;
 using MajdataEdit_Neo.Types.MajSetting;
@@ -9,6 +9,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using Types;
 
 namespace MajdataEdit_Neo.ViewModels;
 
@@ -32,7 +33,8 @@ public partial class SettingsViewModel : ViewModelBase
             {
                 Items = subSection.GetType()
                     .GetProperties()
-                    .Where(p => {
+                    .Where(p =>
+                    {
                         var attr = p.GetCustomAttribute<SettingUnbrowsableAttribute>();
                         return attr == null;
                     })
@@ -148,7 +150,7 @@ public partial class SettingItem : ObservableObject
 
                 _prop.SetValue(_owner, converted);
                 OnPropertyChanged();
-                MainWindowViewModel.Ins.ReloadSettings();
+                MainWindowViewModel.Ins.Settings.ReloadSettings();
 
                 if (SelectionValues.Count != 0)
                 {

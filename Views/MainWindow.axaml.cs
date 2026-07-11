@@ -37,6 +37,109 @@ namespace MajdataEdit_Neo.Views;
 public partial class MainWindow : Window
 {
     MainWindowViewModel viewModel => (MainWindowViewModel)DataContext;
+
+    private void PlayRecord_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var simai = viewModel.Session.Doc.CurrentSimaiFile;
+        if (simai == null) return;
+        var ctx = new global::ViewModels.SubModels.PlaybackModel.PlayContext(
+            simai.Title ?? "",
+            simai.Artist ?? "",
+            viewModel.Session.Doc.Offset,
+            viewModel.Session.Doc.Designer,
+            viewModel.Session.Doc.Level,
+            viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen,
+            simai.Commands,
+            viewModel.Session.Doc.SelectedDifficulty
+        );
+        _ = viewModel.Session.Playback.PlayRecord(ctx, viewModel.Settings.Settings, viewModel.Session.MaidataDir);
+    }
+    
+    private void Subdivide1p5x_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiSubdivide.Subdivide(textEditor.SelectedText, 1.5f);
+    }
+
+    private void Subdivide2x_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiSubdivide.Subdivide(textEditor.SelectedText, 2f);
+    }
+
+    private void PlayIncludeOp_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var simai = viewModel.Session.Doc.CurrentSimaiFile;
+        if (simai == null) return;
+        var ctx = new global::ViewModels.SubModels.PlaybackModel.PlayContext(
+            simai.Title ?? "",
+            simai.Artist ?? "",
+            viewModel.Session.Doc.Offset,
+            viewModel.Session.Doc.Designer,
+            viewModel.Session.Doc.Level,
+            viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen,
+            simai.Commands,
+            viewModel.Session.Doc.SelectedDifficulty
+        );
+        _ = viewModel.Session.Playback.PlayIncludeOp(ctx, viewModel.Settings.Settings);
+    }
+    
+    private void Stop_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        viewModel.Session.Playback.Stop();
+    }
+
+    private void PlayPause_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var simai = viewModel.Session.Doc.CurrentSimaiFile;
+        if (simai == null) return;
+        var ctx = new global::ViewModels.SubModels.PlaybackModel.PlayContext(
+            simai.Title ?? "",
+            simai.Artist ?? "",
+            viewModel.Session.Doc.Offset,
+            viewModel.Session.Doc.Designer,
+            viewModel.Session.Doc.Level,
+            viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen,
+            simai.Commands,
+            viewModel.Session.Doc.SelectedDifficulty
+        );
+        _ = viewModel.Session.Playback.PlayPause(ctx, viewModel.Settings.Settings);
+    }
+
+    private void MirrorHorizontal_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiMirror.HandleMirror(textEditor.SelectedText, MajdataEdit_Neo.Models.SimaiMirror.HandleType.LRMirror);
+    }
+    private void MirrorVertical_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiMirror.HandleMirror(textEditor.SelectedText, MajdataEdit_Neo.Models.SimaiMirror.HandleType.UDMirror);
+    }
+    private void Mirror180_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiMirror.HandleMirror(textEditor.SelectedText, MajdataEdit_Neo.Models.SimaiMirror.HandleType.HalfRotation);
+    }
+    private void Turn45_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiMirror.HandleMirror(textEditor.SelectedText, MajdataEdit_Neo.Models.SimaiMirror.HandleType.Rotation45);
+    }
+    private void TurnNegative45_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiMirror.HandleMirror(textEditor.SelectedText, MajdataEdit_Neo.Models.SimaiMirror.HandleType.CcwRotation45);
+    }
+    private void PlayStop_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var simai = viewModel.Session.Doc.CurrentSimaiFile;
+        if (simai == null) return;
+        var ctx = new global::ViewModels.SubModels.PlaybackModel.PlayContext(
+            simai.Title ?? "",
+            simai.Artist ?? "",
+            viewModel.Session.Doc.Offset,
+            viewModel.Session.Doc.Designer,
+            viewModel.Session.Doc.Level,
+            viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen,
+            simai.Commands,
+            viewModel.Session.Doc.SelectedDifficulty
+        );
+        _ = viewModel.Session.Playback.PlayStop(ctx, viewModel.Settings.Settings);
+    }
     TextEditor textEditor;
     TextMarkerService markerService;
     SimaiVisualizerControl simaiVisual;
@@ -63,7 +166,7 @@ public partial class MainWindow : Window
             Process.Start(viewPath);
         }
 
-        // 补全 Mac 常见的环境变量路径（Homebrew 在 Intel 和 Apple Silicon 的路径不同）
+        // 补全 Mac 常见的环境变量路径（Homebrew �?Intel �?Apple Silicon 的路径不同）
         if (isMac)
         {
             var currentPath = Environment.GetEnvironmentVariable("PATH");
@@ -110,16 +213,16 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)
     {
-        var setting = viewModel.Settings.WindowSetting;
+        var setting = viewModel.Settings.Settings.WindowSetting;
         this.Position = new PixelPoint(setting.PosX, setting.PosY);
         this.Width = setting.Width;
         this.Height = setting.Height;
 
-        if (viewModel.Settings.EditSetting.AutoCheckUpdatesOnStartup)
+        if (viewModel.Settings.Settings.EditSetting.AutoCheckUpdatesOnStartup)
         {
-            await viewModel.CheckUpdateAsync(true);
+            await viewModel.Update.CheckUpdateAsync(true);
         }
-        await viewModel.ConnectToPlayerAsync();
+        await viewModel.Session.Playback.ConnectToPlayerAsync();
     }
 
     bool haveAsked = false;
@@ -128,9 +231,9 @@ public partial class MainWindow : Window
         if (haveAsked) return;
         e.Cancel = true;
         haveAsked = true;
-        viewModel.SetWindowLastState(this);
+        viewModel.Settings.SetWindowLastState(this);
         viewModel.OnWindowClosing();
-        if (!await viewModel.AskSave())
+        if (!await viewModel.Session.AskSave())
         {
             Process.GetProcessesByName("MajdataView").FirstOrDefault()?.Kill();
             this.Close();
@@ -156,8 +259,8 @@ public partial class MainWindow : Window
     private void Caret_PositionChanged(object? sender, System.EventArgs e)
     {
         var seek = textEditor.SelectionStart;
-        viewModel.SetCaretTime(seek, isCtrlKeyDown);
-        viewModel.CaretLine = textEditor.TextArea.Caret.Line;
+        viewModel.Session.Playback.SetCaretTime(seek, isCtrlKeyDown);
+        viewModel.Session.Playback.CaretLine = textEditor.TextArea.Caret.Line;
     }
 
     static double? lastX = null;
@@ -170,19 +273,19 @@ public partial class MainWindow : Window
         var delta = x - lastX;
         if (point.Properties.IsLeftButtonPressed)
         {
-            var docseek = viewModel.SlideTrackTime((float)delta*10f/Width);
-            viewModel.SeekToDocPos(docseek,textEditor);
+            var docseek = viewModel.Session.Playback.SlideTrackTime((float)delta*10f/Width, viewModel.Session.SongTrackInfo, viewModel.Session.Doc.CurrentChartData, (viewModel.Session.Doc.CurrentSimaiFile?.Offset ?? 0));
+            SeekToDocPos(docseek,textEditor);
         }
         lastX = x;
     }
 
     private void ZoomIn_Click(object? sender, RoutedEventArgs e)
     {
-        viewModel.SlideZoomLevel(-0.3f);
+        viewModel.Session.Playback.SlideZoomLevel(-0.3f);
     }
     private void ZoomOut_Click(object? sender, RoutedEventArgs e)
     {
-        viewModel.SlideZoomLevel(0.3f);
+        viewModel.Session.Playback.SlideZoomLevel(0.3f);
     }
 
     private void First_PointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)
@@ -210,12 +313,12 @@ public partial class MainWindow : Window
     {
         if (isCtrlKeyDown)
         {
-            viewModel.SlideZoomLevel(-0.3f * (float)e.Delta.Y);
+            viewModel.Session.Playback.SlideZoomLevel(-0.3f * (float)e.Delta.Y);
         }
         else
         {
-            var docseek = viewModel.SlideTrackTime(e.Delta.Y);
-            viewModel.SeekToDocPos(docseek,textEditor);
+            var docseek = viewModel.Session.Playback.SlideTrackTime(e.Delta.Y, viewModel.Session.SongTrackInfo, viewModel.Session.Doc.CurrentChartData, (viewModel.Session.Doc.CurrentSimaiFile?.Offset ?? 0));
+            SeekToDocPos(docseek,textEditor);
         }
     }
 
@@ -265,9 +368,9 @@ public partial class MainWindow : Window
     {
         _debounceTimer.Stop();
         _debounceTimer.Start();
-        await viewModel.SetFumenContent(((TextEditor)sender).Text);
+        await viewModel.Session.Doc.SetFumenContent(((TextEditor)sender).Text);
         var seek = textEditor.SelectionStart;
-        viewModel.SetCaretTime(seek, isCtrlKeyDown);
+        viewModel.Session.Playback.SetCaretTime(seek, isCtrlKeyDown);
     }
     private void _debounceTimer_Tick(object? sender, EventArgs e)
     {
@@ -276,16 +379,16 @@ public partial class MainWindow : Window
     }
     private async void TextEditor_DebouncedTextChanged()
     {
-        var fumen = viewModel.CurrentFumen;
+        var fumen = viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen;
 
         var diags = await Task.Run(() => SimaiChecker.Check(fumen));
-        viewModel.SimaiDiagnostics = diags;
+        viewModel.Session.Doc.SimaiDiagnostics = diags;
         markerService.UpdateDiags(diags);
 
-        viewModel.Signatures.Clear();
-        if (viewModel.CurrentChartData != null)
+        viewModel.Session.Doc.Signatures.Clear();
+        if (viewModel.Session.Doc.CurrentChartData != null)
         {
-            var timingList = viewModel.CurrentChartData.CommaTimings;
+            var timingList = viewModel.Session.Doc.CurrentChartData.CommaTimings;
             var first = timingList.FirstOrDefault();
             if (first != default)
             {
@@ -295,7 +398,7 @@ public partial class MainWindow : Window
                 {
                     if (timing.SignatureNumerator != lastNum || timing.SignatureDenominator != lastDeno)
                     {
-                        viewModel.Signatures.Add((timing.Timing, timing.SignatureNumerator, timing.SignatureDenominator));
+                        viewModel.Session.Doc.Signatures.Add((timing.Timing, timing.SignatureNumerator, timing.SignatureDenominator));
                     }
                 }
             }
@@ -355,141 +458,28 @@ public partial class MainWindow : Window
             textEditor.SearchPanel.Open();
         }
     }
-
-    private async void MediaQuickProcess_Click(object? sender, RoutedEventArgs e)
+    private void SeekToDocPos(Avalonia.Point position)
     {
-        try
-        {
-            if (viewModel.CurrentChartData is null || viewModel.CurrentChartData.CommaTimings.Length == 0)
-            {
-                await Utils.MessageBox.ShowWindowDialogAsync(
-                    Assets.Langs.Langs.Msg_NoBpmInChart,
-                    Assets.Langs.Langs.Gui_Error,
-                    ButtonEnum.Ok, MsBoxIcon.Error);
-                return;
-            }
-
-            var firstTiming = viewModel.CurrentChartData.CommaTimings[0];
-            var bpm = firstTiming.Bpm;
-            var offset = viewModel.Offset;
-
-            var beatsCountBox = this.FindControl<NumericUpDown>("BeatsCountBox");
-            var freezeFrameCheckBox = this.FindControl<CheckBox>("FreezeFrameCheckBox");
-
-            if (beatsCountBox?.Value is null)
-            {
-                await Utils.MessageBox.ShowWindowDialogAsync(
-                    Assets.Langs.Langs.Msg_InvalidBeatsCount,
-                    Assets.Langs.Langs.Gui_Error,
-                    ButtonEnum.Ok, MsBoxIcon.Error);
-                return;
-            }
-
-            var beatsCount = (int)beatsCountBox.Value;
-            var freezeFrame = freezeFrameCheckBox?.IsChecked == true;
-            
-            if (!await EnsureFFmpeg()) return;
-
-            var maidataDir = viewModel.MaidataDir;
-            var audioPath = Path.Combine(maidataDir, "track.mp3");
-            if (!File.Exists(audioPath))
-                audioPath = Path.Combine(maidataDir, "track.ogg");
-
-            viewModel.ShowStatusMessage(Assets.Langs.Langs.Status_Processing);
-
-            await Task.Run(() =>
-            {
-                TrackProcessor.AdjustMediaTime("ffmpeg", audioPath, 60.0 / bpm * beatsCount, offset);
-
-                string? videoPath = null;
-                foreach (var name in new[] { "pv.mp4", "mv.mp4", "bg.mp4" })
-                {
-                    var dir = Path.Combine(maidataDir, name);
-                    if (File.Exists(dir))
-                    {
-                        videoPath = dir;
-                        break;
-                    }
-                }
-
-                if (videoPath != null)
-                {
-                    TrackProcessor.AdjustMediaTime("ffmpeg", videoPath, 60.0 / bpm * beatsCount, offset, freezeFrame);
-                }
-            });
-
-            viewModel.Offset = 0;
-            viewModel.SaveFile();
-            await Task.Delay(30);
-            await viewModel.ReloadFile();
-
-            viewModel.ResetStatusMessage();
-            await Utils.MessageBox.ShowWindowDialogAsync(
-                Assets.Langs.Langs.Msg_MediaProcessComplete,
-                Assets.Langs.Langs.Gui_Success,
-                ButtonEnum.Ok, MsBoxIcon.Success);
-        }
-        catch (Exception ex)
-        {
-            viewModel.ResetStatusMessage();
-            await Utils.MessageBox.ShowWindowDialogAsync(
-                string.Format(Assets.Langs.Langs.Msg_MediaProcessFailed, ex.Message),
-                Assets.Langs.Langs.Gui_Error,
-                ButtonEnum.Ok, MsBoxIcon.Error);
-        }
+        if (position.Y + 1 > textEditor.Document.LineCount) return;
+        var offset = textEditor.Document.GetOffset((int)position.Y + 1, (int)position.X);
+        textEditor.Select(offset, 0);
+        textEditor.ScrollTo((int)position.Y + 1, (int)position.X);
+        textEditor.Focus();
     }
-
-    private async void NewChartFromVideo_Click(object? sender, RoutedEventArgs e)
+    private void SeekToDocPos(Avalonia.Point position, AvaloniaEdit.TextEditor editor)
     {
-        try
-        {
-            var topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel is null) return;
-
-            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-            {
-                Title = "Select Video File",
-                FileTypeFilter = new[]
-                {
-                    new FilePickerFileType("Video Files") { Patterns = new[] { "*.mp4", "*.mkv", "*.avi", "*.mov", "*.flv", "*.wmv" } },
-                    new FilePickerFileType("All Files") { Patterns = new[] { "*.*" } }
-                },
-                AllowMultiple = false
-            });
-
-            if (files.Count == 0) return;
-
-            var file = files[0].TryGetLocalPath();
-            if (file is null) return;
-
-            var parent = Path.GetDirectoryName(file)!;
-            var newFile = Path.Combine(parent, "pv.mp4");
-
-            if (file != newFile)
-            {
-                if (File.Exists(newFile))
-                    File.Delete(newFile);
-                File.Move(file, newFile);
-            }
-
-            if (!await EnsureFFmpeg()) return;
-
-            viewModel.ShowStatusMessage(Assets.Langs.Langs.Status_ExtractingAudio);
-
-            var audioPath = Path.Combine(parent, "track.mp3");
-            await Task.Run(() => TrackProcessor.ExtractAudio("ffmpeg", newFile, audioPath));
-
-            viewModel.ResetStatusMessage();
-            await viewModel.NewChart(parent);
-            viewModel.OpenChartInfoWindow();
-        }
-        catch (Exception ex)
-        {
-            viewModel.ResetStatusMessage();
-            await Utils.MessageBox.ShowWindowDialogAsync(
-                string.Format(Assets.Langs.Langs.Msg_ExtractAudioFailed, ex.Message),
-                Assets.Langs.Langs.Gui_Error,
-                ButtonEnum.Ok, MsBoxIcon.Error);
-        }
+        if (position.Y + 1 > editor.Document.LineCount) return;
+        var offset = editor.Document.GetOffset((int)position.Y + 1, (int)position.X);
+        editor.Select(offset, 0);
+        editor.ScrollTo((int)position.Y + 1, (int)position.X);
+        editor.Focus();
     }
 }
+
+
+
+
+
+
+
+

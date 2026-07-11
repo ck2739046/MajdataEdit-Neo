@@ -5,7 +5,7 @@ namespace MajdataEdit_Neo.Types.SimaiAnalyzer;
 public enum Severity
 {
     Info,
-    Warning, 
+    Warning,
     Error
 }
 

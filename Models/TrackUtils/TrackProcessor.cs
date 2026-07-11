@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 
-namespace MajdataEdit_Neo.Models;
+namespace Models.TrackUtils;
 
 public static class TrackProcessor
 {

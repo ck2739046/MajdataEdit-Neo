@@ -212,7 +212,7 @@ public static partial class ReadOnlySpanExtensions
 
     public static ReadOnlySpan<T> TakeLast<T>(this ReadOnlySpan<T> span, int count)
         => span[Math.Max(0, span.Length - count)..];
-    
+
     public static TSource? MinBy<TSource, TKey>(
         this ReadOnlySpan<TSource> span,
         Func<TSource, TKey> selector)
