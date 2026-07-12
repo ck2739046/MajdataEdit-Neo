@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
         xmlns:controls="clr-namespace:MajdataEdit_Neo.Controls"
@@ -58,26 +58,11 @@
 					<Separator/>
 					<MenuItem Header="{local:I18N Gui_ExportVideo}" Command="{Binding PlayRecordCommand}"/>
 				</MenuItem>
-				<MenuItem Header="{local:I18N Gui_Edit}" ItemsSource="{Binding Session.Plugins.PluginItems}">
-					<MenuItem.DataTemplates>
-						<DataTemplate DataType="tp:PluginAction">
-							<MenuItem Header="{Binding Name}"
-									  Command="{Binding #Root.DataContext.ExecutePluginActionCommand}"
-									  CommandParameter="{Binding}">
-								<MenuItem.Icon>
-									<PathIcon Data="{Binding IconKey, Converter={x:Static conv:IconKeyToStreamGeometryConverter.Instance}}"/>
-								</MenuItem.Icon>
-							</MenuItem>
-						</DataTemplate>
-
-						<DataTemplate DataType="tp:MenuSeparator">
-							<Separator/>
-						</DataTemplate>
-					</MenuItem.DataTemplates>
-					<Separator/>
+				<MenuItem x:Name="EditMenu" Header="{local:I18N Gui_Edit}">
 					<MenuItem Header="{local:I18N Gui_ChartInfo}" Command="{Binding OpenChartInfoWindow}"/>
 					<Separator/>
 					<MenuItem Header="{local:I18N Gui_FindAndReplace}" PointerPressed="FindReplace_PointerPressed"/>
+					<Separator/>
 				</MenuItem>
 				<MenuItem Header="{local:I18N Gui_Setting}">
 					<MenuItem Header="{local:I18N Gui_Setting}" Command="{Binding OpenSettingsWindow}"/>
@@ -188,23 +173,6 @@
                                      FontSize="{Binding Settings.FontSize}">
 				<AvaloniaEdit:TextEditor.ContextFlyout>
 					<MenuFlyout>
-						<MenuItem Header="{local:I18N Gui_Edit}" ItemsSource="{Binding Session.Plugins.PluginItems}">
-							<MenuItem.DataTemplates>
-								<DataTemplate DataType="tp:PluginAction">
-									<MenuItem Header="{Binding Name}"
-											  Command="{Binding #Root.DataContext.ExecutePluginActionCommand}"
-											  CommandParameter="{Binding}">
-										<MenuItem.Icon>
-											<PathIcon Data="{Binding IconKey, Converter={x:Static conv:IconKeyToStreamGeometryConverter.Instance}}"/>
-										</MenuItem.Icon>
-									</MenuItem>
-								</DataTemplate>
-
-								<DataTemplate DataType="tp:MenuSeparator">
-									<Separator/>
-								</DataTemplate>
-							</MenuItem.DataTemplates>
-						</MenuItem>
 					</MenuFlyout>
 				</AvaloniaEdit:TextEditor.ContextFlyout>
 

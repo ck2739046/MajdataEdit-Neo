@@ -1,9 +1,10 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.Data;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Editing;
@@ -13,6 +14,8 @@ using AvaloniaEdit.Utils;
 using MajdataEdit_Neo.Controls;
 using MajdataEdit_Neo.Extensions;
 using MajdataEdit_Neo.Models;
+using MajdataEdit_Neo.Types;
+using MajdataEdit_Neo.Types.Plugin;
 using MajdataEdit_Neo.Models.SimaiAnalyzer;
 using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
@@ -135,11 +138,72 @@ public partial class MainWindow : Window
         this.Width = setting.Width;
         this.Height = setting.Height;
 
+        LoadPluginsToMenu();
+        viewModel.RequestPluginActionExecution += ViewModel_RequestPluginActionExecution;
+
         if (viewModel.Settings.Settings.EditSetting.AutoCheckUpdatesOnStartup)
         {
             await viewModel.Update.CheckUpdateAsync(true);
         }
         await viewModel.Session.Playback.ConnectToPlayerAsync();
+    }
+
+    private void LoadPluginsToMenu()
+    {
+        MenuItem editMenu = this.FindControl<MenuItem>("EditMenu")!;
+        MenuFlyout editorFlyout = (MenuFlyout)this.FindControl<TextEditor>("Editor")!.ContextFlyout!;
+
+        foreach (var item in viewModel.Session.Plugins.PluginItems)
+        {
+            if (item is PluginAction action)
+            {
+                var geometry = string.IsNullOrEmpty(action.IconKey) ? null
+                    : Converters.IconKeyToStreamGeometryConverter.Instance.Convert(
+                        action.IconKey,
+                        typeof(Avalonia.Media.StreamGeometry),
+                        null,
+                        System.Globalization.CultureInfo.CurrentCulture)
+                    as Avalonia.Media.StreamGeometry;
+
+                var editMenuItem = new MenuItem
+                {
+                    Header = action.Name,
+                    Command = viewModel.ExecutePluginActionCommand,
+                    CommandParameter = action,
+                    Icon = geometry != null ? new PathIcon { Data = geometry } : null
+                };
+                var flyoutMenuItem = new MenuItem
+                {
+                    Header = action.Name,
+                    Command = viewModel.ExecutePluginActionCommand,
+                    CommandParameter = action,
+                    Icon = geometry != null ? new PathIcon { Data = geometry } : null
+                };
+
+                editMenu.Items.Add(editMenuItem);
+                editorFlyout.Items.Add(flyoutMenuItem);
+            }
+            else if (item is PluginMenuSeparator)
+            {
+                editMenu!.Items.Add(new Separator());
+                editorFlyout!.Items.Add(new Separator());
+            }
+        }
+    }
+
+    private void ViewModel_RequestPluginActionExecution(PluginAction action)
+    {
+        if (action.Transform == null) return;
+
+        var selectedText = textEditor.SelectedText;
+        if (!string.IsNullOrEmpty(selectedText))
+        {
+            var newText = action.Transform(selectedText);
+            if (newText != selectedText)
+            {
+                textEditor.Document.Replace(textEditor.SelectionStart, textEditor.SelectionLength, newText);
+            }
+        }
     }
 
     bool haveAsked = false;
@@ -264,7 +328,7 @@ public partial class MainWindow : Window
             }
         }
 
-        //fix: SB avaloniaEdit ate my ctrl+up/down
+        //fix: SB AvaloniaEdit ate my ctrl+up/down
         if (hasCtrl && !hasShift)
         {
             if (e.Key == Key.Up)
@@ -276,6 +340,23 @@ public partial class MainWindow : Window
             else if (e.Key == Key.Down)
             {
                 textEditor.TextArea.Caret.Line = Math.Min(textEditor.Document.LineCount, textEditor.TextArea.Caret.Line + 1);
+                textEditor.TextArea.Caret.BringCaretToView();
+                e.Handled = true;
+            }
+        }
+
+        //fix: ctrl+left/right jumps a 'word', we dont need this
+        if (hasCtrl)
+        {
+            if (e.Key == Key.Left)
+            {
+                textEditor.TextArea.Caret.Offset--;
+                textEditor.TextArea.Caret.BringCaretToView();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Right)
+            {
+                textEditor.TextArea.Caret.Offset++;
                 textEditor.TextArea.Caret.BringCaretToView();
                 e.Handled = true;
             }

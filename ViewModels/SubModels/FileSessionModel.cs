@@ -1,4 +1,4 @@
-﻿using Avalonia.Platform.Storage;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MajdataEdit_Neo.Assets.Langs;
@@ -61,8 +61,7 @@ public partial class FileSessionModel : ViewModelBase
         Tools = new ToolsModel(_mainWindow, this, Doc);
 
         Plugins = new PluginModel();
-        Plugins.Register<MirrorPlugin>();
-        Plugins.Register<SubdividePlugin>();
+        Plugins.RegisterAll();
 
         WireEvents();
     }
