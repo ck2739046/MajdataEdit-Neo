@@ -145,14 +145,11 @@ public partial class PlaybackModel : ViewModelBase
 
         foreach (var o in chartData.CommaTimings)
         {
-            if (o.Timing + offset - time < 0)
+            double diff = Math.Abs(o.Timing + offset - time);
+            if (diff < minDiff)
             {
-                double diff = Math.Abs(o.Timing + offset - time);
-                if (diff < minDiff)
-                {
-                    minDiff = diff;
-                    nearestNote = o;
-                }
+                minDiff = diff;
+                nearestNote = o;
             }
         }
 
@@ -207,7 +204,7 @@ public partial class PlaybackModel : ViewModelBase
 
         if (setTrackTime)
         {
-            TrackTime = CaretTime;
+            TrackTime = CaretTime + _doc.Offset;
         }
     }
 

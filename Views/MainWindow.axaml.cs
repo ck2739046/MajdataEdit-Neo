@@ -254,7 +254,7 @@ public partial class MainWindow : Window
         var delta = x - lastX;
         if (point.Properties.IsLeftButtonPressed)
         {
-            var docseek = viewModel.Session.Playback.SlideTrackTime((float)delta * 10f / Width, viewModel.Session.SongTrackInfo, viewModel.Session.Doc.CurrentChartData, (viewModel.Session.Doc.CurrentSimaiFile?.Offset ?? 0));
+            var docseek = viewModel.Session.Playback.SlideTrackTime((float)delta * 10f / Width, viewModel.Session.SongTrackInfo, viewModel.Session.Doc.CurrentChartData, viewModel.Session.Doc.CurrentSimaiFile?.Offset ?? 0);
             SeekToDocPos(docseek, textEditor);
         }
         lastX = x;
@@ -345,27 +345,49 @@ public partial class MainWindow : Window
             }
         }
 
-        //fix: ctrl+left/right jumps a 'word', we dont need this
+        //fix: ctrl+left/right/up/down jumps something, we dont need this
         if (hasCtrl)
         {
-            if (e.Key == Key.Left)
+            if (hasShift)
             {
-                if (hasShift)
-                    EditingCommands.SelectLeftByCharacter.Execute(null, area);
-                else
-                    EditingCommands.MoveLeftByCharacter.Execute(null, area);
-                e.Handled = true;
+                switch (e.Key)
+                {
+                    case Key.Left:
+                        EditingCommands.SelectLeftByCharacter.Execute(null, area);
+                        e.Handled = true;
+                        break;
+                    case Key.Right:
+                        EditingCommands.SelectRightByCharacter.Execute(null, area);
+                        e.Handled = true;
+                        break;
+                    case Key.Up:
+                        EditingCommands.SelectUpByLine.Execute(null, area);
+                        e.Handled = true;
+                        break;
+                    case Key.Down:
+                        EditingCommands.SelectDownByLine.Execute(null, area);
+                        e.Handled = true;
+                        break;
+                }
             }
-            else if (e.Key == Key.Right)
+            else
             {
-                if (hasShift)
-                    EditingCommands.SelectRightByCharacter.Execute(null, area);
-                else
-                    EditingCommands.MoveRightByCharacter.Execute(null, area);
-                e.Handled = true;
+                switch (e.Key)
+                {
+                    case Key.Left:
+                        EditingCommands.MoveLeftByCharacter.Execute(null, area);
+                        e.Handled = true;
+                        break;
+                    case Key.Right:
+                        EditingCommands.MoveRightByCharacter.Execute(null, area);
+                        e.Handled = true;
+                        break;
+                    // up/down is normal
+                }
             }
         }
     }
+
     private async void TextEditor_TextChanged(object? sender, EventArgs e)
     {
         _debounceTimer.Stop();
