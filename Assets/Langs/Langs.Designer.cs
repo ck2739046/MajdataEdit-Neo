@@ -39,7 +39,7 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("MajdataEdit-Neo.Assets.Langs.Langs", typeof(Langs).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("MajdataEdit_Neo.Assets.Langs.Langs", typeof(Langs).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -363,6 +363,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static string Gui_Open {
             get {
                 return ResourceManager.GetString("Gui_Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Speed 的本地化字符串。
+        /// </summary>
+        internal static string Gui_PlaybackSpeed {
+            get {
+                return ResourceManager.GetString("Gui_PlaybackSpeed", resourceCulture);
             }
         }
         

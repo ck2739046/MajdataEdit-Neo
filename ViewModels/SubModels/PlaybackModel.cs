@@ -9,11 +9,12 @@ using AvaloniaEdit;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types.MajWs;
+using MajdataEdit_Neo.Types.MajSetting;
 using MajSimai;
-using MajdataEdit_Neo.ViewModels;
 using Types;
+using MajdataEdit_Neo.Types;
 
-namespace ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels.SubModels;
 
 public partial class PlaybackModel : ViewModelBase
 {
@@ -238,7 +239,7 @@ public partial class PlaybackModel : ViewModelBase
         }
     }
 
-    public async Task PlayPause(PlayContext ctx, MajdataEdit_Neo.Types.MajSetting.MajSetting settings)
+    public async Task PlayPause(PlayContext ctx, MajSetting settings)
     {
         if (!IsPlayControlEnabled) return;
         bool shouldRecoverPlayControl = true;
@@ -309,7 +310,7 @@ public partial class PlaybackModel : ViewModelBase
         }
     }
 
-    public async Task PlayStop(PlayContext ctx, MajdataEdit_Neo.Types.MajSetting.MajSetting settings)
+    public async Task PlayStop(PlayContext ctx, MajSetting settings)
     {
         if (IsPlayControlEnabled == false) return;
         bool shouldRecoverPlayControl = true;
@@ -349,7 +350,7 @@ public partial class PlaybackModel : ViewModelBase
         }
     }
 
-    public async Task PlayIncludeOp(PlayContext ctx, MajdataEdit_Neo.Types.MajSetting.MajSetting settings)
+    public async Task PlayIncludeOp(PlayContext ctx, MajSetting settings)
     {
         if (IsPlayControlEnabled == false) return;
         bool shouldRecoverPlayControl = true;
@@ -375,7 +376,7 @@ public partial class PlaybackModel : ViewModelBase
         }
     }
 
-    public async Task PlayRecord(PlayContext ctx, MajdataEdit_Neo.Types.MajSetting.MajSetting settings, string maidataDir)
+    public async Task PlayRecord(PlayContext ctx, MajSetting settings, string maidataDir)
     {
         if (IsPlayControlEnabled == false) return;
         bool shouldRecoverPlayControl = true;
@@ -492,6 +493,7 @@ public partial class PlaybackModel : ViewModelBase
         CurrentViewState = e;
     }
 }
+
 
 
 

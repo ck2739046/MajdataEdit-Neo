@@ -13,13 +13,10 @@ using static MajdataEdit_Neo.Base.MajEnv;
 using MajdataEdit_Neo.Utils;
 using Types;
 
-namespace MajdataEdit_Neo.ViewModels;
+namespace MajdataEdit_Neo.ViewModels.SubModels;
 
 public partial class UpdateModel : ViewModelBase
 {
-
-
-
     [ObservableProperty]
     public partial bool IsCheckingUpdate { get; set; }
 

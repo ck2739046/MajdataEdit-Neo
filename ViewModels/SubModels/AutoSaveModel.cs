@@ -7,7 +7,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels.SubModels;
 
 public class AutoSaveModel
 {

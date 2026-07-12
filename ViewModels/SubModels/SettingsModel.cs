@@ -11,7 +11,7 @@ using Avalonia.Platform;
 using static MajdataEdit_Neo.Base.MajEnv;
 using Types;
 
-namespace MajdataEdit_Neo.ViewModels;
+namespace MajdataEdit_Neo.ViewModels.SubModels;
 
 public partial class SettingsModel : ViewModelBase
 {

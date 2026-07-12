@@ -1,18 +1,19 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types;
+using MajdataEdit_Neo.Types.Plugin;
+using MajdataEdit_Neo.ViewModels.SubModels;
 using MajdataEdit_Neo.Views;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Types;
-using ViewModels.SubModels;
 using static MajdataEdit_Neo.Base.MajEnv;
 
 namespace MajdataEdit_Neo.ViewModels;
@@ -172,5 +173,116 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         new BpmTapWindow().Show();
     }
+
+    [RelayCommand]
+    public Task NewFile() => Session.NewFile();
+
+    [RelayCommand]
+    public Task OpenFile() => Session.OpenFile();
+
+    [RelayCommand]
+    public Task SaveFile() => Session.SaveFile();
+
+    [RelayCommand]
+    public Task CompressBgVideo() => Session.Tools.CompressBgVideoAsync();
+
+    [RelayCommand]
+    public Task MediaQuickProcess() => Session.Tools.MediaQuickProcessAsync();
+
+    [RelayCommand]
+    public Task NewChartFromVideo() => Session.Tools.NewChartFromVideoAsync();
+
+    [RelayCommand]
+    public void IncreasePlaybackSpeed() => Session.Playback.IncreasePlaybackSpeed();
+
+    [RelayCommand]
+    public void DecreasePlaybackSpeed() => Session.Playback.DecreasePlaybackSpeed();
+
+    [RelayCommand]
+    public void PlayRecord()
+    {
+        var simai = Session.Doc.CurrentSimaiFile;
+        if (simai == null) return;
+        var ctx = new PlaybackModel.PlayContext(
+            simai.Title ?? "",
+            simai.Artist ?? "",
+            Session.Doc.Offset,
+            Session.Doc.Designer,
+            Session.Doc.Level,
+            Session.Doc.CurrentFumen,
+            simai.Commands,
+            Session.Doc.SelectedDifficulty
+        );
+        _ = Session.Playback.PlayRecord(ctx, Settings.Settings, Session.MaidataDir);
+    }
+
+    [RelayCommand]
+    public void PlayIncludeOp()
+    {
+        var simai = Session.Doc.CurrentSimaiFile;
+        if (simai == null) return;
+        var ctx = new PlaybackModel.PlayContext(
+            simai.Title ?? "",
+            simai.Artist ?? "",
+            Session.Doc.Offset,
+            Session.Doc.Designer,
+            Session.Doc.Level,
+            Session.Doc.CurrentFumen,
+            simai.Commands,
+            Session.Doc.SelectedDifficulty
+        );
+        _ = Session.Playback.PlayIncludeOp(ctx, Settings.Settings);
+    }
+
+    [RelayCommand]
+    public void PlayStop()
+    {
+        var simai = Session.Doc.CurrentSimaiFile;
+        if (simai == null) return;
+        var ctx = new PlaybackModel.PlayContext(
+            simai.Title ?? "",
+            simai.Artist ?? "",
+            Session.Doc.Offset,
+            Session.Doc.Designer,
+            Session.Doc.Level,
+            Session.Doc.CurrentFumen,
+            simai.Commands,
+            Session.Doc.SelectedDifficulty
+        );
+        _ = Session.Playback.PlayStop(ctx, Settings.Settings);
+    }
+
+    [RelayCommand]
+    public void PlayPause()
+    {
+        var simai = Session.Doc.CurrentSimaiFile;
+        if (simai == null) return;
+        var ctx = new PlaybackModel.PlayContext(
+            simai.Title ?? "",
+            simai.Artist ?? "",
+            Session.Doc.Offset,
+            Session.Doc.Designer,
+            Session.Doc.Level,
+            Session.Doc.CurrentFumen,
+            simai.Commands,
+            Session.Doc.SelectedDifficulty
+        );
+        _ = Session.Playback.PlayPause(ctx, Settings.Settings);
+    }
+
+    [RelayCommand]
+    public void Stop() => Session.Playback.Stop();
+
+
+    public event Action<PluginAction>? RequestPluginActionExecution;
+    [RelayCommand]
+    public void ExecutePluginAction(PluginAction action)
+    {
+        RequestPluginActionExecution?.Invoke(action);
+    }
 }
+
+
+
+
 

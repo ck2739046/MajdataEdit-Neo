@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
         xmlns:controls="clr-namespace:MajdataEdit_Neo.Controls"
@@ -7,8 +7,10 @@
         xmlns:local="using:MajdataEdit_Neo"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:MajdataEdit_Neo.ViewModels"
+        xmlns:tp="using:MajdataEdit_Neo.Types.Plugin"
         mc:Ignorable="d" d:DesignWidth="780" d:DesignHeight="660"
-        MinWidth="780" MinHeight="660" 
+        MinWidth="780" MinHeight="660"
+		x:Name="Root"
         x:Class="MajdataEdit_Neo.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/favicon.ico"
@@ -17,284 +19,264 @@
         Background="Transparent"
         ExtendClientAreaToDecorationsHint="False">
 
-    <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
-    <Window.Resources>
-        <StreamGeometry x:Key="play_pause">M200-312v-336l240 168-240 168Zm320-8v-320h80v320h-80Zm160 0v-320h80v320h-80Z</StreamGeometry>
-        <StreamGeometry x:Key="stop">M320-640v320-320Zm-80 400v-480h480v480H240Zm80-80h320v-320H320v320Z</StreamGeometry>
-        <StreamGeometry x:Key="zoom_in">M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z</StreamGeometry>
-        <StreamGeometry x:Key="zoom_out">M200-440v-80h560v80H200Z</StreamGeometry>
-        <StreamGeometry x:Key="mirror_v">M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z</StreamGeometry>
-        <StreamGeometry x:Key="mirror_h">M280-160 80-360l200-200 56 57-103 103h287v80H233l103 103-56 57Zm400-240-56-57 103-103H440v-80h287L624-743l56-57 200 200-200 200Z</StreamGeometry>
-        <StreamGeometry x:Key="mirror_180">M480-80 310-250l57-57 73 73v-206H235l73 72-58 58L80-480l169-169 57 57-72 72h206v-206l-73 73-57-57 170-170 170 170-57 57-73-73v206h205l-73-72 58-58 170 170-170 170-57-57 73-73H520v205l72-73 58 58L480-80Z</StreamGeometry>
-        <StreamGeometry x:Key="rotate_l">M440-80q-50-5-96-24.5T256-156l56-58q29 21 61.5 34t66.5 18v82Zm80 0v-82q104-15 172-93.5T760-438q0-117-81.5-198.5T480-718h-8l64 64-56 56-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-438q0 137-91 238.5T520-80ZM198-214q-32-42-51.5-88T122-398h82q5 34 18 66.5t34 61.5l-58 56Zm-76-264q6-51 25-98t51-86l58 56q-21 29-34 61.5T204-478h-82Z</StreamGeometry>
-        <StreamGeometry x:Key="rotate_r">M522-80v-82q34-5 66.5-18t61.5-34l56 58q-42 32-88 51.5T522-80Zm-80 0Q304-98 213-199.5T122-438q0-75 28.5-140.5t77-114q48.5-48.5 114-77T482-798h6l-62-62 56-58 160 160-160 160-56-56 64-64h-8q-117 0-198.5 81.5T202-438q0 104 68 182.5T442-162v82Zm322-134-58-56q21-29 34-61.5t18-66.5h82q-5 50-24.5 96T764-214Zm76-264h-82q-5-34-18-66.5T706-606l58-56q32 39 51 86t25 98Z</StreamGeometry>
-        <StreamGeometry x:Key="open">M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640H447l-80-80H160v480l96-320h684L837-217q-8 26-29.5 41.5T760-160H160Zm84-80h516l72-240H316l-72 240Zm0 0 72-240-72 240Zm-84-400v-80 80Z</StreamGeometry>
-        <StreamGeometry x:Key="new">M440-240h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z</StreamGeometry>
-        <StreamGeometry x:Key="video">M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h480q33 0 56.5 23.5T720-720v480q0 33-23.5 56.5T640-160H160Zm0-80h480v-480H160v480Zm200-40 200-160-200-160v320Z</StreamGeometry>
-    </Window.Resources>
-    <Panel>
-        <ExperimentalAcrylicBorder IsHitTestVisible="False">
-            <ExperimentalAcrylicBorder.Material>
-                <ExperimentalAcrylicMaterial
+		<vm:MainWindowViewModel/>
+	</Design.DataContext>
+	<Window.Resources>
+		<StreamGeometry x:Key="play_pause">M200-312v-336l240 168-240 168Zm320-8v-320h80v320h-80Zm160 0v-320h80v320h-80Z</StreamGeometry>
+		<StreamGeometry x:Key="stop">M320-640v320-320Zm-80 400v-480h480v480H240Zm80-80h320v-320H320v320Z</StreamGeometry>
+		<StreamGeometry x:Key="zoom_in">M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z</StreamGeometry>
+		<StreamGeometry x:Key="zoom_out">M200-440v-80h560v80H200Z</StreamGeometry>
+		<StreamGeometry x:Key="mirror_v">M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z</StreamGeometry>
+		<StreamGeometry x:Key="mirror_h">M280-160 80-360l200-200 56 57-103 103h287v80H233l103 103-56 57Zm400-240-56-57 103-103H440v-80h287L624-743l56-57 200 200-200 200Z</StreamGeometry>
+		<StreamGeometry x:Key="mirror_180">M480-80 310-250l57-57 73 73v-206H235l73 72-58 58L80-480l169-169 57 57-72 72h206v-206l-73 73-57-57 170-170 170 170-57 57-73-73v206h205l-73-72 58-58 170 170-170 170-57-57 73-73H520v205l72-73 58 58L480-80Z</StreamGeometry>
+		<StreamGeometry x:Key="rotate_l">M440-80q-50-5-96-24.5T256-156l56-58q29 21 61.5 34t66.5 18v82Zm80 0v-82q104-15 172-93.5T760-438q0-117-81.5-198.5T480-718h-8l64 64-56 56-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-438q0 137-91 238.5T520-80ZM198-214q-32-42-51.5-88T122-398h82q5 34 18 66.5t34 61.5l-58 56Zm-76-264q6-51 25-98t51-86l58 56q-21 29-34 61.5T204-478h-82Z</StreamGeometry>
+		<StreamGeometry x:Key="rotate_r">M522-80v-82q34-5 66.5-18t61.5-34l56 58q-42 32-88 51.5T522-80Zm-80 0Q304-98 213-199.5T122-438q0-75 28.5-140.5t77-114q48.5-48.5 114-77T482-798h6l-62-62 56-58 160 160-160 160-56-56 64-64h-8q-117 0-198.5 81.5T202-438q0 104 68 182.5T442-162v82Zm322-134-58-56q21-29 34-61.5t18-66.5h82q-5 50-24.5 96T764-214Zm76-264h-82q-5-34-18-66.5T706-606l58-56q32 39 51 86t25 98Z</StreamGeometry>
+		<StreamGeometry x:Key="open">M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640H447l-80-80H160v480l96-320h684L837-217q-8 26-29.5 41.5T760-160H160Zm84-80h516l72-240H316l-72 240Zm0 0 72-240-72 240Zm-84-400v-80 80Z</StreamGeometry>
+		<StreamGeometry x:Key="new">M440-240h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z</StreamGeometry>
+		<StreamGeometry x:Key="video">M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h480q33 0 56.5 23.5T720-720v480q0 33-23.5 56.5T640-160H160Zm0-80h480v-480H160v480Zm200-40 200-160-200-160v320Z</StreamGeometry>
+	</Window.Resources>
+	<Panel>
+		<ExperimentalAcrylicBorder IsHitTestVisible="False">
+			<ExperimentalAcrylicBorder.Material>
+				<ExperimentalAcrylicMaterial
                 BackgroundSource="Digger"
                 TintColor="Black"
                 TintOpacity="1"
                 MaterialOpacity="0.75" />
-            </ExperimentalAcrylicBorder.Material>
-        </ExperimentalAcrylicBorder>
-        <Grid RowDefinitions="20,100,*,60,100,20"
+			</ExperimentalAcrylicBorder.Material>
+		</ExperimentalAcrylicBorder>
+		<Grid RowDefinitions="20,100,*,60,100,20"
               ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding Session.Doc.IsLoaded}">
-            <Menu Grid.Row="0" Grid.ColumnSpan="4">
-                <MenuItem Header="{local:I18N Gui_File}" >
-                    <MenuItem Header="{local:I18N Gui_New}" Command="{Binding Session.NewFileCommand}"/>
-                    <MenuItem Header="{local:I18N Gui_Open}" Command="{Binding Session.OpenFileCommand}"/>
-                    <MenuItem Header="{local:I18N Gui_Save}" Command="{Binding Session.SaveFileCommand}"/>
-                    <Separator/>
-                    <MenuItem Header="{local:I18N Gui_ExportVideo}" Click="PlayRecord_Click"/>
-                </MenuItem>
-                <MenuItem Header="{local:I18N Gui_Edit}">
-                    <MenuItem Header="{local:I18N Gui_MirrorHorizontally}" Click="MirrorHorizontal_Click">
-                        <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource mirror_h}"/>
-                        </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_MirrorVertically}" Click="MirrorVertical_Click">
-                        <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource mirror_v}"/>
-                        </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_Mirror180}" Click="Mirror180_Click">
-                        <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource mirror_180}"/>
-                        </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_Rotate45}" Click="Turn45_Click">
-                        <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource rotate_r}"/>
-                        </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_RotateNeg45}" Click="TurnNegative45_Click">
-                        <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource rotate_l}"/>
-                        </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_Subdivide1p5x}" Click="Subdivide1p5x_Click">
-                    </MenuItem>
-                    <MenuItem Header="{local:I18N Gui_Subdivide2x}" Click="Subdivide2x_Click">
-                    </MenuItem>
-                    <Separator/>
-                    <MenuItem Header="{local:I18N Gui_ChartInfo}" Command="{Binding OpenChartInfoWindow}"/>
-                    <Separator/>
-                    <MenuItem Header="{local:I18N Gui_FindAndReplace}" PointerPressed="FindReplace_PointerPressed"/>
-                </MenuItem>
-                <MenuItem Header="{local:I18N Gui_Setting}">
-                    <MenuItem Header="{local:I18N Gui_Setting}" Command="{Binding OpenSettingsWindow}"/>
-                    <MenuItem Header="{local:I18N Gui_CheckUpdate}" Command="{Binding Update.CheckUpdateAsync}" CommandParameter="false"/>
-                </MenuItem>
-                <MenuItem Header="{local:I18N Gui_Tools}">
-                    <MenuItem Header="{local:I18N Gui_BpmTap}" Command="{Binding OpenBpmTapWindow}"/>
-                    <MenuItem Header="{local:I18N Gui_CompressBgVideo}" Command="{Binding Session.Tools.CompressBgVideoCommand}"/>
-                    <Separator/>
-                    <MenuItem Name="MediaQuickProcessMenuItem" Header="{local:I18N Gui_MediaQuickProcess}">
-                        <StackPanel Width="200" Margin="5">
-                            <TextBlock Text="{local:I18N Gui_MediaQuickProcessDesc}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0 0 0 10"/>
-                            <DockPanel Margin="0 0 0 5">
-                                <Label DockPanel.Dock="Left" Content="{local:I18N Gui_BeatsCount}" VerticalAlignment="Center"/>
-                                <NumericUpDown Name="BeatsCountBox" Value="{Binding Session.Tools.MediaQuickProcessBeatsCount}" Minimum="1" Maximum="32" Margin="10 0 0 0"/>
-                            </DockPanel>
-                            <CheckBox Name="FreezeFrameCheckBox" Content="{local:I18N Gui_FreezeFrame}" Margin="0 0 0 10" IsChecked="{Binding Session.Tools.MediaQuickProcessFreezeFrame}"/>
-                            <Button Content="{local:I18N Gui_Confirm}" HorizontalAlignment="Stretch" Command="{Binding Session.Tools.MediaQuickProcessCommand}"/>
-                        </StackPanel>
-                    </MenuItem>
-                    <MenuItem Name="NewChartFromVideoMenuItem" Header="{local:I18N Gui_NewChartFromVideo}" Command="{Binding Session.Tools.NewChartFromVideoCommand}"/>
-                </MenuItem>
-                <MenuItem Header="{local:I18N Gui_About}">
-                    <MenuItem Header="Discord" Command="{Binding AboutButtonClicked}" CommandParameter="0"/>
-                    <MenuItem Header="QQ" Command="{Binding AboutButtonClicked}" CommandParameter="1"/>
-                    <Separator/>
-                    <MenuItem Header="Github" Command="{Binding AboutButtonClicked}" CommandParameter="2"/>
-                    <MenuItem Header="Majnet" Command="{Binding AboutButtonClicked}" CommandParameter="3"/>
-                </MenuItem>
-            </Menu>
+			<Menu Grid.Row="0" Grid.ColumnSpan="4">
+				<MenuItem Header="{local:I18N Gui_File}" >
+					<MenuItem Header="{local:I18N Gui_New}" Command="{Binding NewFileCommand}"/>
+					<MenuItem Header="{local:I18N Gui_Open}" Command="{Binding OpenFileCommand}"/>
+					<MenuItem Header="{local:I18N Gui_Save}" Command="{Binding SaveFileCommand}"/>
+					<Separator/>
+					<MenuItem Header="{local:I18N Gui_ExportVideo}" Command="{Binding PlayRecordCommand}"/>
+				</MenuItem>
+				<MenuItem Header="{local:I18N Gui_Edit}" ItemsSource="{Binding Session.Plugins.PluginItems}">
+					<MenuItem.DataTemplates>
+						<DataTemplate DataType="tp:PluginAction">
+							<MenuItem Header="{Binding Name}"
+									  Command="{Binding #Root.DataContext.ExecutePluginActionCommand}"
+									  CommandParameter="{Binding}">
+								<MenuItem.Icon>
+									<PathIcon Data="{Binding IconKey, Converter={x:Static conv:IconKeyToStreamGeometryConverter.Instance}}"/>
+								</MenuItem.Icon>
+							</MenuItem>
+						</DataTemplate>
 
-            <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="8"
+						<DataTemplate DataType="tp:MenuSeparator">
+							<Separator/>
+						</DataTemplate>
+					</MenuItem.DataTemplates>
+					<Separator/>
+					<MenuItem Header="{local:I18N Gui_ChartInfo}" Command="{Binding OpenChartInfoWindow}"/>
+					<Separator/>
+					<MenuItem Header="{local:I18N Gui_FindAndReplace}" PointerPressed="FindReplace_PointerPressed"/>
+				</MenuItem>
+				<MenuItem Header="{local:I18N Gui_Setting}">
+					<MenuItem Header="{local:I18N Gui_Setting}" Command="{Binding OpenSettingsWindow}"/>
+					<MenuItem Header="{local:I18N Gui_CheckUpdate}" Command="{Binding Update.CheckUpdateAsync}" CommandParameter="false"/>
+				</MenuItem>
+				<MenuItem Header="{local:I18N Gui_Tools}">
+					<MenuItem Header="{local:I18N Gui_BpmTap}" Command="{Binding OpenBpmTapWindow}"/>
+					<MenuItem Header="{local:I18N Gui_CompressBgVideo}" Command="{Binding CompressBgVideoCommand}"/>
+					<Separator/>
+					<MenuItem Name="MediaQuickProcessMenuItem" Header="{local:I18N Gui_MediaQuickProcess}">
+						<StackPanel Width="200" Margin="5">
+							<TextBlock Text="{local:I18N Gui_MediaQuickProcessDesc}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0 0 0 10"/>
+							<DockPanel Margin="0 0 0 5">
+								<Label DockPanel.Dock="Left" Content="{local:I18N Gui_BeatsCount}" VerticalAlignment="Center"/>
+								<NumericUpDown Name="BeatsCountBox" Value="{Binding Session.Tools.MediaQuickProcessBeatsCount}" Minimum="1" Maximum="32" Margin="10 0 0 0"/>
+							</DockPanel>
+							<CheckBox Name="FreezeFrameCheckBox" Content="{local:I18N Gui_FreezeFrame}" Margin="0 0 0 10" IsChecked="{Binding Session.Tools.MediaQuickProcessFreezeFrame}"/>
+							<Button Content="{local:I18N Gui_Confirm}" HorizontalAlignment="Stretch" Command="{Binding MediaQuickProcessCommand}"/>
+						</StackPanel>
+					</MenuItem>
+					<MenuItem Name="NewChartFromVideoMenuItem" Header="{local:I18N Gui_NewChartFromVideo}" Command="{Binding NewChartFromVideoCommand}"/>
+				</MenuItem>
+				<MenuItem Header="{local:I18N Gui_About}">
+					<MenuItem Header="Discord" Command="{Binding AboutButtonClicked}" CommandParameter="0"/>
+					<MenuItem Header="QQ" Command="{Binding AboutButtonClicked}" CommandParameter="1"/>
+					<Separator/>
+					<MenuItem Header="Github" Command="{Binding AboutButtonClicked}" CommandParameter="2"/>
+					<MenuItem Header="Majnet" Command="{Binding AboutButtonClicked}" CommandParameter="3"/>
+				</MenuItem>
+			</Menu>
+
+			<StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="8"
                         Margin="6 0 8 0" Width="116">
 
-                <Label Height="90" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
+				<Label Height="90" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
                        Content="{Binding Session.Playback.DisplayTime}" Padding="0 30 0 0"/>
-                <Label Height="30" Name="LineCombo" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+				<Label Height="30" Name="LineCombo" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
                        Content="{Binding Session.Doc.DisplayLineComboText}" Padding="0 0 0 0"/>
 
-                <ComboBox Name="Difficulty"
+				<ComboBox Name="Difficulty"
                           Width="116" VerticalAlignment="Center"
                           SelectedIndex="{Binding Session.Doc.SelectedDifficulty}">
-                    <ComboBoxItem Content="EASY" />
-                    <ComboBoxItem Content="BASIC" />
-                    <ComboBoxItem Content="ADVANCED" />
-                    <ComboBoxItem Content="EXPERT" />
-                    <ComboBoxItem Content="MASTER" />
-                    <ComboBoxItem Content="Re:MASTER" />
-                    <ComboBoxItem Content="ORIGINAL" />
-                </ComboBox>
+					<ComboBoxItem Content="EASY" />
+					<ComboBoxItem Content="BASIC" />
+					<ComboBoxItem Content="ADVANCED" />
+					<ComboBoxItem Content="EXPERT" />
+					<ComboBoxItem Content="MASTER" />
+					<ComboBoxItem Content="Re:MASTER" />
+					<ComboBoxItem Content="ORIGINAL" />
+				</ComboBox>
 
-                <DockPanel Margin="0 8 0 0">
-                    <Label VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Level}"/>
-                    <TextBox Name="Level" Text="{Binding Session.Doc.Level}" Margin="10 0 0 0"/>
-                </DockPanel>
+				<DockPanel Margin="0 8 0 0">
+					<Label VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Level}"/>
+					<TextBox Name="Level" Text="{Binding Session.Doc.Level}" Margin="10 0 0 0"/>
+				</DockPanel>
 
-                <DockPanel Margin="0 8 0 0">
-                    <Label  VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Designer}"/>
-                    <TextBox  Name="Designer" Text="{Binding Session.Doc.Designer}" Margin="20 0 0 0"/>
-                </DockPanel>
+				<DockPanel Margin="0 8 0 0">
+					<Label  VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Designer}"/>
+					<TextBox  Name="Designer" Text="{Binding Session.Doc.Designer}" Margin="20 0 0 0"/>
+				</DockPanel>
 
-                <DockPanel Margin="0 8 0 0">
-                    <Label  VerticalAlignment="Center" Margin="0 10 0 0" Content="{local:I18N Gui_Offset}"/>
-                    <NumericUpDown Name="First" Value="{Binding Session.Doc.Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
-                </DockPanel>
+				<DockPanel Margin="0 8 0 0">
+					<Label  VerticalAlignment="Center" Margin="0 10 0 0" Content="{local:I18N Gui_Offset}"/>
+					<NumericUpDown Name="First" Value="{Binding Session.Doc.Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
+				</DockPanel>
 
-                <DockPanel Margin="0 20 0 0" LastChildFill="True">
-                    <Label Content="{local:I18N Gui_Error}" DockPanel.Dock="Left" />
-                    <Label Name="ErrorCountLabel" Content="{Binding Session.Doc.SimaiDiagnosticsCount}" HorizontalAlignment="Center"/>
-                </DockPanel>
+				<DockPanel Margin="0 20 0 0" LastChildFill="True">
+					<Label Content="{local:I18N Gui_Error}" DockPanel.Dock="Left" />
+					<Label Name="ErrorCountLabel" Content="{Binding Session.Doc.SimaiDiagnosticsCount}" HorizontalAlignment="Center"/>
+				</DockPanel>
 
-                <DockPanel Margin="0 10 0 0">
-                    <Label VerticalAlignment="Center" Content="{local:I18N Gui_PlaybackSpeed}"/>
-                    <NumericUpDown Name="Speed" Margin="3 0 0 0"
+				<DockPanel Margin="0 10 0 0">
+					<Label VerticalAlignment="Center" Content="{local:I18N Gui_PlaybackSpeed}"/>
+					<NumericUpDown Name="Speed" Margin="3 0 0 0"
                                    Value="{Binding Session.Playback.PlaybackSpeed}"
                                    Minimum="0.1" Increment="0.1"
                                    FormatString="0.##"
                                    ShowButtonSpinner="False"/>
-                </DockPanel>
+				</DockPanel>
 
-                <CheckBox Grid.Row="8" Margin="0 10 0 0"
+				<CheckBox Grid.Row="8" Margin="0 10 0 0"
                           IsChecked="{Binding Session.Playback.IsFollowCursor}" FontSize="12" Content="{local:I18N Gui_FollowCursor}"/>
-                <StackPanel Orientation="Horizontal" Margin="9 0 0 0">
-                    <CheckBox IsChecked="{Binding Session.Playback.IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
-                    <Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+z"
-                            Click="PlayIncludeOp_Click" Width="64" Content="{local:I18N Gui_Record}"/>
-                </StackPanel>
-                <Label Content="{local:I18N Gui_Connected}" FontSize="8" Margin="-4 -11 0 0"/>
-            </StackPanel>
+				<StackPanel Orientation="Horizontal" Margin="9 0 0 0">
+					<CheckBox IsChecked="{Binding Session.Playback.IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
+					<Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+z"
+                            Command="{Binding PlayIncludeOpCommand}" Width="64" Content="{local:I18N Gui_Record}"/>
+				</StackPanel>
+				<Label Content="{local:I18N Gui_Connected}" FontSize="8" Margin="-4 -11 0 0"/>
+			</StackPanel>
 
 
 
-            <Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+z" Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
-                    Click="Stop_Click">
-                <PathIcon Width="13" Data="{StaticResource stop}"/>
-            </Button>
+			<Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+z" Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
+                    Command="{Binding PlayStopCommand}">
+				<PathIcon Width="13" Data="{StaticResource stop}"/>
+			</Button>
 
-            <Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+x" Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
-                    Click="PlayPause_Click">
-                <PathIcon Data="{StaticResource play_pause}"/>
-            </Button>
+			<Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+x" Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
+                    Command="{Binding PlayPauseCommand}">
+				<PathIcon Data="{StaticResource play_pause}"/>
+			</Button>
 
-            <AvaloniaEdit:TextEditor Grid.Column="3" Grid.Row="1" Grid.RowSpan="3"
+			<AvaloniaEdit:TextEditor Grid.Column="3" Grid.Row="1" Grid.RowSpan="3"
                                      Document="{Binding Session.Doc.FumenDocument}"
                                      Name="Editor" BorderBrush="#50FFFFFF" BorderThickness="0.5"
                                      ShowLineNumbers="True" Margin="5 5 5 5" Padding="5" WordWrap="False"
                                      FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                                      FontSize="{Binding Settings.FontSize}">
-                <AvaloniaEdit:TextEditor.ContextFlyout>
-                    <MenuFlyout>
-                        <MenuItem Header="{local:I18N Gui_MirrorHorizontally}" Click="MirrorHorizontal_Click">
-                            <MenuItem.Icon>
-                                <PathIcon Data="{StaticResource mirror_h}"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="{local:I18N Gui_MirrorVertically}" Click="MirrorVertical_Click">
-                            <MenuItem.Icon>
-                                <PathIcon Data="{StaticResource mirror_v}"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="{local:I18N Gui_Mirror180}"  Click="Mirror180_Click">
-                            <MenuItem.Icon>
-                                <PathIcon Data="{StaticResource mirror_180}"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="{local:I18N Gui_Rotate45}" Click="Turn45_Click">
-                            <MenuItem.Icon>
-                                <PathIcon Data="{StaticResource rotate_r}"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="{local:I18N Gui_RotateNeg45}" Click="TurnNegative45_Click">
-                            <MenuItem.Icon>
-                                <PathIcon Data="{StaticResource rotate_l}"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <Separator/>
-                        <MenuItem Header="{local:I18N Gui_FindAndReplace}" PointerPressed="FindReplace_PointerPressed"/>
-                    </MenuFlyout>
-                </AvaloniaEdit:TextEditor.ContextFlyout>
-            </AvaloniaEdit:TextEditor>
+				<AvaloniaEdit:TextEditor.ContextFlyout>
+					<MenuFlyout>
+						<MenuItem Header="{local:I18N Gui_Edit}" ItemsSource="{Binding Session.Plugins.PluginItems}">
+							<MenuItem.DataTemplates>
+								<DataTemplate DataType="tp:PluginAction">
+									<MenuItem Header="{Binding Name}"
+											  Command="{Binding #Root.DataContext.ExecutePluginActionCommand}"
+											  CommandParameter="{Binding}">
+										<MenuItem.Icon>
+											<PathIcon Data="{Binding IconKey, Converter={x:Static conv:IconKeyToStreamGeometryConverter.Instance}}"/>
+										</MenuItem.Icon>
+									</MenuItem>
+								</DataTemplate>
+
+								<DataTemplate DataType="tp:MenuSeparator">
+									<Separator/>
+								</DataTemplate>
+							</MenuItem.DataTemplates>
+						</MenuItem>
+					</MenuFlyout>
+				</AvaloniaEdit:TextEditor.ContextFlyout>
+
+			</AvaloniaEdit:TextEditor>
 
 
-            <controls:SimaiVisualizerControl Name="SimaiVisual"
+			<controls:SimaiVisualizerControl Name="SimaiVisual"
                                              Height="100" Grid.Row="4" Grid.ColumnSpan="4"
                                              Time="{Binding Session.Playback.TrackTime}" TrackIf="{Binding Session.SongTrackInfo}"
                                              ZoomLevel="{Binding Session.Playback.TrackZoomLevel}" SimaiChart="{Binding Session.Doc.CurrentChartData}"
                                              Offset="{Binding Session.Doc.Offset}" CaretTime="{Binding Session.Playback.CaretTime}"
                                              IsAnimated ="{Binding Settings.IsAnimated}" Signatures="{Binding Session.Doc.Signatures}"/>
-            <DockPanel Grid.Row="4" >
-                <Button Name="ZoomOut" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
-                    <PathIcon Width="8" Data="{StaticResource zoom_out}"/>
-                </Button>
-                <Button Name="ZoomIn" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
-                    <PathIcon Width="8" Data="{StaticResource zoom_in}"/>
-                </Button>
-            </DockPanel>
+			<DockPanel Grid.Row="4" >
+				<Button Name="ZoomOut" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
+					<PathIcon Width="8" Data="{StaticResource zoom_out}"/>
+				</Button>
+				<Button Name="ZoomIn" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
+					<PathIcon Width="8" Data="{StaticResource zoom_in}"/>
+				</Button>
+			</DockPanel>
 
-            <!-- Status Bar -->
-            <Border Grid.Row="5" Grid.ColumnSpan="4" Background="#20FFFFFF" BorderThickness="0,1,0,0" BorderBrush="#30FFFFFF">
-                <TextBlock VerticalAlignment="Center" Margin="10,0" FontSize="12" Opacity="0.8">
-                    <TextBlock.Text>
-                        <MultiBinding Converter="{x:Static conv:StatusBarConverter.Instance}">
-                            <Binding Path="StatusBarMessage"/>
-                            <Binding Path="Session.Playback.CurrentViewState"/>
-                            <Binding Path="Session.Playback.IsConnected"/>
-                            <Binding Path="Culture" Source="{x:Static local:I18N.Ins}"/>
-                        </MultiBinding>
-                    </TextBlock.Text>
-                </TextBlock>
-            </Border>
-        </Grid>
+			<!-- Status Bar -->
+			<Border Grid.Row="5" Grid.ColumnSpan="4" Background="#20FFFFFF" BorderThickness="0,1,0,0" BorderBrush="#30FFFFFF">
+				<TextBlock VerticalAlignment="Center" Margin="10,0" FontSize="12" Opacity="0.8">
+					<TextBlock.Text>
+						<MultiBinding Converter="{x:Static conv:StatusBarConverter.Instance}">
+							<Binding Path="StatusBarMessage"/>
+							<Binding Path="Session.Playback.CurrentViewState"/>
+							<Binding Path="Session.Playback.IsConnected"/>
+							<Binding Path="Culture" Source="{x:Static local:I18N.Ins}"/>
+						</MultiBinding>
+					</TextBlock.Text>
+				</TextBlock>
+			</Border>
+		</Grid>
 
-        <Grid RowDefinitions="120,*" ColumnDefinitions="*,*,*" Margin="150" ZIndex="5" IsVisible="{Binding !Session.Doc.IsLoaded}">
-            <Button Grid.Column="0" Grid.Row="0" Height="120" Width="120" HorizontalAlignment="Center"
-                    Command="{Binding Session.NewFileCommand}">
-                <PathIcon Data="{StaticResource new}"/>
-            </Button>
-            <Button Grid.Column="1" Grid.Row="0" Height="120" Width="120" HorizontalAlignment="Center"
-                    Command="{Binding Session.OpenFileCommand}">
-                <PathIcon Data="{StaticResource open}"/>
-            </Button>
-            <Button Grid.Column="2" Grid.Row="0" Height="120" Width="120" HorizontalAlignment="Center"
-                    Command="{Binding Session.Tools.NewChartFromVideoCommand}">
-                <PathIcon Data="{StaticResource video}"/>
-            </Button>
-            <TextBlock Grid.Column="0" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_New}"/>
-            <TextBlock Grid.Column="1" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_Open}"/>
-            <TextBlock Grid.Column="2" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_NewChartFromVideo}" TextWrapping="Wrap" TextAlignment="Center"/>
-            <Button IsVisible="False" HotKey="Ctrl+J" Click="MirrorHorizontal_Click"/>
-            <Button IsVisible="False" HotKey="Ctrl+K" Click="MirrorVertical_Click"/>
-            <Button IsVisible="False" HotKey="Ctrl+L" Click="Mirror180_Click"/>
-            <Button IsVisible="False" HotKey="Ctrl+U" Click="Turn45_Click"/>
-            <Button IsVisible="False" HotKey="Ctrl+I" Click="TurnNegative45_Click"/>
-            <Button IsVisible="False" HotKey="Ctrl+S"  Command="{Binding Session.SaveFileCommand}"/>
-            <Button IsVisible="False" HotKey="Ctrl+O" Command="{Binding Session.Playback.IncreasePlaybackSpeed}"/>
-            <Button IsVisible="False" HotKey="Ctrl+P" Command="{Binding Session.Playback.DecreasePlaybackSpeed}"/>
-            <Button IsVisible="False" IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+C" Click="PlayStop_Click"/>
-        </Grid>
-        <DockPanel >
-            <Image DockPanel.Dock="Right"
+		<Grid RowDefinitions="120,*" ColumnDefinitions="*,*,*" Margin="150" ZIndex="5" IsVisible="{Binding !Session.Doc.IsLoaded}">
+			<Button Grid.Column="0" Grid.Row="0" Height="120" Width="120" HorizontalAlignment="Center"
+                    Command="{Binding NewFileCommand}">
+				<PathIcon Data="{StaticResource new}"/>
+			</Button>
+			<Button Grid.Column="1" Grid.Row="0" Height="120" Width="120" HorizontalAlignment="Center"
+                    Command="{Binding OpenFileCommand}">
+				<PathIcon Data="{StaticResource open}"/>
+			</Button>
+			<Button Grid.Column="2" Grid.Row="0" Height="120" Width="120" HorizontalAlignment="Center"
+                    Command="{Binding NewChartFromVideoCommand}">
+				<PathIcon Data="{StaticResource video}"/>
+			</Button>
+			<TextBlock Grid.Column="0" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_New}"/>
+			<TextBlock Grid.Column="1" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_Open}"/>
+			<TextBlock Grid.Column="2" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_NewChartFromVideo}" TextWrapping="Wrap" TextAlignment="Center"/>
+			<Button IsVisible="False" HotKey="Ctrl+S"  Command="{Binding SaveFileCommand}"/>
+			<Button IsVisible="False" HotKey="Ctrl+O" Command="{Binding IncreasePlaybackSpeedCommand}"/>
+			<Button IsVisible="False" HotKey="Ctrl+P" Command="{Binding DecreasePlaybackSpeedCommand}"/>
+			<Button IsVisible="False" IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+C" Command="{Binding PlayStopCommand}"/>
+		</Grid>
+		<DockPanel >
+			<Image DockPanel.Dock="Right"
                    HorizontalAlignment="Right"
                    Margin="0 0 -30 100" ZIndex="-9999"
                    Opacity="0.5"
                    Source="{Binding Settings.BackgroundImage}"></Image>
-        </DockPanel>
+		</DockPanel>
 
-    </Panel>
+	</Panel>
 </Window>
+
+
+
+
+
+
+
+

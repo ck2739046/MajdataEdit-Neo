@@ -1,6 +1,6 @@
 using DiscordRPC;
 
-namespace ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels.SubModels;
 
 public class DiscordRpcModel
 {

@@ -1,115 +1,116 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <LangVersion>preview</LangVersion>
-	<Version>6.0.0</Version>
-    <Nullable>enable</Nullable>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <NeutralResourcesLanguage>en-US</NeutralResourcesLanguage>
-	<ApplicationIcon>Assets/favicon.ico</ApplicationIcon>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<LangVersion>preview</LangVersion>
+		<Version>6.0.0</Version>
+		<Nullable>enable</Nullable>
+		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<RootNamespace>MajdataEdit_Neo</RootNamespace>
+		<NeutralResourcesLanguage>en-US</NeutralResourcesLanguage>
+		<ApplicationIcon>Assets/favicon.ico</ApplicationIcon>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
-  </ItemGroup>
+	<ItemGroup>
+		<AvaloniaResource Include="Assets\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<AvaloniaResource Remove="Assets\Langs\Langs.resx" />
 		<AvaloniaResource Remove="Assets\Langs\Langs.zh-CN.resx" />
 	</ItemGroup>
 
-  <ItemGroup>
-    <AvaloniaXaml Remove="Modules\**" />
-    <Compile Remove="Modules\**" />
-    <EmbeddedResource Remove="Modules\**" />
-    <None Remove="Modules\**" />
-  </ItemGroup>
+	<ItemGroup>
+		<AvaloniaXaml Remove="Modules\**" />
+		<Compile Remove="Modules\**" />
+		<EmbeddedResource Remove="Modules\**" />
+		<None Remove="Modules\**" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.0.4" />
-    <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.0.4" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.4" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.4" />
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.17">
-      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
-      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
-    <PackageReference Include="Lingfeng-bbben.MajSimai" Version="2.1.1" />
-    <PackageReference Include="ManagedBass" Version="4.0.2" />
-    <PackageReference Include="MessageBox.Avalonia" Version="12.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="Semver" Version="3.0.0" />
-    <PackageReference Include="websocketsharp.core" Version="1.0.1" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.8" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Avalonia" Version="12.0.4" />
+		<PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
+		<PackageReference Include="Avalonia.Desktop" Version="12.0.4" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.4" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.4" />
+		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+		<PackageReference Include="Avalonia.Diagnostics" Version="11.3.17">
+			<IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+			<PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+		<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
+		<PackageReference Include="Lingfeng-bbben.MajSimai" Version="2.1.1" />
+		<PackageReference Include="ManagedBass" Version="4.0.2" />
+		<PackageReference Include="MessageBox.Avalonia" Version="12.0.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="Semver" Version="3.0.0" />
+		<PackageReference Include="websocketsharp.core" Version="1.0.1" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.8" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="Assets\Langs\Langs.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Langs.resx</DependentUpon>
-    </Compile>
-    <Compile Update="ViewLocator.cs">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Update="Assets\Langs\Langs.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Langs.resx</DependentUpon>
+		</Compile>
+		<Compile Update="ViewLocator.cs">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Compile>
+	</ItemGroup>
 
 	<!--runtimes按需复制-->
 	<ItemGroup>
 		<Content Remove="runtimes" />
 	</ItemGroup>
-  <ItemGroup>
-    <Content Include="runtimes\win-x64\native\bass.dll" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-      <Link>bass.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="runtimes\osx\native\libbass.dylib" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-      <Link>libbass.dylib</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="runtimes\linux-x64\native\libbass.so" Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-      <Link>libbass.so</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+	<ItemGroup>
+		<Content Include="runtimes\win-x64\native\bass.dll" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+			<Link>bass.dll</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="runtimes\osx\native\libbass.dylib" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+			<Link>libbass.dylib</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="runtimes\linux-x64\native\libbass.so" Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+			<Link>libbass.so</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
 
 	<ItemGroup>
-    <None Update="simai.tmLanguage.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+		<None Update="simai.tmLanguage.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
-    <ItemGroup>
-	    <None Update="xxlb.png">
-		    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	    </None>
-    </ItemGroup>
-	
-  <ItemGroup>
-    <ProjectReference Include="Modules\AutoSave\AutoSaveModule.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Update="xxlb.png">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Update="Assets\Langs\Langs.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>Langs.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>MajdataEdit_Neo.Assets.Langs</CustomToolNamespace>
-    </EmbeddedResource>
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="Modules\AutoSave\AutoSaveModule.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Update="Assets\Langs\Langs.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Langs.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Update="Assets\Langs\Langs.resx">
+			<Generator>PublicResXFileCodeGenerator</Generator>
+			<LastGenOutput>Langs.Designer.cs</LastGenOutput>
+			<CustomToolNamespace>MajdataEdit_Neo.Assets.Langs</CustomToolNamespace>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="Assets\Langs\Langs.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Langs.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
 </Project>

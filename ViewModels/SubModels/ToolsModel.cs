@@ -11,29 +11,26 @@ using System.Threading.Tasks;
 using Types;
 using static MajdataEdit_Neo.Utils.FFmpegChecker;
 using Avalonia.Platform.Storage;
+using MajdataEdit_Neo.Models.TrackUtils;
+using MajdataEdit_Neo.Types;
 
-namespace ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels.SubModels;
 
-public partial class ToolsModel : ViewModelBase
+public partial class ToolsModel(
+        MainWindowViewModel _mainWindow,
+        FileSessionModel _session,
+        IMutableDocument _doc
+    ) : ViewModelBase
 {
-    private readonly MainWindowViewModel _mainWindow;
-    private readonly FileSessionModel _session;
-    private readonly IMutableDocument _doc;
-
     [ObservableProperty]
     public partial int MediaQuickProcessBeatsCount { get; set; } = 4;
 
     [ObservableProperty]
     public partial bool MediaQuickProcessFreezeFrame { get; set; } = false;
 
-    public ToolsModel(MainWindowViewModel mainWindow, FileSessionModel session, IMutableDocument doc)
-    {
-        _mainWindow = mainWindow;
-        _session = session;
-        _doc = doc;
-    }
+    private static readonly string[] VideoFilter = ["*.mp4", "*.mkv", "*.avi", "*.mov", "*.flv", "*.wmv"];
+    private static readonly string[] AllFilter = ["*.*"];
 
-    [RelayCommand]
     public async Task CompressBgVideoAsync()
     {
         var maidataDir = _session.MaidataDir;
@@ -90,7 +87,6 @@ public partial class ToolsModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
     public async Task MediaQuickProcessAsync()
     {
         try
@@ -113,19 +109,21 @@ public partial class ToolsModel : ViewModelBase
             _mainWindow.ShowStatusMessage(Langs.Status_Processing);
             await Task.Run(() =>
             {
-                MajdataEdit_Neo.Models.TrackProcessor.AdjustMediaTime("ffmpeg", audioPath, 60.0 / bpm * beatsCount, offset);
+                TrackProcessor.AdjustMediaTime("ffmpeg", audioPath, 60.0 / bpm * beatsCount, offset);
                 string? videoPath = null;
                 foreach (var name in new[] { "pv.mp4", "mv.mp4", "bg.mp4" })
-                { var dir = Path.Combine(maidataDir, name);
+                {
+                    var dir = Path.Combine(maidataDir, name);
                     if (File.Exists(dir))
                     {
                         videoPath = dir;
                         break;
-                    } }
-                if (videoPath != null) MajdataEdit_Neo.Models.TrackProcessor.AdjustMediaTime("ffmpeg", videoPath, 60.0 / bpm * beatsCount, offset, freezeFrame);
+                    }
+                }
+                if (videoPath != null) TrackProcessor.AdjustMediaTime("ffmpeg", videoPath, 60.0 / bpm * beatsCount, offset, freezeFrame);
             });
             _doc.Offset = 0;
-            _session.SaveFile();
+            await _session.SaveFile();
             await Task.Delay(30);
             await _session.ReloadFile();
             _mainWindow.ResetStatusMessage();
@@ -138,7 +136,6 @@ public partial class ToolsModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
     public async Task NewChartFromVideoAsync()
     {
         try
@@ -146,10 +143,10 @@ public partial class ToolsModel : ViewModelBase
             var files = await StorageUtils.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 Title = "Select Video File",
-                FileTypeFilter = new[] {
-                    new FilePickerFileType("Video Files") { Patterns = new[] { "*.mp4", "*.mkv", "*.avi", "*.mov", "*.flv", "*.wmv" } },
-                    new FilePickerFileType("All Files") { Patterns = new[] { "*.*" } }
-                },
+                FileTypeFilter = [
+                    new FilePickerFileType("Video Files") { Patterns = VideoFilter },
+                    new FilePickerFileType("All Files") { Patterns = AllFilter }
+                ],
                 AllowMultiple = false
             });
             if (files == null || files.Count == 0) return;
@@ -157,12 +154,15 @@ public partial class ToolsModel : ViewModelBase
             if (file is null) return;
             var parent = Path.GetDirectoryName(file)!;
             var newFile = Path.Combine(parent, "pv.mp4");
-            if (file != newFile) { if (File.Exists(newFile))
-                    File.Delete(newFile); File.Move(file, newFile); }
+            if (file != newFile)
+            {
+                if (File.Exists(newFile))
+                    File.Delete(newFile); File.Move(file, newFile);
+            }
             if (!await EnsureFFmpeg()) return;
             _mainWindow.ShowStatusMessage(Langs.Status_ExtractingAudio);
             var audioPath = Path.Combine(parent, "track.mp3");
-            await Task.Run(() => MajdataEdit_Neo.Models.TrackProcessor.ExtractAudio("ffmpeg", newFile, audioPath));
+            await Task.Run(() => TrackProcessor.ExtractAudio("ffmpeg", newFile, audioPath));
             _mainWindow.ResetStatusMessage();
             await _session.NewChartFromDir(parent);
             _mainWindow.OpenChartInfoWindow();
@@ -174,7 +174,7 @@ public partial class ToolsModel : ViewModelBase
         }
     }
 
-    private bool RunFfmpegCompress(string ffmpegPath, string inputPath, string outputPath)
+    private static bool RunFfmpegCompress(string ffmpegPath, string inputPath, string outputPath)
     {
         try
         {
@@ -202,3 +202,4 @@ public partial class ToolsModel : ViewModelBase
         }
     }
 }
+

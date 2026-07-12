@@ -11,10 +11,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Types;
 
-namespace MajdataEdit_Neo.ViewModels;
+namespace MajdataEdit_Neo.ViewModels.SubModels;
 
 /// <summary>
-/// 谱面文档管理：难度切换、元数据、FumenDocument、诊断信息
+/// 谱面文档管理
 /// </summary>
 public partial class DocumentModel : ViewModelBase, IMutableDocument
 {

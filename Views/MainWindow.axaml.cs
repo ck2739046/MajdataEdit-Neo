@@ -31,132 +31,41 @@ using TextMateSharp.Registry;
 using MsBoxIcon = MsBox.Avalonia.Enums.Icon;
 using static MajdataEdit_Neo.Base.MajEnv;
 using static MajdataEdit_Neo.Utils.FFmpegChecker;
+using MajdataEdit_Neo.ViewModels.SubModels;
 
 namespace MajdataEdit_Neo.Views;
 
 public partial class MainWindow : Window
 {
-    MainWindowViewModel viewModel => (MainWindowViewModel)DataContext;
+    MainWindowViewModel viewModel => (MainWindowViewModel)DataContext!;
 
-    private void PlayRecord_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        var simai = viewModel.Session.Doc.CurrentSimaiFile;
-        if (simai == null) return;
-        var ctx = new global::ViewModels.SubModels.PlaybackModel.PlayContext(
-            simai.Title ?? "",
-            simai.Artist ?? "",
-            viewModel.Session.Doc.Offset,
-            viewModel.Session.Doc.Designer,
-            viewModel.Session.Doc.Level,
-            viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen,
-            simai.Commands,
-            viewModel.Session.Doc.SelectedDifficulty
-        );
-        _ = viewModel.Session.Playback.PlayRecord(ctx, viewModel.Settings.Settings, viewModel.Session.MaidataDir);
-    }
-    
-    private void Subdivide1p5x_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiSubdivide.Subdivide(textEditor.SelectedText, 1.5f);
-    }
+    //window elements
+    readonly TextEditor textEditor;
+    readonly TextMarkerService markerService;
 
-    private void Subdivide2x_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiSubdivide.Subdivide(textEditor.SelectedText, 2f);
-    }
+    readonly SimaiVisualizerControl simaiVisual;
 
-    private void PlayIncludeOp_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        var simai = viewModel.Session.Doc.CurrentSimaiFile;
-        if (simai == null) return;
-        var ctx = new global::ViewModels.SubModels.PlaybackModel.PlayContext(
-            simai.Title ?? "",
-            simai.Artist ?? "",
-            viewModel.Session.Doc.Offset,
-            viewModel.Session.Doc.Designer,
-            viewModel.Session.Doc.Level,
-            viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen,
-            simai.Commands,
-            viewModel.Session.Doc.SelectedDifficulty
-        );
-        _ = viewModel.Session.Playback.PlayIncludeOp(ctx, viewModel.Settings.Settings);
-    }
-    
-    private void Stop_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        viewModel.Session.Playback.Stop();
-    }
+    readonly Button zoomIn, zoomOut;
 
-    private void PlayPause_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        var simai = viewModel.Session.Doc.CurrentSimaiFile;
-        if (simai == null) return;
-        var ctx = new global::ViewModels.SubModels.PlaybackModel.PlayContext(
-            simai.Title ?? "",
-            simai.Artist ?? "",
-            viewModel.Session.Doc.Offset,
-            viewModel.Session.Doc.Designer,
-            viewModel.Session.Doc.Level,
-            viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen,
-            simai.Commands,
-            viewModel.Session.Doc.SelectedDifficulty
-        );
-        _ = viewModel.Session.Playback.PlayPause(ctx, viewModel.Settings.Settings);
-    }
+    readonly NumericUpDown first;
+    readonly NumericUpDown speed;
 
-    private void MirrorHorizontal_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiMirror.HandleMirror(textEditor.SelectedText, MajdataEdit_Neo.Models.SimaiMirror.HandleType.LRMirror);
-    }
-    private void MirrorVertical_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiMirror.HandleMirror(textEditor.SelectedText, MajdataEdit_Neo.Models.SimaiMirror.HandleType.UDMirror);
-    }
-    private void Mirror180_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiMirror.HandleMirror(textEditor.SelectedText, MajdataEdit_Neo.Models.SimaiMirror.HandleType.HalfRotation);
-    }
-    private void Turn45_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiMirror.HandleMirror(textEditor.SelectedText, MajdataEdit_Neo.Models.SimaiMirror.HandleType.Rotation45);
-    }
-    private void TurnNegative45_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        textEditor.SelectedText = MajdataEdit_Neo.Models.SimaiMirror.HandleMirror(textEditor.SelectedText, MajdataEdit_Neo.Models.SimaiMirror.HandleType.CcwRotation45);
-    }
-    private void PlayStop_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        var simai = viewModel.Session.Doc.CurrentSimaiFile;
-        if (simai == null) return;
-        var ctx = new global::ViewModels.SubModels.PlaybackModel.PlayContext(
-            simai.Title ?? "",
-            simai.Artist ?? "",
-            viewModel.Session.Doc.Offset,
-            viewModel.Session.Doc.Designer,
-            viewModel.Session.Doc.Level,
-            viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen,
-            simai.Commands,
-            viewModel.Session.Doc.SelectedDifficulty
-        );
-        _ = viewModel.Session.Playback.PlayStop(ctx, viewModel.Settings.Settings);
-    }
-    TextEditor textEditor;
-    TextMarkerService markerService;
-    SimaiVisualizerControl simaiVisual;
 
-    DispatcherTimer _debounceTimer;
+    //behind elements
+    readonly DispatcherTimer _debounceTimer;
+
+
     string? _currentTooltipMessage;
-
     private readonly HashSet<Key> _pressedKeys = new();
-    bool isCtrlKeyDown => _pressedKeys.Contains(Key.LeftCtrl) || _pressedKeys.Contains(Key.RightCtrl);
+    bool IsCtrlKeyDown => _pressedKeys.Contains(Key.LeftCtrl) || _pressedKeys.Contains(Key.RightCtrl);
 
     public MainWindow()
     {
         Console.WriteLine(MajBase);
-        
-        var isMac =  OperatingSystem.IsMacOS();
+
+        var isMac = OperatingSystem.IsMacOS();
         var isLinux = OperatingSystem.IsLinux();
-        
+
         //pull up MajdataView
         var viewPath = GetPath(isMac || isLinux ? "MajdataView" : "MajdataView.exe");
         if (File.Exists(viewPath) &&
@@ -166,7 +75,7 @@ public partial class MainWindow : Window
             Process.Start(viewPath);
         }
 
-        // 琛ュ叏 Mac 甯歌鐨勭幆澧冨彉閲忚矾寰勶紙Homebrew 鍦?Intel 鍜?Apple Silicon 鐨勮矾寰勪笉鍚岋級
+        // 补齐mac环境变量
         if (isMac)
         {
             var currentPath = Environment.GetEnvironmentVariable("PATH");
@@ -175,8 +84,9 @@ public partial class MainWindow : Window
         }
 
         InitializeComponent();
+
         //setup editor
-        textEditor = this.FindControl<TextEditor>("Editor");
+        textEditor = this.FindControl<TextEditor>("Editor")!;
         textEditor.TextChanged += TextEditor_TextChanged;
         textEditor.TextArea.TextEntered += TextEditor_TextArea_TextEntered;
         textEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
@@ -187,28 +97,35 @@ public partial class MainWindow : Window
         var _install = TextMate.InstallTextMate(textEditor, _registryOptions);
         var registry = new Registry(_install.RegistryOptions);
         _install.SetGrammarFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "simai.tmLanguage.json"));
-        _debounceTimer = new DispatcherTimer{ Interval = TimeSpan.FromMilliseconds(114.514) };
-        _debounceTimer.Tick += _debounceTimer_Tick;
         markerService = new TextMarkerService(textEditor.Document, textEditor.TextArea.TextView);
         textEditor.TextArea.TextView.BackgroundRenderers.Add(markerService);
         textEditor.PointerMoved += TextEditor_PointerMoved;
         InputMethod.SetIsInputMethodEnabled(textEditor.TextArea, false);
         //setup visualizer
-        simaiVisual = this.FindControl<SimaiVisualizerControl>("SimaiVisual");
+        simaiVisual = this.FindControl<SimaiVisualizerControl>("SimaiVisual")!;
         simaiVisual.PointerWheelChanged += SimaiVisual_PointerWheelChanged;
         simaiVisual.PointerMoved += SimaiVisual_PointerMoved;
-        //zoom buttons
-        this.FindControl<Button>("ZoomIn").Click += ZoomIn_Click;
-        this.FindControl<Button>("ZoomOut").Click += ZoomOut_Click;
-        //control panel
-        First.PointerWheelChanged += First_PointerWheelChanged;
-        Speed.PointerWheelChanged += Speed_PointerWheelChanged;
+        //setup zoom buttons
+        zoomIn = this.FindControl<Button>("ZoomIn")!;
+        zoomIn.Click += ZoomIn_Click;
+        zoomOut = this.FindControl<Button>("ZoomOut")!;
+        zoomOut.Click += ZoomOut_Click;
+        //setup control panel
+        first = this.FindControl<NumericUpDown>("First")!;
+        first.PointerWheelChanged += First_PointerWheelChanged;
+        speed = this.FindControl<NumericUpDown>("Speed")!;
+        speed.PointerWheelChanged += Speed_PointerWheelChanged;
         //this window
         this.KeyDown += MainWindow_KeyDown;
         this.KeyUp += MainWindow_KeyUp;
         this.LostFocus += MainWindow_LostFocus;
         this.Closing += MainWindow_Closing;
         this.Loaded += MainWindow_Loaded;
+
+
+        //setup debounce timer
+        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(114.514) };
+        _debounceTimer.Tick += _debounceTimer_Tick;
     }
 
     private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)
@@ -246,25 +163,25 @@ public partial class MainWindow : Window
         _pressedKeys.Clear();
     }
 
-    private void MainWindow_KeyUp(object? sender, Avalonia.Input.KeyEventArgs e)
+    private void MainWindow_KeyUp(object? sender, KeyEventArgs e)
     {
         _pressedKeys.Remove(e.Key);
     }
 
-    private void MainWindow_KeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    private void MainWindow_KeyDown(object? sender, KeyEventArgs e)
     {
         _pressedKeys.Add(e.Key);
     }
 
-    private void Caret_PositionChanged(object? sender, System.EventArgs e)
+    private void Caret_PositionChanged(object? sender, EventArgs e)
     {
         var seek = textEditor.SelectionStart;
-        viewModel.Session.Playback.SetCaretTime(seek, isCtrlKeyDown);
+        viewModel.Session.Playback.SetCaretTime(seek, IsCtrlKeyDown);
         viewModel.Session.Playback.CaretLine = textEditor.TextArea.Caret.Line;
     }
 
     static double? lastX = null;
-    private void SimaiVisual_PointerMoved(object? sender, Avalonia.Input.PointerEventArgs e)
+    private void SimaiVisual_PointerMoved(object? sender, PointerEventArgs e)
     {
         var point = e.GetCurrentPoint(sender as SimaiVisualizerControl);
         var x = point.Position.X;
@@ -273,8 +190,8 @@ public partial class MainWindow : Window
         var delta = x - lastX;
         if (point.Properties.IsLeftButtonPressed)
         {
-            var docseek = viewModel.Session.Playback.SlideTrackTime((float)delta*10f/Width, viewModel.Session.SongTrackInfo, viewModel.Session.Doc.CurrentChartData, (viewModel.Session.Doc.CurrentSimaiFile?.Offset ?? 0));
-            SeekToDocPos(docseek,textEditor);
+            var docseek = viewModel.Session.Playback.SlideTrackTime((float)delta * 10f / Width, viewModel.Session.SongTrackInfo, viewModel.Session.Doc.CurrentChartData, (viewModel.Session.Doc.CurrentSimaiFile?.Offset ?? 0));
+            SeekToDocPos(docseek, textEditor);
         }
         lastX = x;
     }
@@ -288,15 +205,15 @@ public partial class MainWindow : Window
         viewModel.Session.Playback.SlideZoomLevel(0.3f);
     }
 
-    private void First_PointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)
+    private void First_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
-        First.Value += (decimal)(e.Delta.Y / 100d);
+        first.Value += (decimal)(e.Delta.Y / 100d);
         e.Handled = true;
     }
 
-    private void Speed_PointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)
+    private void Speed_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
-        var value = Speed.Value + (decimal)(e.Delta.Y / 10d);
+        var value = speed.Value + (decimal)(e.Delta.Y / 10d);
         if (value < (decimal)0.1)
         {
             e.Handled = true;
@@ -304,25 +221,25 @@ public partial class MainWindow : Window
         }
         else
         {
-            Speed.Value = value;
+            speed.Value = value;
             e.Handled = true;
         }
     }
 
-    private void SimaiVisual_PointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)
+    private void SimaiVisual_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
-        if (isCtrlKeyDown)
+        if (IsCtrlKeyDown)
         {
             viewModel.Session.Playback.SlideZoomLevel(-0.3f * (float)e.Delta.Y);
         }
         else
         {
             var docseek = viewModel.Session.Playback.SlideTrackTime(e.Delta.Y, viewModel.Session.SongTrackInfo, viewModel.Session.Doc.CurrentChartData, (viewModel.Session.Doc.CurrentSimaiFile?.Offset ?? 0));
-            SeekToDocPos(docseek,textEditor);
+            SeekToDocPos(docseek, textEditor);
         }
     }
 
-    private void TextEditor_PreviewKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    private void TextEditor_PreviewKeyDown(object? sender, KeyEventArgs e)
     {
         bool hasShift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         bool hasCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
@@ -364,13 +281,13 @@ public partial class MainWindow : Window
             }
         }
     }
-    private async void TextEditor_TextChanged(object? sender, System.EventArgs e)
+    private async void TextEditor_TextChanged(object? sender, EventArgs e)
     {
         _debounceTimer.Stop();
         _debounceTimer.Start();
-        await viewModel.Session.Doc.SetFumenContent(((TextEditor)sender).Text);
+        await viewModel.Session.Doc.SetFumenContent(((TextEditor)sender!).Text);
         var seek = textEditor.SelectionStart;
-        viewModel.Session.Playback.SetCaretTime(seek, isCtrlKeyDown);
+        viewModel.Session.Playback.SetCaretTime(seek, IsCtrlKeyDown);
     }
     private void _debounceTimer_Tick(object? sender, EventArgs e)
     {
@@ -404,7 +321,7 @@ public partial class MainWindow : Window
             }
         }
     }
-    private void TextEditor_PointerMoved(object? sender, Avalonia.Input.PointerEventArgs e)
+    private void TextEditor_PointerMoved(object? sender, PointerEventArgs e)
     {
         var textView = textEditor.TextArea.TextView;
         var pos = e.GetPosition(textView);
@@ -417,7 +334,7 @@ public partial class MainWindow : Window
             var marker = markerService.GetMarkerAtOffset(offset);
             newMessage = marker?.Message;
         }
-        
+
         if (_currentTooltipMessage != newMessage)
         {
             _currentTooltipMessage = newMessage;
@@ -433,7 +350,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void TextEditor_TextArea_TextEntered(object? sender, Avalonia.Input.TextInputEventArgs e)
+    private void TextEditor_TextArea_TextEntered(object? sender, TextInputEventArgs e)
     {
         if (SimaiCompletionData.SIMAI_COMPLETIONS.ContainsKey(e.Text?[0] ?? '\0'))
         {
@@ -447,7 +364,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void FindReplace_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    private async void FindReplace_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (textEditor.SearchPanel.IsOpened)
             textEditor.SearchPanel.Close();
@@ -458,15 +375,7 @@ public partial class MainWindow : Window
             textEditor.SearchPanel.Open();
         }
     }
-    private void SeekToDocPos(Avalonia.Point position)
-    {
-        if (position.Y + 1 > textEditor.Document.LineCount) return;
-        var offset = textEditor.Document.GetOffset((int)position.Y + 1, (int)position.X);
-        textEditor.Select(offset, 0);
-        textEditor.ScrollTo((int)position.Y + 1, (int)position.X);
-        textEditor.Focus();
-    }
-    private void SeekToDocPos(Avalonia.Point position, AvaloniaEdit.TextEditor editor)
+    private void SeekToDocPos(Point position, TextEditor editor)
     {
         if (position.Y + 1 > editor.Document.LineCount) return;
         var offset = editor.Document.GetOffset((int)position.Y + 1, (int)position.X);
@@ -485,14 +394,15 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Playback_RequestSeekToDocPos(Avalonia.Point point)
+    private void Playback_RequestSeekToDocPos(Point point)
     {
-        Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        Dispatcher.UIThread.InvokeAsync(() =>
         {
             SeekToDocPos(point, textEditor);
         });
     }
 }
+
 
 
 

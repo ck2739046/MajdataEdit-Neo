@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
 
-namespace MajdataEdit_Neo.ViewModels;
+namespace MajdataEdit_Neo.Types;
 
 public interface IReadOnlyDocument
 {

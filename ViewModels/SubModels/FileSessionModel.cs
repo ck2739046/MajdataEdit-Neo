@@ -13,8 +13,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Types;
+using MajdataEdit_Neo.ViewModels.SubModels;
+using MajdataEdit_Neo.Models.Plugins;
 
-namespace ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels.SubModels;
 
 public partial class FileSessionModel : ViewModelBase
 {
@@ -23,6 +25,7 @@ public partial class FileSessionModel : ViewModelBase
     public PlaybackModel Playback { get; }
     public AutoSaveModel AutoSave { get; }
     public ToolsModel Tools { get; }
+    public PluginModel Plugins { get; }
     public DiscordRpcModel DiscordRpc { get; }
 
     //------file state
@@ -56,6 +59,10 @@ public partial class FileSessionModel : ViewModelBase
 
         // Inject mutable interface to ToolsModel
         Tools = new ToolsModel(_mainWindow, this, Doc);
+
+        Plugins = new PluginModel();
+        Plugins.Register<MirrorPlugin>();
+        Plugins.Register<SubdividePlugin>();
 
         WireEvents();
     }
@@ -144,7 +151,6 @@ public partial class FileSessionModel : ViewModelBase
         await Playback.EditorLoad(MaidataDir);
     }
 
-    [RelayCommand]
     public async Task NewFile()
     {
         if (await AskSave()) return;
@@ -174,7 +180,6 @@ public partial class FileSessionModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
     public async Task OpenFile()
     {
         if (await AskSave()) return;
@@ -256,7 +261,6 @@ public partial class FileSessionModel : ViewModelBase
         _editDb.UpsertRecord(record);
     }
 
-    [RelayCommand]
     public async Task SaveFile()
     {
         if (Doc.CurrentSimaiFile is null) return;
@@ -276,6 +280,8 @@ public partial class FileSessionModel : ViewModelBase
         AutoSave.IsFileChanged = false;
     }
 }
+
+
 
 
 

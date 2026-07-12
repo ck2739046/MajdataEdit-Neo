@@ -74,7 +74,7 @@ class TrackReader : IDisposable
 public class TrackInfo
 {
     public double Length { get; }
-    public short[] RawWave { get; } = new short[0];
+    public short[] RawWave { get; } = Array.Empty<short>();
     private short[][] waveThumbnails = new short[3][];
     public short[] GetWaveThumbnails(int thumbLevel = 0)
     {
