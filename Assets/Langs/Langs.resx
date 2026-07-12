@@ -435,4 +435,7 @@ Do you want to download the latest update of Majdata?</value>
   <data name="Set_ShowHand" xml:space="preserve">
     <value>Show Autoplay's Hand</value>
   </data>
+  <data name="Set_WordWrap" xml:space="preserve">
+    <value>Word Wrap</value>
+  </data>
 </root>

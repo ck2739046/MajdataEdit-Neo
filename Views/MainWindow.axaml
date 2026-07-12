@@ -168,7 +168,8 @@
 			<AvaloniaEdit:TextEditor Grid.Column="3" Grid.Row="1" Grid.RowSpan="3"
                                      Document="{Binding Session.Doc.FumenDocument}"
                                      Name="Editor" BorderBrush="#50FFFFFF" BorderThickness="0.5"
-                                     ShowLineNumbers="True" Margin="5 5 5 5" Padding="5" WordWrap="False"
+                                     ShowLineNumbers="True" Margin="5 5 5 5" Padding="5"
+									 WordWrap="{Binding Settings.WordWrap}"
                                      FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                                      FontSize="{Binding Settings.FontSize}">
 				<AvaloniaEdit:TextEditor.ContextFlyout>

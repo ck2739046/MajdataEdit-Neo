@@ -435,4 +435,7 @@
   <data name="Set_ShowHand" xml:space="preserve">
     <value>展示Autoplay的手</value>
   </data>
+  <data name="Set_WordWrap" xml:space="preserve">
+    <value>自动换行</value>
+  </data>
 </root>

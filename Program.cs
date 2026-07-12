@@ -27,7 +27,7 @@ sealed class Program
 
     static void LogCrashed(Exception ex)
     {
-        File.WriteAllText(MajEnv.GetPath("crash.log"), $"{ex.Message}\n{ex.StackTrace}\n\n" +
+        File.WriteAllText(MajEnv.CrashFile, $"{ex.Message}\n{ex.StackTrace}\n\n" +
             $"inner:{ex.InnerException?.Message}\n{ex.InnerException?.StackTrace}");
     }
 

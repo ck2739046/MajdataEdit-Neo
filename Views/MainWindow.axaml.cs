@@ -305,25 +305,27 @@ public partial class MainWindow : Window
 
     private void TextEditor_PreviewKeyDown(object? sender, KeyEventArgs e)
     {
+        var area = textEditor.TextArea;
+
         bool hasShift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         bool hasCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
 
         //fix: when selection is not empty, left/right key will move caret to start/end of selection,
         //instead of moving caret from the start by one char.
-        if (!textEditor.TextArea.Selection.IsEmpty && !hasShift)
+        if (!area.Selection.IsEmpty && !hasShift)
         {
             if (e.Key == Key.Right)
             {
-                int endOffset = textEditor.TextArea.Selection.SurroundingSegment.EndOffset;
-                textEditor.TextArea.Caret.Offset = endOffset;
-                textEditor.TextArea.ClearSelection();
+                int endOffset = area.Selection.SurroundingSegment.EndOffset;
+                area.Caret.Offset = endOffset;
+                area.ClearSelection();
                 e.Handled = true;
             }
             else if (e.Key == Key.Left)
             {
-                int startOffset = textEditor.TextArea.Selection.SurroundingSegment.Offset;
-                textEditor.TextArea.Caret.Offset = startOffset;
-                textEditor.TextArea.ClearSelection();
+                int startOffset = area.Selection.SurroundingSegment.Offset;
+                area.Caret.Offset = startOffset;
+                area.ClearSelection();
                 e.Handled = true;
             }
         }
@@ -333,14 +335,12 @@ public partial class MainWindow : Window
         {
             if (e.Key == Key.Up)
             {
-                textEditor.TextArea.Caret.Line = Math.Max(1, textEditor.TextArea.Caret.Line - 1);
-                textEditor.TextArea.Caret.BringCaretToView();
+                EditingCommands.MoveUpByLine.Execute(null, area);
                 e.Handled = true;
             }
             else if (e.Key == Key.Down)
             {
-                textEditor.TextArea.Caret.Line = Math.Min(textEditor.Document.LineCount, textEditor.TextArea.Caret.Line + 1);
-                textEditor.TextArea.Caret.BringCaretToView();
+                EditingCommands.MoveDownByLine.Execute(null, area);
                 e.Handled = true;
             }
         }
@@ -350,14 +350,18 @@ public partial class MainWindow : Window
         {
             if (e.Key == Key.Left)
             {
-                textEditor.TextArea.Caret.Offset--;
-                textEditor.TextArea.Caret.BringCaretToView();
+                if (hasShift)
+                    EditingCommands.SelectLeftByCharacter.Execute(null, area);
+                else
+                    EditingCommands.MoveLeftByCharacter.Execute(null, area);
                 e.Handled = true;
             }
             else if (e.Key == Key.Right)
             {
-                textEditor.TextArea.Caret.Offset++;
-                textEditor.TextArea.Caret.BringCaretToView();
+                if (hasShift)
+                    EditingCommands.SelectRightByCharacter.Execute(null, area);
+                else
+                    EditingCommands.MoveRightByCharacter.Execute(null, area);
                 e.Handled = true;
             }
         }

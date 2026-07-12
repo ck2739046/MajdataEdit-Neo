@@ -856,6 +856,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 Word Wrap 的本地化字符串。
+        /// </summary>
+        internal static string Set_WordWrap {
+            get {
+                return ResourceManager.GetString("Set_WordWrap", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Busy 的本地化字符串。
         /// </summary>
         internal static string Status_Busy {

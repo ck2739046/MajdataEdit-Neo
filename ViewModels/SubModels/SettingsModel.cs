@@ -15,21 +15,16 @@ namespace MajdataEdit_Neo.ViewModels.SubModels;
 
 public partial class SettingsModel : ViewModelBase
 {
-    [ObservableProperty]
-    public partial MajSetting Settings { get; set; }
+    //reload setting required
+    [ObservableProperty] public partial MajSetting Settings { get; set; }
+    [ObservableProperty] public partial double FontSize { get; set; }
+    [ObservableProperty] public partial bool IsAnimated { get; set; }
+    [ObservableProperty] public partial Bitmap BackgroundImage { get; set; }
+    [ObservableProperty] public partial bool WordWrap { get; set; }
 
-    [ObservableProperty]
-    public partial double FontSize { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsAnimated { get; set; } = true;
-
-    [ObservableProperty]
-    public partial Bitmap BackgroundImage { get; set; }
 
     private static readonly WriteableBitmap emptyBitmap = new(new PixelSize(1, 1), new Vector(96, 96), PixelFormat.Bgra8888);
 
-    public static string SettingsFile => GetPath("Settings.json");
 
     public bool Initialize()
     {
@@ -63,6 +58,7 @@ public partial class SettingsModel : ViewModelBase
         IsAnimated = Settings.EditSetting.WaveAnimated;
         var bgPath = GetPath(Settings.EditSetting.BackgroundImagePath);
         BackgroundImage = File.Exists(bgPath) ? new Bitmap(bgPath) : emptyBitmap;
+        WordWrap = Settings.EditSetting.WordWrap;
     }
 
     public void SetWindowLastState(Window window)
