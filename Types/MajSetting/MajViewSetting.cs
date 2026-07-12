@@ -53,13 +53,11 @@ public class MajViewSetting
         Values = new object[] { AutoPlayMode.Enable,
                                 AutoPlayMode.DJAutoButton,
                                 AutoPlayMode.DJAutoSensor,
-                                AutoPlayMode.MuriDX,
                                 AutoPlayMode.Random,
                                 AutoPlayMode.Disable },
         Labels = new[] {        "Enable",
                                 "DJAuto (Btn)",
                                 "DJAuto",
-                                "MuriDX",
                                 "Random",
                                 "Disable" })]
     public AutoPlayMode AutoMode { get; set; } = AutoPlayMode.Enable;
