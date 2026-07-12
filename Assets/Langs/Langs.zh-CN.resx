@@ -204,9 +204,6 @@
   <data name="Gui_Error" xml:space="preserve">
     <value>Error</value>
   </data>
-  <data name="Gui_PlaybackSpeed" xml:space="preserve">
-    <value>Speed</value>
-  </data>
   <data name="Gui_FollowCursor" xml:space="preserve">
     <value>跟随光标</value>
   </data>
@@ -431,5 +428,11 @@
   </data>
   <data name="Set_BackgroundImagePath" xml:space="preserve">
     <value>编辑器背景图片</value>
+  </data>
+  <data name="Gui_PlaybackSpeed" xml:space="preserve">
+    <value>Speed</value>
+  </data>
+  <data name="Set_ShowHand" xml:space="preserve">
+    <value>展示Autoplay的手</value>
   </data>
 </root>
