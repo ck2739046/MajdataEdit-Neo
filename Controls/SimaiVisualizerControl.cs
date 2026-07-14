@@ -141,6 +141,8 @@ class SimaiVisualizerControl : Control
         private static double _lastTime;
         private static double _lastZoom;
         private readonly bool _isAnimated;
+        public static bool NeedsRender { get; set; }
+        private static SimaiChart? _lastSimaiChart;
 
         // Cached resources to avoid per-frame allocations
         static readonly SKTypeface ConsolasBold = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Bold);
@@ -252,6 +254,8 @@ class SimaiVisualizerControl : Control
                 }
 
                 _lastZoom += 0.2 * (_zoomLevel - _lastZoom);
+                
+                NeedsRender = _isAnimated && (Math.Abs(_time - _lastTime) > 0.005 || Math.Abs(_zoomLevel - _lastZoom) > 0.005);
 
                 var waveLevels = _trackInfo.RawWave;
                 if (_lastZoom > 3) waveLevels = _trackInfo.GetWaveThumbnails(2);
@@ -283,84 +287,92 @@ class SimaiVisualizerControl : Control
                 paint.IsAntialias = true;
 
                 //Draw Bpm Lines
-                var lastbpm = -1f;
-                BpmChangeTimes.Clear();
-                BpmChangeValues.Clear();
-
-                //scan to get bpm change time and value
-                foreach (var timing in _simaiChart.CommaTimings)
+                if (!ReferenceEquals(_simaiChart, _lastSimaiChart))
                 {
-                    if (timing.Bpm != lastbpm)
+                    _lastSimaiChart = _simaiChart;
+                    var lastbpm = -1f;
+                    BpmChangeTimes.Clear();
+                    BpmChangeValues.Clear();
+
+                    //scan to get bpm change time and value
+                    foreach (var timing in _simaiChart.CommaTimings)
                     {
-                        BpmChangeTimes.Add(timing.Timing + _offset);
-                        BpmChangeValues.Add(timing.Bpm);
-                        lastbpm = timing.Bpm;
+                        if (timing.Bpm != lastbpm)
+                        {
+                            BpmChangeTimes.Add(timing.Timing + _offset);
+                            BpmChangeValues.Add(timing.Bpm);
+                            lastbpm = timing.Bpm;
+                        }
+                    }
+                    BpmChangeTimes.Add(_trackInfo.Length);
+
+                    double timeBeats = BpmChangeTimes.Count > 0 ? BpmChangeTimes[0] : 0;
+                    var signatureNum = 4; // Time signature
+                    var signatureDeno = 4; // Time signature
+                    var currentBeat = 1;
+                    double timePerBeat;
+                    StrongBeat.Clear();
+                    WeakBeat.Clear();
+
+                    for (var i = 1; i < BpmChangeTimes.Count; i++)
+                    {
+                        while (timeBeats < BpmChangeTimes[i] - 0.05)
+                        {
+                            var sig = default((double, int, int));
+                            for (var s = _signatures.Count - 1; s >= 0; s--)
+                            {
+                                if (timeBeats > _signatures[s].Item1 - 0.05)
+                                {
+                                    sig = _signatures[s];
+                                    break;
+                                }
+                            }
+                            if (sig != default)
+                            {
+                                signatureNum = sig.Item2;
+                                signatureDeno = sig.Item3;
+                            }
+
+                            if (currentBeat > signatureNum) currentBeat = 1;
+                            timePerBeat = 60.0 / BpmChangeValues[i - 1] * 4 / signatureDeno;
+
+                            if (currentBeat == 1)
+                                StrongBeat.Add(timeBeats);
+                            else
+                                WeakBeat.Add(timeBeats);
+
+                            currentBeat++;
+                            timeBeats += timePerBeat;
+                        }
+                        timeBeats = BpmChangeTimes[i];
+                        currentBeat = 1;
                     }
                 }
-                BpmChangeTimes.Add(_trackInfo.Length);
 
                 double time = BpmChangeTimes.Count > 0 ? BpmChangeTimes[0] : 0;
-                var signatureNum = 4; // Time signature
-                var signatureDeno = 4; // Time signature
-                var currentBeat = 1;
-                double timePerBeat;
                 paint.Color = BpmLineColor;
                 paint.StrokeWidth = 1;
-                StrongBeat.Clear();
-                WeakBeat.Clear();
 
                 for (var i = 1; i < BpmChangeTimes.Count; i++)
                 {
+                    time = BpmChangeTimes[i-1];
                     if (time - currentTime > deltatime) continue;
                     var x = ((float)(time / step) - startindex) * linewidth;
                     canvas.DrawText(BpmChangeValues[i - 1].ToString(), (float)x + 3f, 10, TextFont, paint);
-
-
-                    while (time < BpmChangeTimes[i] - 0.05)
-                    {
-                        // manual reverse search instead of LastOrDefault lambda
-                        var sig = default((double, int, int));
-                        for (var s = _signatures.Count - 1; s >= 0; s--)
-                        {
-                            if (time > _signatures[s].Item1 - 0.05)
-                            {
-                                sig = _signatures[s];
-                                break;
-                            }
-                        }
-                        if (sig != default)
-                        {
-                            signatureNum = sig.Item2;
-                            signatureDeno = sig.Item3;
-                        }
-
-
-                        if (currentBeat > signatureNum) currentBeat = 1;
-                        timePerBeat = 60.0 / BpmChangeValues[i - 1] * 4 / signatureDeno;
-
-                        if (currentBeat == 1)
-                            StrongBeat.Add(time);
-                        else
-                            WeakBeat.Add(time);
-
-                        currentBeat++;
-                        time += timePerBeat;
-                    }
-
-                    time = BpmChangeTimes[i];
-                    currentBeat = 1;
                 }
 
                 foreach (var btime in StrongBeat)
                 {
-                    if (btime - currentTime > deltatime) continue;
+                    if (btime - currentTime < -deltatime) continue;
+                    if (btime - currentTime > deltatime) break;
                     var x = ((float)(btime / step) - startindex) * linewidth;
                     canvas.DrawLine((float)x, 0, (float)x, (float)height, paint);
                 }
 
                 foreach (var btime in WeakBeat)
                 {
-                    if (btime - currentTime > deltatime) continue;
+                    if (btime - currentTime < -deltatime) continue;
+                    if (btime - currentTime > deltatime) break;
                     var x = ((float)(btime / step) - startindex) * linewidth;
                     canvas.DrawLine((float)x, 0, (float)x, 10, paint);
                 }
@@ -370,7 +382,8 @@ class SimaiVisualizerControl : Control
                 foreach (var note in _simaiChart.CommaTimings)
                 {
                     time = note.Timing + _offset;
-                    if (time - currentTime > deltatime) continue;
+                    if (time - currentTime < -deltatime) continue;
+                    if (time - currentTime > deltatime) break;
                     var x = ((float)(time / step) - startindex) * linewidth;
                     canvas.DrawLine((float)x, (float)height - 10, (float)x, (float)height, paint);
                 }
@@ -384,7 +397,8 @@ class SimaiVisualizerControl : Control
                 foreach (var note in _simaiChart.NoteTimings)
                 {
                     time = note.Timing + _offset;
-                    if (time - currentTime > deltatime) continue;
+                    if (time - currentTime < -deltatime - 10.0) continue;
+                    if (time - currentTime > deltatime) break;
                     var notes = note.Notes;
 
                     // manual count non-slide-head notes
@@ -530,8 +544,14 @@ class SimaiVisualizerControl : Control
     }
     public override void Render(DrawingContext context)
     {
+        if (TrackIf == null || SimaiChart == null) return;
+        
         context.Custom(new CustomDrawOp(new Rect(0, 0, Bounds.Width, Bounds.Height),
             TrackIf, Time, ZoomLevel, SimaiChart, Signatures, Offset, CaretTime, IsAnimated));
-        Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
+        
+        if (CustomDrawOp.NeedsRender)
+        {
+            Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
+        }
     }
 }

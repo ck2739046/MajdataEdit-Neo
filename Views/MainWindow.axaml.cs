@@ -388,11 +388,10 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void TextEditor_TextChanged(object? sender, EventArgs e)
+    private void TextEditor_TextChanged(object? sender, EventArgs e)
     {
         _debounceTimer.Stop();
         _debounceTimer.Start();
-        await viewModel.Session.Doc.SetFumenContent(((TextEditor)sender!).Text);
         var seek = textEditor.SelectionStart;
         viewModel.Session.Playback.SetCaretTime(seek, IsCtrlKeyDown);
     }
@@ -403,6 +402,7 @@ public partial class MainWindow : Window
     }
     private async void TextEditor_DebouncedTextChanged()
     {
+        await viewModel.Session.Doc.SetFumenContent(textEditor.Text);
         var fumen = viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen;
 
         var diags = await Task.Run(() => SimaiChecker.Check(fumen));

@@ -209,10 +209,14 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
         content ??= string.Empty;
 
         CurrentChartMetadata[SelectedDifficulty].Fumen = content;
-        OnPropertyChanged(nameof(CurrentSimaiFile));
         try
         {
-            CurrentChartData = await SimaiParser.ParseChartAsync(string.Empty, string.Empty, content);
+            var data = await Task.Run(async () =>
+            {
+                var parsed = await SimaiParser.ParseChartAsync(string.Empty, string.Empty, content);
+                return parsed;
+            });
+            CurrentChartData = data;
         }
         catch (Exception ex)
         {
@@ -244,7 +248,7 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
     {
         if (CurrentChartData is null) return;
 
-        var notes = CurrentChartData.NoteTimings.ToArray();
+        var notes = CurrentChartData.NoteTimings;
         var currentCombo = 0;
         foreach (var note in notes)
         {

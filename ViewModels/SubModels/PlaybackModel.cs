@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -169,7 +169,8 @@ public partial class PlaybackModel : ViewModelBase
         var currentCombo = 0;
         foreach (var note in notes)
         {
-            if (note.Timing < caretTime) currentCombo++;
+            if (note.Timing >= caretTime) break;
+            currentCombo++;
         }
         CurrentCombo = currentCombo;
 
@@ -194,11 +195,12 @@ public partial class PlaybackModel : ViewModelBase
         }
         CaretTime = nearestTiming?.Timing ?? 0;
 
-        var notes = chartData.NoteTimings.ToArray();
+        var notes = chartData.NoteTimings;
         var currentCombo = 0;
         foreach (var note in notes)
         {
-            if (note.RawTextPosition < rawPosition) currentCombo++;
+            if (note.RawTextPosition >= rawPosition) break;
+            currentCombo++;
         }
         CurrentCombo = currentCombo;
 
