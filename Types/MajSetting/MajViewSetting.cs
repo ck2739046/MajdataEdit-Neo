@@ -92,10 +92,6 @@ public class MajViewSetting
     [Display(Name = nameof(Langs.Set_LegacySlideLayer))]
     [SettingControl(SettingControlType.Toggle)]
     public bool LegacySlideLayer { get; set; } = false;
-
-    [Display(Name = nameof(Langs.Set_ButtonFirst))]
-    [SettingControl(SettingControlType.Toggle)]
-    public bool ButtonFirst { get; set; } = false;
 }
 
 public enum BgInfoDisplay

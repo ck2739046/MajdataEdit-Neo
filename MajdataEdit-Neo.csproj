@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net10.0</TargetFramework>
@@ -28,6 +28,7 @@
 		<Compile Remove="Modules\**" />
 		<EmbeddedResource Remove="Modules\**" />
 		<None Remove="Modules\**" />
+		<Compile Remove="Tests\**" />
 	</ItemGroup>
 
 	<ItemGroup>

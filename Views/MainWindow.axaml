@@ -156,7 +156,7 @@
 
 
 			<Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+z" Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
-                    Command="{Binding PlayStopCommand}">
+                    Command="{Binding StopCommand}">
 				<PathIcon Width="13" Data="{StaticResource stop}"/>
 			</Button>
 

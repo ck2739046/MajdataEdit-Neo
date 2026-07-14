@@ -70,9 +70,9 @@ public partial class MainWindow : Window
         var isLinux = OperatingSystem.IsLinux();
 
         //pull up MajdataView
-        var viewPath = GetPath(isMac || isLinux ? "MajdataView" : "MajdataView.exe");
+        var viewPath = GetPath(isMac || isLinux ? "MajdataViewX" : "MajdataViewX.exe");
         if (File.Exists(viewPath) &&
-            Process.GetProcessesByName("MajdataView").Length <= 0 &&
+            Process.GetProcessesByName("MajdataViewX").Length <= 0 &&
             Process.GetProcessesByName("Unity").Length <= 0)
         {
             Process.Start(viewPath);
@@ -382,7 +382,7 @@ public partial class MainWindow : Window
                         EditingCommands.MoveRightByCharacter.Execute(null, area);
                         e.Handled = true;
                         break;
-                    // up/down is normal
+                        // up/down is normal
                 }
             }
         }

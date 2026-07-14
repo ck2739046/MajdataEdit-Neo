@@ -11,6 +11,7 @@ public static class SimaiChecker
     private static readonly char[] SlideTypeChars = ['-', '^', 'v', '<', '>', 'V', 'p', 'q', 's', 'z', 'w'];
     private static readonly string[] SlideTypeDoubleChars = ["pp", "qq"];
     private static readonly char[] TouchSensorTypes = ['A', 'B', 'C', 'D', 'E'];
+    private static readonly char[] SlideCodeCommands = ['A', 'B', 'C', 'K', 'P', 'Q'];
 
     public static IReadOnlyList<SimaiDiagnostic> Check(string fumen)
     {
@@ -908,6 +909,27 @@ public static class SimaiChecker
         {
             var c = span[idx];
 
+            // Check for slidecode pattern (uppercase A/B/C/K/P/Q followed by digit(s) ending with K+digit)
+            if (IsSlideCodeCommand(c))
+            {
+                var slideCodeMatch = TryMatchSlideCode(content, idx);
+                if (slideCodeMatch != null)
+                {
+                    if (info.NextSlideIsSameHeadChainStart)
+                    {
+                        slideCodeMatch.IsSameHeadChainStart = true;
+                        info.NextSlideIsSameHeadChainStart = false;
+                    }
+                    info.Slides.Add(slideCodeMatch);
+                    idx = slideCodeMatch.EndIndex;
+                    if (slideCodeMatch.EndPosition.HasValue)
+                    {
+                        lastSlideEndPosition = slideCodeMatch.EndPosition.Value;
+                    }
+                    continue;
+                }
+            }
+
             switch (char.ToLowerInvariant(c))
             {
                 case 'h':
@@ -1133,6 +1155,145 @@ public static class SimaiChecker
 
         slide.EndIndex = idx;
         return slide;
+    }
+
+    private static bool IsSlideCodeCommand(char c)
+    {
+        return c is 'A' or 'B' or 'C' or 'K' or 'P' or 'Q';
+    }
+
+    private static SlideInfo? TryMatchSlideCode(ReadOnlyMemory<char> content, int startIdx)
+    {
+        var span = content.Span;
+        var idx = startIdx;
+
+        if (idx >= span.Length || !IsSlideCodeCommand(span[idx]))
+            return null;
+
+        // Check if this is followed by digit(s) and eventually K+digit
+        // A slidecode pattern: command letter(s) and digit(s) ending with K[1-8]
+        var tempIdx = idx;
+        var foundK = false;
+
+        // Scan forward to find if there's a K followed by a digit
+        while (tempIdx < span.Length)
+        {
+            var tc = span[tempIdx];
+            if (tc == 'K' && tempIdx + 1 < span.Length && span[tempIdx + 1] >= '1' && span[tempIdx + 1] <= '8')
+            {
+                // Check that K is not followed by another command letter or digit (would mean it's not the end)
+                if (tempIdx + 2 < span.Length && IsSlideCodeCommand(span[tempIdx + 2]))
+                    break; // K is followed by a command letter, not the end
+                if (tempIdx + 2 < span.Length && char.IsDigit(span[tempIdx + 2]))
+                    break; // K is followed by a digit that's not part of K's parameter
+                foundK = true;
+                break;
+            }
+            // Stop if we hit a duration bracket, break/mine flags, or end
+            if (tc == '[' || tc == 'b' || tc == 'm' || tc == '/' || tc == '`' || tc == ',')
+                break;
+            tempIdx++;
+        }
+
+        if (!foundK) return null;
+
+        // Now parse the slidecode
+        var slide = new SlideInfo { StartIndex = idx, SlideType = "SC" };
+
+        // Special case: first char is K — directly parse K+digit+duration+flags
+        if (span[idx] == 'K')
+        {
+            idx++;
+            if (idx >= span.Length || span[idx] < '1' || span[idx] > '8')
+                return null;
+            slide.EndPosition = span[idx] - '0';
+            idx++;
+
+            // Parse duration
+            if (idx < span.Length && span[idx] == '[')
+            {
+                var relClose = span[idx..].IndexOf(']');
+                var closeIdx = relClose != -1 ? relClose + idx : -1;
+                if (closeIdx != -1)
+                {
+                    slide.Duration = content[(idx + 1)..closeIdx];
+                    slide.DurationStart = idx;
+                    slide.DurationEnd = closeIdx;
+                    idx = closeIdx + 1;
+                }
+            }
+
+            // Parse break/mine flags
+            if (idx < span.Length && span[idx] == 'b')
+            {
+                slide.IsBreak = true;
+                idx++;
+            }
+            if (idx < span.Length && span[idx] == 'm')
+            {
+                slide.IsMine = true;
+                idx++;
+            }
+
+            slide.EndIndex = idx;
+            return slide;
+        }
+
+        idx++; // skip first command letter
+
+        while (idx < span.Length)
+        {
+            var c = span[idx];
+
+            if (c == 'K')
+            {
+                idx++;
+                if (idx >= span.Length || span[idx] < '1' || span[idx] > '8')
+                    return null;
+                slide.EndPosition = span[idx] - '0';
+                idx++;
+
+                // Parse duration
+                if (idx < span.Length && span[idx] == '[')
+                {
+                    var relClose = span[idx..].IndexOf(']');
+                    var closeIdx = relClose != -1 ? relClose + idx : -1;
+                    if (closeIdx != -1)
+                    {
+                        slide.Duration = content[(idx + 1)..closeIdx];
+                        slide.DurationStart = idx;
+                        slide.DurationEnd = closeIdx;
+                        idx = closeIdx + 1;
+                    }
+                }
+
+                // Parse break/mine flags
+                if (idx < span.Length && span[idx] == 'b')
+                {
+                    slide.IsBreak = true;
+                    idx++;
+                }
+                if (idx < span.Length && span[idx] == 'm')
+                {
+                    slide.IsMine = true;
+                    idx++;
+                }
+
+                slide.EndIndex = idx;
+                return slide;
+            }
+
+            if (IsSlideCodeCommand(c) || char.IsDigit(c))
+            {
+                idx++;
+                continue;
+            }
+
+            // Invalid character in slidecode
+            return null;
+        }
+
+        return null;
     }
 
     private static void ValidateNoteInfo(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos, NoteInfo info)
@@ -1568,6 +1729,16 @@ public static class SimaiChecker
     private static void ValidateSlide(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos,
         SlideInfo slide, bool checkDuration)
     {
+        // SlideCode has its own validation in TryMatchSlideCode
+        if (slide.SlideType == "SC")
+        {
+            if (checkDuration && slide.Duration.HasValue)
+            {
+                ValidateDuration(context, content, startPos, slide.Duration.Value.Span, slide.DurationStart, "SLIDE", allowSlideFormat: true);
+            }
+            return;
+        }
+
         if (slide.EndPosition == null)
         {
             context.AddError(

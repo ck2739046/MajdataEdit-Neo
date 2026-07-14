@@ -7,6 +7,9 @@
     { "include": "#hs-modifier" },
     { "include": "#bpm" },
     { "include": "#measure" },
+    { "include": "#slide-code-star" },
+    { "include": "#slide-code-break" },
+    { "include": "#slide-code" },
     { "include": "#slide-with-star" },
     { "include": "#slide-complex" },
     { "include": "#duration" },
@@ -92,6 +95,21 @@
         }
       ]
     },
+    "slide-code": {
+      "comment": "SlideCode pattern like 5Q9A1P98CQ49K5, 1K2, 7K4 - command letters A/B/C/P/Q with digits 0-9, ending with K+digit",
+      "name": "entity.name.function.slidecode.simai",
+      "match": "[1-8]([ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bx!m]*"
+    },
+    "slide-code-star": {
+      "comment": "SlideCode with star connector like *P7K6, *Q1K6, *P77CQ3K2",
+      "name": "entity.name.function.slidecode-star.simai",
+      "match": "\\*(?:[ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bx!m]*"
+    },
+    "slide-code-break": {
+      "comment": "SlideCode with break flag like bP46824K3, bQ1K6",
+      "name": "entity.name.function.slidecode-break.simai",
+      "match": "b(?:[ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bx!m]*"
+    },
     "slide-with-star": {
       "comment": "Star slide connector like *>6p1, *V53, *<2p5, *-3[0##0.01]",
       "name": "entity.name.function.slide-star.simai",
@@ -118,14 +136,14 @@
       "match": "[1-8][1-8]?[bx!m]*h(\\[[^\\]]*\\])?[bx!m]*"
     },
     "tap-double": {
-      "comment": "Double tap (each shorthand) like 73, 36, 12, 17b",
+      "comment": "Double tap (each shorthand) like 73, 36, 12, 17b, 2$/6$",
       "name": "entity.name.variable.tap-double.simai",
-      "match": "[1-8][1-8][bx!m]*(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)"
+      "match": "[1-8][1-8]([bx!m](?![ABCPQ]))*(?:\\$\\$?)?(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)"
     },
     "tap-single": {
-      "comment": "Single tap like 1, 2b, 3x, 4!, 5bx",
+      "comment": "Single tap like 1, 2b, 3x, 4!, 5bx, 2$, 3$$",
       "name": "entity.name.variable.tap.simai",
-      "match": "[1-8][bx!m]*(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)"
+      "match": "[1-8]([bx!m](?![ABCPQ]))*(?:\\$\\$?)?(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)"
     },
     "each-separator": {
       "comment": "Each note separator /",
