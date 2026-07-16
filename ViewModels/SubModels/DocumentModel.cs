@@ -222,6 +222,8 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
         {
             Debug.WriteLine(ex);
         }
+
+        UpdateFumenContextChanged();
     }
 
     public SimaiTimingPoint? GetNearestCommaTimingFromPos(int rawPosition)

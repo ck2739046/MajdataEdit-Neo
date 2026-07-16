@@ -1,18 +1,19 @@
+using Avalonia;
+using AvaloniaEdit;
+using CommunityToolkit.Mvvm.ComponentModel;
+using MajdataEdit_Neo.Base;
+using MajdataEdit_Neo.Models;
+using MajdataEdit_Neo.Types;
+using MajdataEdit_Neo.Types.MajSetting;
+using MajdataEdit_Neo.Types.MajWs;
+using MajSimai;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Threading.Tasks;
-using Avalonia;
-using AvaloniaEdit;
-using CommunityToolkit.Mvvm.ComponentModel;
-using MajdataEdit_Neo.Models;
-using MajdataEdit_Neo.Types.MajWs;
-using MajdataEdit_Neo.Types.MajSetting;
-using MajSimai;
 using Types;
-using MajdataEdit_Neo.Types;
 
 namespace MajdataEdit_Neo.ViewModels.SubModels;
 
@@ -21,6 +22,8 @@ public partial class PlaybackModel : ViewModelBase
     private readonly IReadOnlyDocument _doc;
     private readonly Func<string> _getMaidataDir;
 
+    private readonly MemoryMappedFile mmfAudioTime = null!;
+    private readonly MemoryMappedViewAccessor mmvAudioTime = null!;
     public PlaybackModel(IReadOnlyDocument doc, Func<string> getMaidataDir)
     {
         _doc = doc;
@@ -32,6 +35,23 @@ public partial class PlaybackModel : ViewModelBase
         _playerConnection.OnLoadFinished += OnLoadFinished;
         _playerConnection.OnDisconnected += OnDisconnected;
         _playerConnection.OnViewStateChanged += OnViewStateChanged;
+
+        var mmfAudioTimeFileStream = new FileStream(
+            //这个文件在库里包含并在发布时也包含，避免第一次打开crash
+            Path.Combine(MajEnv.MajBase, "majdata_time.dat"),
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite
+        );
+        mmfAudioTime = MemoryMappedFile.CreateFromFile(
+            mmfAudioTimeFileStream,
+            null,
+            sizeof(float),
+            MemoryMappedFileAccess.Read,
+            HandleInheritability.None,
+            false
+        );
+        mmvAudioTime = mmfAudioTime.CreateViewAccessor(0, sizeof(float), MemoryMappedFileAccess.Read);
     }
 
     [ObservableProperty]
@@ -39,6 +59,8 @@ public partial class PlaybackModel : ViewModelBase
 
     [ObservableProperty]
     private double _trackTime = 0d;
+
+    partial void OnTrackTimeChanged(double value) => OnPropertyChanged(nameof(DisplayTime));
 
     [ObservableProperty]
     private float _trackZoomLevel = 4f;
@@ -236,6 +258,10 @@ public partial class PlaybackModel : ViewModelBase
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load editor: {ex}");
         }
+        finally
+        {
+            IsPlayControlEnabled = true;
+        }
     }
 
     public async Task PlayPause(PlayContext ctx, MajSetting settings)
@@ -402,6 +428,7 @@ public partial class PlaybackModel : ViewModelBase
         }
     }
 
+
     private async void OnPlayStarted(object sender, MajWsResponseType e)
     {
         CurrentViewState = ViewStatus.Playing;
@@ -409,17 +436,8 @@ public partial class PlaybackModel : ViewModelBase
 
         await Task.Run(async () =>
         {
-#if DEBUG
-            var mmfAudioTimePath = Path.Combine("/Users/re_poem/repos/MajdataViewX", "majdata_time.dat");
-#else
-            var mmfAudioTimePath = Path.Combine(MajdataEdit_Neo.Base.MajEnv.MajBase, "majdata_time.dat");
-#endif
-            MemoryMappedFile mmfAudioTime = null!;
-            MemoryMappedViewAccessor mmvAudioTime = null!;
             try
             {
-                mmfAudioTime = MemoryMappedFile.CreateFromFile(mmfAudioTimePath, FileMode.Open);
-                mmvAudioTime = mmfAudioTime.CreateViewAccessor();
                 while (_playerConnection.ViewSummary.State == ViewStatus.Playing &&
                        _playerConnection.IsConnected)
                 {
@@ -451,11 +469,6 @@ public partial class PlaybackModel : ViewModelBase
             {
                 System.Diagnostics.Debug.WriteLine($"Start Read Play Time MMV Err:{ex}");
             }
-            finally
-            {
-                mmvAudioTime?.Dispose();
-                mmfAudioTime?.Dispose();
-            }
         });
     }
 
@@ -485,6 +498,7 @@ public partial class PlaybackModel : ViewModelBase
     private void OnDisconnected(object? sender, EventArgs e)
     {
         OnPropertyChanged(nameof(IsConnected));
+        IsPlayControlEnabled = true;
     }
 
     private void OnViewStateChanged(object? sender, ViewStatus e)

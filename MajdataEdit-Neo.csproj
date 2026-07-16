@@ -85,6 +85,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="majdata_time.dat">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="simai.tmLanguage.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -114,4 +117,13 @@
 			<LastGenOutput>Langs.Designer.cs</LastGenOutput>
 		</EmbeddedResource>
 	</ItemGroup>
+
+	<Target Name="DeletePdbs" AfterTargets="Publish">
+		<ItemGroup>
+			<PdbFiles Include="$(PublishDir)libSkiaSharp.pdb" />
+			<PdbFiles Include="$(PublishDir)libHarfBuzzSharp.pdb" />
+		</ItemGroup>
+
+		<Delete Files="@(PdbFiles)" />
+	</Target>
 </Project>

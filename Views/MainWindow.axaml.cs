@@ -213,9 +213,10 @@ public partial class MainWindow : Window
         e.Cancel = true;
         haveAsked = true;
         viewModel.Settings.SetWindowLastState(this);
-        viewModel.OnWindowClosing();
-        if (!await viewModel.Session.AskSave())
+        var shouldClose = !await viewModel.Session.AskSave();
+        if (shouldClose)
         {
+            viewModel.OnWindowClosing();
             Process.GetProcessesByName("MajdataView").FirstOrDefault()?.Kill();
             this.Close();
         }

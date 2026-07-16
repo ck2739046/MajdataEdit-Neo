@@ -41,6 +41,7 @@ public partial class SettingsModel : ViewModelBase
     {
         Settings = new MajSetting();
         File.WriteAllText(SettingsFile, JsonConvert.SerializeObject(Settings, Formatting.Indented));
+        ReloadSettings();
     }
 
     private void ReadSettings()
