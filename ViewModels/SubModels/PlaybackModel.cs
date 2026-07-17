@@ -32,7 +32,6 @@ public partial class PlaybackModel : ViewModelBase
         _playerConnection.OnPlayStopped += OnPlayStopped;
         _playerConnection.OnLoadRequired += OnLoadRequired;
         _playerConnection.OnStopRequired += OnStopRequired;
-        _playerConnection.OnLoadFinished += OnLoadFinished;
         _playerConnection.OnDisconnected += OnDisconnected;
         _playerConnection.OnViewStateChanged += OnViewStateChanged;
 
@@ -70,9 +69,6 @@ public partial class PlaybackModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isFollowCursor;
-
-    [ObservableProperty]
-    private bool _isPlayControlEnabled = true;
 
     [ObservableProperty]
     private ViewStatus _currentViewState = ViewStatus.Idle;
@@ -236,7 +232,6 @@ public partial class PlaybackModel : ViewModelBase
     {
         try
         {
-            IsPlayControlEnabled = false;
             var useOgg = System.IO.File.Exists(maidataDir + "/track.ogg");
             var trackPath = maidataDir + "/track" + (useOgg ? ".ogg" : ".mp3");
 
@@ -258,56 +253,39 @@ public partial class PlaybackModel : ViewModelBase
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load editor: {ex}");
         }
-        finally
-        {
-            IsPlayControlEnabled = true;
-        }
     }
 
     public async Task PlayPause(PlayContext ctx, MajSetting settings)
     {
-        if (!IsPlayControlEnabled) return;
-        bool shouldRecoverPlayControl = true;
-        try
+        if (!await CheckPlayerConnectionAndReconnect(true))
         {
-            IsPlayControlEnabled = false;
-            if (!await CheckPlayerConnectionAndReconnect(true))
-            {
-                return;
-            }
+            return;
+        }
 
-            switch (_playerConnection.ViewSummary.State)
-            {
-                case ViewStatus.Playing:
-                    await _playerConnection.PauseAsync();
-                    return;
-                case ViewStatus.Paused:
-                    await _playerConnection.ResumeAsync();
-                    _playStartTime = TrackTime;
-                    _isLastPlayIncludeOp = false;
-                    return;
-            }
-            shouldRecoverPlayControl = false;
-            _playStartTime = TrackTime;
-            await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed,
-                ctx.Title, ctx.Artist, ctx.Offset,
-                ctx.Designer, ctx.Level, ctx.Fumen,
-                ctx.Commands, ctx.SelectedDifficulty);
-            _isLastPlayIncludeOp = false;
-        }
-        finally
+        switch (_playerConnection.ViewSummary.State)
         {
-            if (shouldRecoverPlayControl) IsPlayControlEnabled = true;
+            case ViewStatus.Playing:
+                await _playerConnection.PauseAsync();
+                return;
+            case ViewStatus.Paused:
+                await _playerConnection.ResumeAsync();
+                _playStartTime = TrackTime;
+                _isLastPlayIncludeOp = false;
+                return;
         }
+        _playStartTime = TrackTime;
+        await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
+        await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed,
+            ctx.Title, ctx.Artist, ctx.Offset,
+            ctx.Designer, ctx.Level, ctx.Fumen,
+            ctx.Commands, ctx.SelectedDifficulty);
+        _isLastPlayIncludeOp = false;
     }
 
     public async void Stop(bool toStart = true)
     {
-        if (IsPlayControlEnabled == false) return;
         try
         {
-            IsPlayControlEnabled = false;
             _isStopping = true;
             _isBackToStartOnPlayStop = toStart;
 
@@ -318,121 +296,78 @@ public partial class PlaybackModel : ViewModelBase
                 return;
             }
 
-            switch (_playerConnection.ViewSummary.State)
-            {
-                case ViewStatus.Playing:
-                case ViewStatus.Paused:
-                    break;
-                default:
-                    return;
-            }
             await _playerConnection.StopAsync();
         }
         finally
         {
             _isStopping = false;
-            IsPlayControlEnabled = true;
         }
     }
 
     public async Task PlayStop(PlayContext ctx, MajSetting settings)
     {
-        if (IsPlayControlEnabled == false) return;
-        bool shouldRecoverPlayControl = true;
-        try
+        if (!await CheckPlayerConnectionAndReconnect(true))
         {
-            IsPlayControlEnabled = false;
-            if (!await CheckPlayerConnectionAndReconnect(true))
-            {
-                TrackTime = _playStartTime;
-                return;
-            }
+            TrackTime = _playStartTime;
+            return;
+        }
 
-            switch (_playerConnection.ViewSummary.State)
-            {
-                case ViewStatus.Playing:
-                    _isBackToStartOnPlayStop = true;
-                    await _playerConnection.StopAsync();
-                    return;
-                case ViewStatus.Paused:
-                    await _playerConnection.ResumeAsync();
-                    _isLastPlayIncludeOp = false;
-                    _playStartTime = TrackTime;
-                    return;
-            }
-            shouldRecoverPlayControl = false;
-            _playStartTime = TrackTime;
-            await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed,
-                ctx.Title, ctx.Artist, ctx.Offset,
-                ctx.Designer, ctx.Level, ctx.Fumen,
-                ctx.Commands, ctx.SelectedDifficulty);
-            _isLastPlayIncludeOp = false;
-        }
-        finally
+        switch (_playerConnection.ViewSummary.State)
         {
-            if (shouldRecoverPlayControl) IsPlayControlEnabled = true;
+            case ViewStatus.Playing:
+                _isBackToStartOnPlayStop = true;
+                await _playerConnection.StopAsync();
+                return;
+            case ViewStatus.Paused:
+                await _playerConnection.ResumeAsync();
+                _isLastPlayIncludeOp = false;
+                _playStartTime = TrackTime;
+                return;
         }
+        _playStartTime = TrackTime;
+        await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
+        await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed,
+            ctx.Title, ctx.Artist, ctx.Offset,
+            ctx.Designer, ctx.Level, ctx.Fumen,
+            ctx.Commands, ctx.SelectedDifficulty);
+        _isLastPlayIncludeOp = false;
     }
 
     public async Task PlayIncludeOp(PlayContext ctx, MajSetting settings)
     {
-        if (IsPlayControlEnabled == false) return;
-        bool shouldRecoverPlayControl = true;
-        try
+        if (!await CheckPlayerConnectionAndReconnect(true))
         {
-            IsPlayControlEnabled = false;
-            if (!await CheckPlayerConnectionAndReconnect(true))
-            {
-                return;
-            }
-            shouldRecoverPlayControl = false;
-            _playStartTime = TrackTime;
-            await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, _playStartTime, PlaybackSpeed,
-                ctx.Title, ctx.Artist, ctx.Offset,
-                ctx.Designer, ctx.Level, ctx.Fumen,
-                ctx.Commands, ctx.SelectedDifficulty);
-            _isLastPlayIncludeOp = true;
+            return;
         }
-        finally
-        {
-            if (shouldRecoverPlayControl) IsPlayControlEnabled = true;
-        }
+        _playStartTime = TrackTime;
+        await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
+        await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, _playStartTime, PlaybackSpeed,
+            ctx.Title, ctx.Artist, ctx.Offset,
+            ctx.Designer, ctx.Level, ctx.Fumen,
+            ctx.Commands, ctx.SelectedDifficulty);
+        _isLastPlayIncludeOp = true;
     }
 
     public async Task PlayRecord(PlayContext ctx, MajSetting settings, string maidataDir)
     {
-        if (IsPlayControlEnabled == false) return;
-        bool shouldRecoverPlayControl = true;
-        try
+        if (!await CheckPlayerConnectionAndReconnect(true))
         {
-            IsPlayControlEnabled = false;
-            if (!await CheckPlayerConnectionAndReconnect(true))
-            {
-                return;
-            }
+            return;
+        }
 
-            shouldRecoverPlayControl = false;
-            _playStartTime = TrackTime;
-            await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, _playStartTime, PlaybackSpeed,
-                ctx.Title, ctx.Artist, ctx.Offset,
-                ctx.Designer, ctx.Level, ctx.Fumen,
-                ctx.Commands, ctx.SelectedDifficulty, maidataDir);
-            _isLastPlayIncludeOp = false;
-        }
-        finally
-        {
-            if (shouldRecoverPlayControl) IsPlayControlEnabled = true;
-        }
+        _playStartTime = TrackTime;
+        await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
+        await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, _playStartTime, PlaybackSpeed,
+            ctx.Title, ctx.Artist, ctx.Offset,
+            ctx.Designer, ctx.Level, ctx.Fumen,
+            ctx.Commands, ctx.SelectedDifficulty, maidataDir);
+        _isLastPlayIncludeOp = false;
     }
 
 
     private async void OnPlayStarted(object sender, MajWsResponseType e)
     {
         CurrentViewState = ViewStatus.Playing;
-        IsPlayControlEnabled = true;
 
         await Task.Run(async () =>
         {
@@ -477,7 +412,6 @@ public partial class PlaybackModel : ViewModelBase
         await Task.Delay(32); // Wait the OnPlayStarted Loop to end
         CurrentViewState = ViewStatus.Idle;
         if (_isBackToStartOnPlayStop) TrackTime = _playStartTime;
-        IsPlayControlEnabled = true;
     }
 
     private async void OnLoadRequired(object? sender, EventArgs e)
@@ -490,15 +424,9 @@ public partial class PlaybackModel : ViewModelBase
         Stop();
     }
 
-    private void OnLoadFinished(object? sender, EventArgs e)
-    {
-        IsPlayControlEnabled = true;
-    }
-
     private void OnDisconnected(object? sender, EventArgs e)
     {
         OnPropertyChanged(nameof(IsConnected));
-        IsPlayControlEnabled = true;
     }
 
     private void OnViewStateChanged(object? sender, ViewStatus e)

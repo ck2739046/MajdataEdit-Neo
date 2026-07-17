@@ -147,7 +147,7 @@
                           IsChecked="{Binding Session.Playback.IsFollowCursor}" FontSize="12" Content="{local:I18N Gui_FollowCursor}"/>
 				<StackPanel Orientation="Horizontal" Margin="9 0 0 0">
 					<CheckBox IsChecked="{Binding Session.Playback.IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
-					<Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+z"
+					<Button HotKey="Ctrl+Shift+z"
                             Command="{Binding PlayIncludeOpCommand}" Width="64" Content="{local:I18N Gui_Record}"/>
 				</StackPanel>
 				<Label Content="{local:I18N Gui_Connected}" FontSize="8" Margin="-4 -11 0 0"/>
@@ -155,12 +155,12 @@
 
 
 
-			<Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+z" Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
+			<Button HotKey="Ctrl+Shift+z" Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
                     Command="{Binding StopCommand}">
 				<PathIcon Width="13" Data="{StaticResource stop}"/>
 			</Button>
 
-			<Button IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+x" Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
+			<Button HotKey="Ctrl+Shift+x" Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
                     Command="{Binding PlayPauseCommand}">
 				<PathIcon Data="{StaticResource play_pause}"/>
 			</Button>
@@ -229,7 +229,7 @@
 			<Button IsVisible="False" HotKey="Ctrl+S"  Command="{Binding SaveFileCommand}"/>
 			<Button IsVisible="False" HotKey="Ctrl+O" Command="{Binding IncreasePlaybackSpeedCommand}"/>
 			<Button IsVisible="False" HotKey="Ctrl+P" Command="{Binding DecreasePlaybackSpeedCommand}"/>
-			<Button IsVisible="False" IsEnabled="{Binding Session.Playback.IsPlayControlEnabled}" HotKey="Ctrl+Shift+C" Command="{Binding PlayStopCommand}"/>
+			<Button IsVisible="False" HotKey="Ctrl+Shift+C" Command="{Binding PlayStopCommand}"/>
 		</Grid>
 		<DockPanel >
 			<Image DockPanel.Dock="Right"
