@@ -187,7 +187,7 @@
     <value>BPM 测速</value>
   </data>
   <data name="Gui_CompressBgVideo" xml:space="preserve">
-    <value>压缩 bg.mp4</value>
+    <value>压缩背景视频</value>
   </data>
   <data name="Gui_About" xml:space="preserve">
     <value>关于</value>
