@@ -76,9 +76,6 @@ public partial class PlaybackModel : ViewModelBase
     [ObservableProperty]
     private int _currentCombo = 0;
 
-    [ObservableProperty]
-    private int _caretLine = 1;
-
     internal readonly PlayerConnection _playerConnection = new();
     internal double _playStartTime = 0d;
     internal bool _isBackToStartOnPlayStop = false;
@@ -434,14 +431,3 @@ public partial class PlaybackModel : ViewModelBase
         CurrentViewState = e;
     }
 }
-
-
-
-
-
-
-
-
-
-
-

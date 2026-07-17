@@ -56,6 +56,7 @@ public partial class MainWindow : Window
 
     //behind elements
     readonly DispatcherTimer _debounceTimer;
+    bool _isTextChangedBeforeCaretMoving;
 
 
     string? _currentTooltipMessage;
@@ -240,9 +241,15 @@ public partial class MainWindow : Window
 
     private void Caret_PositionChanged(object? sender, EventArgs e)
     {
-        var seek = textEditor.SelectionStart;
+        if (_isTextChangedBeforeCaretMoving)
+        {
+            // _isTextChangedBeforeCaretMoving = false;
+            // in TextEditor_DebouncedTextChanged
+            return;
+        }
+
+        var seek = textEditor.CaretOffset;
         viewModel.Session.Playback.SetCaretTime(seek, IsCtrlKeyDown);
-        viewModel.Session.Playback.CaretLine = textEditor.TextArea.Caret.Line;
     }
 
     static double? lastX = null;
@@ -391,10 +398,9 @@ public partial class MainWindow : Window
 
     private void TextEditor_TextChanged(object? sender, EventArgs e)
     {
+        _isTextChangedBeforeCaretMoving = true;
         _debounceTimer.Stop();
         _debounceTimer.Start();
-        var seek = textEditor.SelectionStart;
-        viewModel.Session.Playback.SetCaretTime(seek, IsCtrlKeyDown);
     }
     private void _debounceTimer_Tick(object? sender, EventArgs e)
     {
@@ -404,6 +410,13 @@ public partial class MainWindow : Window
     private async void TextEditor_DebouncedTextChanged()
     {
         await viewModel.Session.Doc.SetFumenContent(textEditor.Text);
+        var seek = textEditor.CaretOffset;
+        viewModel.Session.Playback.SetCaretTime(seek, IsCtrlKeyDown); // 等parse完才能找到对的位
+        _isTextChangedBeforeCaretMoving = false;
+        // WHY SET false FUCKING HERE?
+        // AvaloniaEdit will trigger Caret_PositionChanged twice 
+        // after TextEditor_TextChanged...
+
         var fumen = viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen;
 
         var diags = await Task.Run(() => SimaiChecker.Check(fumen));
