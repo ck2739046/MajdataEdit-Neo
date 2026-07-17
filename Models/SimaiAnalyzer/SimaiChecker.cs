@@ -16,8 +16,9 @@ public static class SimaiChecker
     public static IReadOnlyList<SimaiDiagnostic> Check(string fumen)
     {
         var context = new CheckerContext(fumen);
+        var endMarkerIndex = FindEndMarkerIndex(fumen);
 
-        var (cleanedFumen, positionMap, newlines) = PreprocessNewlines(fumen, context);
+        var (cleanedFumen, positionMap, newlines) = PreprocessNewlines(fumen, context, endMarkerIndex);
 
         var segments = SplitIntoSegments(cleanedFumen, positionMap, context);
 
@@ -28,8 +29,25 @@ public static class SimaiChecker
         return context.Diagnostics;
     }
 
+    private static int FindEndMarkerIndex(ReadOnlySpan<char> fumen)
+    {
+        var index = fumen.Length - 1;
+        while (index >= 0 && char.IsWhiteSpace(fumen[index]))
+        {
+            index--;
+        }
+
+        if (index < 0 || fumen[index] != 'E')
+            return -1;
+
+        if (index > 0 && fumen[index - 1] != ',' && !char.IsWhiteSpace(fumen[index - 1]))
+            return -1;
+
+        return index;
+    }
+
     private static (string CleanedFumen, List<TextPosition> PositionMap, List<(int Index, TextPosition OriginalPos)> Newlines)
-        PreprocessNewlines(string fumen, CheckerContext context)
+        PreprocessNewlines(string fumen, CheckerContext context, int endMarkerIndex)
     {
         var cleanedChars = new List<char>();
         var positionMap = new List<TextPosition>();
@@ -41,6 +59,12 @@ public static class SimaiChecker
         for (var i = 0; i < fumen.Length; i++)
         {
             var c = fumen[i];
+
+            if (i == endMarkerIndex)
+            {
+                originalPos = originalPos.Advance(c);
+                continue;
+            }
 
             if (inComment)
             {
@@ -82,12 +106,6 @@ public static class SimaiChecker
             cleanedChars.Add(c);
             positionMap.Add(originalPos);
             originalPos = originalPos.Advance(c);
-        }
-
-        if (cleanedChars.Count > 0 && cleanedChars[^1] == 'E')
-        {
-            cleanedChars.RemoveAt(cleanedChars.Count - 1);
-            positionMap.RemoveAt(positionMap.Count - 1);
         }
 
         var cleanedFumen = new string(cleanedChars.ToArray());
