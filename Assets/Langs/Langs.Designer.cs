@@ -88,15 +88,6 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
-        ///   查找类似 Error 的本地化字符串。
-        /// </summary>
-        internal static string Error {
-            get {
-                return ResourceManager.GetString("Error", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 About 的本地化字符串。
         /// </summary>
         internal static string Gui_About {
@@ -273,6 +264,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static string Gui_FreezeFrame {
             get {
                 return ResourceManager.GetString("Gui_FreezeFrame", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Info 的本地化字符串。
+        /// </summary>
+        internal static string Gui_Info {
+            get {
+                return ResourceManager.GetString("Gui_Info", resourceCulture);
             }
         }
         
@@ -507,6 +507,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static string Gui_Warning {
             get {
                 return ResourceManager.GetString("Gui_Warning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Close View? 的本地化字符串。
+        /// </summary>
+        internal static string Msg_AskCloseView {
+            get {
+                return ResourceManager.GetString("Msg_AskCloseView", resourceCulture);
             }
         }
         

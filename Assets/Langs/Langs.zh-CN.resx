@@ -414,9 +414,6 @@
   <data name="Gui_NewChartFromVideo" xml:space="preserve">
     <value>从视频新建谱面</value>
   </data>
-  <data name="Error" xml:space="preserve">
-    <value>错误</value>
-  </data>
   <data name="Msg_BgTooLarge" xml:space="preserve">
     <value>bg.mp4体积过大，是否进行压缩？</value>
   </data>
@@ -437,5 +434,11 @@
   </data>
   <data name="Set_WordWrap" xml:space="preserve">
     <value>自动换行</value>
+  </data>
+  <data name="Gui_Info" xml:space="preserve">
+    <value>信息</value>
+  </data>
+  <data name="Msg_AskCloseView" xml:space="preserve">
+    <value>是否关闭View？</value>
   </data>
 </root>

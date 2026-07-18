@@ -1,25 +1,29 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
-using Avalonia.Data;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
+using MajdataEdit_Neo.Assets.Langs;
+using MajdataEdit_Neo.Base;
 using MajdataEdit_Neo.Controls;
 using MajdataEdit_Neo.Extensions;
 using MajdataEdit_Neo.Models;
-using MajdataEdit_Neo.Types;
-using MajdataEdit_Neo.Types.Plugin;
 using MajdataEdit_Neo.Models.SimaiAnalyzer;
+using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Types.MajSetting;
+using MajdataEdit_Neo.Types.Plugin;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
+using MajdataEdit_Neo.Utils;
 using MajdataEdit_Neo.ViewModels;
+using MajdataEdit_Neo.ViewModels.SubModels;
 using MsBox.Avalonia.Enums;
 using System;
 using System.Collections.Generic;
@@ -28,13 +32,11 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using MajdataEdit_Neo.Base;
 using TextMateSharp.Grammars;
 using TextMateSharp.Registry;
-using MsBoxIcon = MsBox.Avalonia.Enums.Icon;
 using static MajdataEdit_Neo.Base.MajEnv;
 using static MajdataEdit_Neo.Utils.FFmpegChecker;
-using MajdataEdit_Neo.ViewModels.SubModels;
+using MsBoxIcon = MsBox.Avalonia.Enums.Icon;
 
 namespace MajdataEdit_Neo.Views;
 
@@ -218,7 +220,15 @@ public partial class MainWindow : Window
         if (shouldClose)
         {
             viewModel.OnWindowClosing();
-            Process.GetProcessesByName("MajdataView").FirstOrDefault()?.Kill();
+            var result = await MessageBox.ShowWindowDialogAsync(
+                Langs.Msg_AskCloseView,
+                Langs.Gui_Info,
+                ButtonEnum.YesNo,
+                MsBox.Avalonia.Enums.Icon.Info);
+            if (result == ButtonResult.Yes)
+            {
+                Process.GetProcessesByName("MajdataViewX").FirstOrDefault()?.Kill();
+            }
             this.Close();
         }
         else haveAsked = false;
