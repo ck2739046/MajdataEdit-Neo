@@ -132,17 +132,24 @@ public partial class FileSessionModel : ViewModelBase
     {
         SaveEditRecord();
 
-        MaidataDir = directory;
-        File.Create(Path.Combine(MaidataDir, "maidata.txt")).Dispose();
+        File.Create(Path.Combine(directory, "maidata.txt")).Dispose();
         var levels = new SimaiChart[7];
+        var metadata = new MutSimaiChartMetadata[7];
         for (var i = 0; i < 7; i++)
+        {
             levels[i] = new SimaiChart(string.Empty, string.Empty, string.Empty, []);
-        SongTrackInfo = _trackReader.ReadTrack(MaidataDir);
+            metadata[i] = new MutSimaiChartMetadata();
+        }
+        var songTrackInfo = _trackReader.ReadTrack(directory);
 
         _editTimer.Reset();
         _editTimer.Start();
 
+        MaidataDir = directory;
+        SongTrackInfo = songTrackInfo;
+        Doc.CurrentChartMetadata = metadata;
         Doc.CurrentSimaiFile = new SimaiFile("Set Title", "Set Artist", 0, string.Empty, levels, null);
+        Doc.SelectedDifficulty = 0;
         Doc.IsSaved = false;
         AutoSave.Enabled = true;
         AutoSave.SetContent("");
@@ -200,11 +207,13 @@ public partial class FileSessionModel : ViewModelBase
     {
         SaveEditRecord();
 
-        var simaiFile = await SimaiParser.ParseAsync(new FileStream(maidataPath, FileMode.Open, FileAccess.Read));
+        await using var maidataStream = new FileStream(maidataPath, FileMode.Open, FileAccess.Read);
+        var simaiFile = await SimaiParser.ParseAsync(maidataStream);
+        var metadata = new MutSimaiChartMetadata[7];
         for (var i = 0; i < 7; i++)
         {
             var chart = simaiFile.Charts[i];
-            Doc.CurrentChartMetadata[i] = new MutSimaiChartMetadata
+            metadata[i] = new MutSimaiChartMetadata
             {
                 Level = chart.Level,
                 Designer = chart.Designer,
@@ -214,10 +223,12 @@ public partial class FileSessionModel : ViewModelBase
         var fileInfo = new FileInfo(maidataPath);
         var directory = fileInfo.Directory?.FullName;
         if (directory is null) return;
-        MaidataDir = directory;
-        SongTrackInfo = _trackReader.ReadTrack(MaidataDir);
+        var songTrackInfo = _trackReader.ReadTrack(directory);
         var content = await File.ReadAllTextAsync(maidataPath);
 
+        MaidataDir = directory;
+        SongTrackInfo = songTrackInfo;
+        Doc.CurrentChartMetadata = metadata;
         Doc.CurrentSimaiFile = simaiFile;
         AutoSave.Enabled = true;
         AutoSave.SetContent(content);
@@ -266,11 +277,13 @@ public partial class FileSessionModel : ViewModelBase
 
         for (var i = 0; i < 7; i++)
         {
+            var parsedChart = Doc.CurrentSimaiFile.Charts[i];
             Doc.CurrentSimaiFile.Charts[i] = new SimaiChart(
                 Doc.CurrentChartMetadata[i].Level,
                 Doc.CurrentChartMetadata[i].Designer,
                 Doc.CurrentChartMetadata[i].Fumen,
-                ReadOnlySpan<SimaiTimingPoint>.Empty);
+                parsedChart.NoteTimings,
+                parsedChart.CommaTimings);
         }
         await SimaiParser.DeparseAsync(Doc.CurrentSimaiFile,
             new FileStream(Path.Combine(MaidataDir, "maidata.txt"), FileMode.Create, FileAccess.Write));

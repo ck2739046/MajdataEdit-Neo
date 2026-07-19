@@ -59,6 +59,7 @@ public partial class MainWindow : Window
     //behind elements
     readonly DispatcherTimer _debounceTimer;
     bool _isTextChangedBeforeCaretMoving;
+    bool _isHandlingCtrlClick;
 
 
     string? _currentTooltipMessage;
@@ -97,6 +98,7 @@ public partial class MainWindow : Window
         textEditor.TextArea.TextEntered += TextEditor_TextArea_TextEntered;
         textEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
         textEditor.TextArea.AddHandler(InputElement.KeyDownEvent, TextEditor_PreviewKeyDown, RoutingStrategies.Tunnel);
+        textEditor.TextArea.AddHandler(InputElement.PointerPressedEvent, TextEditor_PreviewPointerPressed, RoutingStrategies.Tunnel);
         textEditor.Options.HighlightCurrentLine = true;
         textEditor.Options.EnableTextDragDrop = true;
         var _registryOptions = new RegistryOptions(ThemeName.DarkPlus);
@@ -122,8 +124,8 @@ public partial class MainWindow : Window
         speed = this.FindControl<NumericUpDown>("Speed")!;
         speed.PointerWheelChanged += Speed_PointerWheelChanged;
         //this window
-        this.KeyDown += MainWindow_KeyDown;
-        this.KeyUp += MainWindow_KeyUp;
+        this.AddHandler(InputElement.KeyDownEvent, MainWindow_KeyDown, RoutingStrategies.Tunnel, true);
+        this.AddHandler(InputElement.KeyUpEvent, MainWindow_KeyUp, RoutingStrategies.Tunnel, true);
         this.LostFocus += MainWindow_LostFocus;
         this.Closing += MainWindow_Closing;
         this.Loaded += MainWindow_Loaded;
@@ -219,16 +221,21 @@ public partial class MainWindow : Window
         var shouldClose = !await viewModel.Session.AskSave();
         if (shouldClose)
         {
-            viewModel.OnWindowClosing();
-            var result = await MessageBox.ShowWindowDialogAsync(
-                Langs.Msg_AskCloseView,
-                Langs.Gui_Info,
-                ButtonEnum.YesNo,
-                MsBox.Avalonia.Enums.Icon.Info);
-            if (result == ButtonResult.Yes)
+            var viewx = Process.GetProcessesByName("MajdataViewX");
+            if (viewx.Length > 0)
             {
-                Process.GetProcessesByName("MajdataViewX").FirstOrDefault()?.Kill();
+                var result = await MessageBox.ShowWindowDialogAsync(
+                    Langs.Msg_AskCloseView,
+                    Langs.Gui_Info,
+                    ButtonEnum.YesNo,
+                    MsBox.Avalonia.Enums.Icon.Info);
+                if (result == ButtonResult.Yes)
+                {
+                    viewx.FirstOrDefault()?.Kill();
+                }
             }
+
+            viewModel.OnWindowClosing();
             this.Close();
         }
         else haveAsked = false;
@@ -251,7 +258,7 @@ public partial class MainWindow : Window
 
     private void Caret_PositionChanged(object? sender, EventArgs e)
     {
-        if (_isTextChangedBeforeCaretMoving)
+        if (_isTextChangedBeforeCaretMoving || _isHandlingCtrlClick)
         {
             // _isTextChangedBeforeCaretMoving = false;
             // in TextEditor_DebouncedTextChanged
@@ -405,6 +412,38 @@ public partial class MainWindow : Window
             }
         }
     }
+    private void TextEditor_PreviewPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        //fix: sb avalonia edit 整词拖选
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) ||
+            e.KeyModifiers.HasFlag(KeyModifiers.Shift) ||
+            !e.GetCurrentPoint(textEditor.TextArea).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        var textView = textEditor.TextArea.TextView;
+        var visualPosition = textView.GetPosition(e.GetPosition(textView) + textView.ScrollOffset);
+        if (visualPosition is null)
+        {
+            return;
+        }
+
+        var offset = textEditor.Document.GetOffset(visualPosition.Value.Line, visualPosition.Value.Column);
+        _isHandlingCtrlClick = true;
+        try
+        {
+            textEditor.Select(offset, 0);
+            textEditor.TextArea.Focus();
+        }
+        finally
+        {
+            _isHandlingCtrlClick = false;
+        }
+
+        viewModel.Session.Playback.SetCaretTime(offset, true);
+        e.Handled = true;
+    }
 
     private void TextEditor_TextChanged(object? sender, EventArgs e)
     {
@@ -421,7 +460,8 @@ public partial class MainWindow : Window
     {
         await viewModel.Session.Doc.SetFumenContent(textEditor.Text);
         var seek = textEditor.CaretOffset;
-        viewModel.Session.Playback.SetCaretTime(seek, IsCtrlKeyDown); // 等parse完才能找到对的位
+        // Text edits (especially Ctrl+V) update the parsed caret timing, but must not seek playback.
+        viewModel.Session.Playback.SetCaretTime(seek, false); // 等parse完才能找到对的位
         _isTextChangedBeforeCaretMoving = false;
         // WHY SET false FUCKING HERE?
         // AvaloniaEdit will trigger Caret_PositionChanged twice 

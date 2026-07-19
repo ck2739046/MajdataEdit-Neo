@@ -42,7 +42,7 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
     internal partial MutSimaiChartMetadata[] CurrentChartMetadata { get; set; } = new MutSimaiChartMetadata[7];
 
     [ObservableProperty]
-    public partial SimaiChart CurrentChartData { get; set; }
+    public partial SimaiChart CurrentChartData { get; set; } = SimaiChart.Empty;
 
     //------editor state
 
@@ -176,7 +176,7 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
 
     public DocumentModel()
     {
-        for (var i = 0; i < 7; i++) CurrentChartMetadata[i] = MutSimaiChartMetadata.Empty;
+        for (var i = 0; i < 7; i++) CurrentChartMetadata[i] = new MutSimaiChartMetadata();
     }
 
     //------methods
@@ -185,6 +185,7 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
     {
         if (CurrentSimaiFile is null)
         {
+            CurrentChartData = SimaiChart.Empty;
             if (_fumenDocument.Text != string.Empty)
             {
                 _fumenDocument.Text = string.Empty;
@@ -194,8 +195,14 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
             return;
         }
 
-        var fumenContent = CurrentChartMetadata[SelectedDifficulty].Fumen ?? string.Empty;
+        var difficulty = SelectedDifficulty;
+        var metadata = CurrentChartMetadata[difficulty];
+        var fumenContent = metadata.Fumen ?? string.Empty;
         OriginFumen = fumenContent;
+        CurrentChartData = string.IsNullOrEmpty(fumenContent)
+            ? SimaiChart.Empty
+            : CurrentSimaiFile.Charts[difficulty];
+
         if (_fumenDocument.Text != fumenContent)
         {
             _fumenDocument.Text = fumenContent;
@@ -205,25 +212,41 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
 
     public async Task SetFumenContent(string content)
     {
-        if (CurrentSimaiFile is null) return;
+        var simaiFile = CurrentSimaiFile;
+        if (simaiFile is null) return;
         content ??= string.Empty;
 
-        CurrentChartMetadata[SelectedDifficulty].Fumen = content;
+        var difficulty = SelectedDifficulty;
+        var metadata = CurrentChartMetadata[difficulty];
+        metadata.Fumen = content;
+        UpdateFumenContextChanged();
+
+        if (string.IsNullOrEmpty(content))
+        {
+            simaiFile.Charts[difficulty] = SimaiChart.Empty;
+            if (ReferenceEquals(CurrentSimaiFile, simaiFile) && SelectedDifficulty == difficulty)
+                CurrentChartData = SimaiChart.Empty;
+            return;
+        }
+
         try
         {
-            var data = await Task.Run(async () =>
+            var data = await SimaiParser.ParseChartAsync(string.Empty, string.Empty, content);
+
+            if (!ReferenceEquals(CurrentSimaiFile, simaiFile) ||
+                CurrentChartMetadata[difficulty].Fumen != content)
             {
-                var parsed = await SimaiParser.ParseChartAsync(string.Empty, string.Empty, content);
-                return parsed;
-            });
-            CurrentChartData = data;
+                return;
+            }
+
+            simaiFile.Charts[difficulty] = data;
+            if (SelectedDifficulty == difficulty)
+                CurrentChartData = data;
         }
         catch (Exception ex)
         {
             Debug.WriteLine(ex);
         }
-
-        UpdateFumenContextChanged();
     }
 
     public SimaiTimingPoint? GetNearestCommaTimingFromPos(int rawPosition)

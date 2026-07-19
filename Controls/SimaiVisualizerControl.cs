@@ -17,6 +17,8 @@ namespace MajdataEdit_Neo.Controls;
 
 class SimaiVisualizerControl : Control
 {
+    private static readonly SimaiChart EmptyChart = SimaiChart.Empty;
+
     //Set the properties
     //The naming of this should be strictly followed "Xxx" and "XxxProperty"
     public static readonly DirectProperty<SimaiVisualizerControl, double> TimeProperty =
@@ -143,6 +145,7 @@ class SimaiVisualizerControl : Control
         private readonly bool _isAnimated;
         public static bool NeedsRender { get; set; }
         private static SimaiChart? _lastSimaiChart;
+        private static float _lastOffset = float.NaN;
 
         // Cached resources to avoid per-frame allocations
         static readonly SKTypeface ConsolasBold = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Bold);
@@ -223,7 +226,6 @@ class SimaiVisualizerControl : Control
         public void Render(ImmediateDrawingContext context)
         {
             if (_trackInfo is null) return;
-            if (_simaiChart is null) return;
             var leaseFeature = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
             if (leaseFeature == null)
                 Debug.WriteLine("SkiaSharp lease feature not available. Cannot render waveform.");
@@ -254,7 +256,7 @@ class SimaiVisualizerControl : Control
                 }
 
                 _lastZoom += 0.2 * (_zoomLevel - _lastZoom);
-                
+
                 NeedsRender = _isAnimated && (Math.Abs(_time - _lastTime) > 0.005 || Math.Abs(_zoomLevel - _lastZoom) > 0.005);
 
                 var waveLevels = _trackInfo.RawWave;
@@ -287,9 +289,10 @@ class SimaiVisualizerControl : Control
                 paint.IsAntialias = true;
 
                 //Draw Bpm Lines
-                if (!ReferenceEquals(_simaiChart, _lastSimaiChart))
+                if (!ReferenceEquals(_simaiChart, _lastSimaiChart) || _offset != _lastOffset)
                 {
                     _lastSimaiChart = _simaiChart;
+                    _lastOffset = _offset;
                     var lastbpm = -1f;
                     BpmChangeTimes.Clear();
                     BpmChangeValues.Clear();
@@ -355,7 +358,7 @@ class SimaiVisualizerControl : Control
 
                 for (var i = 1; i < BpmChangeTimes.Count; i++)
                 {
-                    time = BpmChangeTimes[i-1];
+                    time = BpmChangeTimes[i - 1];
                     if (time - currentTime > deltatime) continue;
                     var x = ((float)(time / step) - startindex) * linewidth;
                     canvas.DrawText(BpmChangeValues[i - 1].ToString(), (float)x + 3f, 10, TextFont, paint);
@@ -544,11 +547,11 @@ class SimaiVisualizerControl : Control
     }
     public override void Render(DrawingContext context)
     {
-        if (TrackIf == null || SimaiChart == null) return;
-        
+        if (TrackIf == null) return;
+
         context.Custom(new CustomDrawOp(new Rect(0, 0, Bounds.Width, Bounds.Height),
-            TrackIf, Time, ZoomLevel, SimaiChart, Signatures, Offset, CaretTime, IsAnimated));
-        
+            TrackIf, Time, ZoomLevel, SimaiChart ?? EmptyChart, Signatures ?? [], Offset, CaretTime, IsAnimated));
+
         if (CustomDrawOp.NeedsRender)
         {
             Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
