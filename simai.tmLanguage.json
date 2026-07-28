@@ -33,9 +33,9 @@
       "match": "^E$"
     },
     "hs-modifier": {
-      "comment": "Hi-Speed modifier like <HS*2>, <HS*-1>, <HS*0.7>",
+      "comment": "Speed modifier like <HS*2>, <SV*1.4>, <HS*-1>",
       "name": "entity.name.tag.hs.simai",
-      "match": "<HS\\*-?[0-9]+\\.?[0-9]*>"
+      "match": "<(?:HS|SV)\\*-?[0-9]+\\.?[0-9]*>"
     },
     "bpm": {
       "comment": "BPM change like (120), (253.25)",
