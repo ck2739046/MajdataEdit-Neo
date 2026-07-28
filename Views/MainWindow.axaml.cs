@@ -266,7 +266,7 @@ public partial class MainWindow : Window
         }
 
         var seek = textEditor.CaretOffset;
-        viewModel.Session.Playback.SetCaretTime(seek, IsCtrlKeyDown);
+        UpdateCaretPosition(seek, IsCtrlKeyDown);
     }
 
     static double? lastX = null;
@@ -441,7 +441,7 @@ public partial class MainWindow : Window
             _isHandlingCtrlClick = false;
         }
 
-        viewModel.Session.Playback.SetCaretTime(offset, true);
+        UpdateCaretPosition(offset, true);
         e.Handled = true;
     }
 
@@ -461,7 +461,7 @@ public partial class MainWindow : Window
         await viewModel.Session.Doc.SetFumenContent(textEditor.Text);
         var seek = textEditor.CaretOffset;
         // Text edits (especially Ctrl+V) update the parsed caret timing, but must not seek playback.
-        viewModel.Session.Playback.SetCaretTime(seek, false); // 等parse完才能找到对的位
+        UpdateCaretPosition(seek, false); // 等parse完才能找到对的位
         _isTextChangedBeforeCaretMoving = false;
         // WHY SET false FUCKING HERE?
         // AvaloniaEdit will trigger Caret_PositionChanged twice 
@@ -553,6 +553,14 @@ public partial class MainWindow : Window
         editor.Select(offset, 0);
         editor.ScrollTo((int)position.Y + 1, (int)position.X);
         editor.Focus();
+    }
+
+    private void UpdateCaretPosition(int offset, bool setTrackTime)
+    {
+        viewModel.Session.Playback.SetCaretPosition(
+            offset,
+            textEditor.TextArea.Caret.Line,
+            setTrackTime);
     }
 
     protected override void OnDataContextChanged(EventArgs e)

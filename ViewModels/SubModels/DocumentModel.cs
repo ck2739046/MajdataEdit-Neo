@@ -57,14 +57,6 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
     [ObservableProperty]
     public partial List<(double, int, int)> Signatures { get; set; } = [(0, 4, 4)];
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(DisplayLineComboText))]
-    public partial int CaretLine { get; set; } = 1;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(DisplayLineComboText))]
-    public partial int CaretCombo { get; set; } = 0;
-
     //------internal state
 
     internal readonly TextDocument _fumenDocument = new();
@@ -77,9 +69,6 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
     //------derived properties
 
     public bool IsLoaded => CurrentSimaiFile is not null;
-
-    public string DisplayLineComboText =>
-        $"L {CaretLine}  Cb {CaretCombo}";
 
     public int SimaiDiagnosticsCount =>
         SimaiDiagnostics?.Count(o => o.Severity == Severity.Error) ?? 0;
@@ -264,24 +253,6 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
             }
         }
         return nearestTiming;
-    }
-
-    /// <summary>
-    /// 设置光标时间和combo（由View在光标位置变化时调用）
-    /// </summary>
-    public void SetCaretInfo(int rawPosition)
-    {
-        if (CurrentChartData is null) return;
-
-        var notes = CurrentChartData.NoteTimings;
-        var currentCombo = 0;
-        foreach (var note in notes)
-        {
-            if (note.RawTextPosition >= rawPosition)
-                break;
-            currentCombo += note.Notes.Length;
-        }
-        CaretCombo = currentCombo;
     }
 
     /// <summary>

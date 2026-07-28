@@ -100,7 +100,7 @@
 				<Label Height="90" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
                        Content="{Binding Session.Playback.DisplayTime}" Padding="0 30 0 0"/>
 				<Label Height="30" Name="LineCombo" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Content="{Binding Session.Doc.DisplayLineComboText}" Padding="0 0 0 0"/>
+                       Content="{Binding Session.Playback.DisplayLineComboText}" Padding="0 0 0 0"/>
 
 				<ComboBox Name="Difficulty"
                           Width="116" VerticalAlignment="Center"

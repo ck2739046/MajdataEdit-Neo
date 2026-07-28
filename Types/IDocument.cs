@@ -20,15 +20,12 @@ public interface IReadOnlyDocument
     string Designer { get; }
     string OriginFumen { get; }
     bool IsFumenContextChanged { get; }
-    int CaretLine { get; }
-    int CaretCombo { get; }
 }
 
 public interface IMutableDocument : IReadOnlyDocument
 {
     Task SetFumenContent(string content);
     void RefreshFumenDocument();
-    void SetCaretInfo(int rawPosition);
     new float Offset { get; set; }
     new string Level { get; set; }
     new string Designer { get; set; }

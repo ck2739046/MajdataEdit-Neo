@@ -74,7 +74,12 @@ public partial class PlaybackModel : ViewModelBase
     private ViewStatus _currentViewState = ViewStatus.Idle;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayLineComboText))]
     private int _currentCombo = 0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayLineComboText))]
+    private int _caretLine = 1;
 
     internal readonly PlayerConnection _playerConnection = new();
     internal double _playStartTime = 0d;
@@ -87,6 +92,8 @@ public partial class PlaybackModel : ViewModelBase
 
 
     public bool IsConnected => _playerConnection.IsConnected;
+
+    public string DisplayLineComboText => $"L {CaretLine}  Cb {CurrentCombo}";
 
     public string DisplayTime
     {
@@ -175,28 +182,11 @@ public partial class PlaybackModel : ViewModelBase
     public void IncreasePlaybackSpeed() => PlaybackSpeed += 0.1f;
     public void DecreasePlaybackSpeed() => PlaybackSpeed -= 0.1f;
 
-    public void SetCaretTime(double caretTime, float offset, bool setTrackTime)
+    public void SetCaretPosition(int rawPosition, int line, bool setTrackTime)
     {
-        if (_doc.CurrentChartData is null) return;
-        CaretTime = caretTime + offset;
+        CaretLine = line;
 
-        var notes = _doc.CurrentChartData.NoteTimings;
-        var currentCombo = 0;
-        foreach (var note in notes)
-        {
-            if (note.Timing >= caretTime) break;
-            currentCombo++;
-        }
-        CurrentCombo = currentCombo;
-
-        if (setTrackTime)
-            TrackTime = CaretTime;
-    }
-
-    public async void SetCaretTime(int rawPosition, bool setTrackTime)
-    {
         var chartData = _doc.CurrentChartData;
-        if (chartData is null) return;
 
         var timings = chartData.CommaTimings;
         var nearestTiming = timings.Length > 0 ? timings[0] : default;
@@ -215,7 +205,7 @@ public partial class PlaybackModel : ViewModelBase
         foreach (var note in notes)
         {
             if (note.RawTextPosition >= rawPosition) break;
-            currentCombo++;
+            currentCombo += note.Notes.Length;
         }
         CurrentCombo = currentCombo;
 
