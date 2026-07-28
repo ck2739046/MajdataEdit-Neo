@@ -18,6 +18,16 @@ public static class SimaiChecker
         var context = new CheckerContext(fumen);
         var endMarkerIndex = FindEndMarkerIndex(fumen);
 
+        if (endMarkerIndex < 0)
+        {
+            context.AddError(
+                "Missing chart end marker",
+                "A simai chart must end with a standalone 'E' after the final comma",
+                TextPosition.Start.Advance(fumen),
+                1
+            );
+        }
+
         var (cleanedFumen, positionMap, newlines) = PreprocessNewlines(fumen, context, endMarkerIndex);
 
         var segments = SplitIntoSegments(cleanedFumen, positionMap, context);
@@ -31,19 +41,39 @@ public static class SimaiChecker
 
     private static int FindEndMarkerIndex(ReadOnlySpan<char> fumen)
     {
-        var index = fumen.Length - 1;
-        while (index >= 0 && char.IsWhiteSpace(fumen[index]))
+        var previousSignificantIndex = -1;
+        var lastSignificantIndex = -1;
+        var inComment = false;
+
+        for (var i = 0; i < fumen.Length; i++)
         {
-            index--;
+            var c = fumen[i];
+            if (inComment)
+            {
+                if (c == '\n') inComment = false;
+                continue;
+            }
+
+            if (c == '|' && i + 1 < fumen.Length && fumen[i + 1] == '|')
+            {
+                inComment = true;
+                i++;
+                continue;
+            }
+
+            if (char.IsWhiteSpace(c)) continue;
+
+            previousSignificantIndex = lastSignificantIndex;
+            lastSignificantIndex = i;
         }
 
-        if (index < 0 || fumen[index] != 'E')
+        if (lastSignificantIndex < 0 || fumen[lastSignificantIndex] != 'E')
             return -1;
 
-        if (index > 0 && fumen[index - 1] != ',' && !char.IsWhiteSpace(fumen[index - 1]))
+        if (previousSignificantIndex >= 0 && fumen[previousSignificantIndex] != ',')
             return -1;
 
-        return index;
+        return lastSignificantIndex;
     }
 
     private static (string CleanedFumen, List<TextPosition> PositionMap, List<(int Index, TextPosition OriginalPos)> Newlines)
@@ -103,14 +133,19 @@ public static class SimaiChecker
                 continue;
             }
 
+            // simai ignores formatting whitespace anywhere in the chart.
+            if (char.IsWhiteSpace(c))
+            {
+                originalPos = originalPos.Advance(c);
+                continue;
+            }
+
             cleanedChars.Add(c);
             positionMap.Add(originalPos);
             originalPos = originalPos.Advance(c);
         }
 
         var cleanedFumen = new string(cleanedChars.ToArray());
-
-        CheckNewlinePositions(fumen, cleanedFumen, positionMap, newlines, context);
 
         return (cleanedFumen, positionMap, newlines);
     }
@@ -381,154 +416,100 @@ public static class SimaiChecker
         if (contentSpan.Length == 1 && contentSpan[0] == ',') return;
 
         var startPos = segment.StartPosition;
-
-        var noteStart = 0;
         var contentOffset = 0;
         var remaining = segment.Content;
 
         while (!remaining.IsEmpty)
         {
-            var processedSomething = false;
             var span = remaining.Span;
             var checkingStartPos = startPos.Advance(segment.Content.Span[..contentOffset]);
 
             if (span.StartsWith("<HS*".AsSpan()))
             {
                 var consumed = CheckHSpeedSyntax(context, span, checkingStartPos);
-                if (consumed > 0)
-                {
-                    contentOffset += consumed;
-                    remaining = segment.Content[contentOffset..];
-                    noteStart = contentOffset;
-                    processedSomething = true;
-                }
-            }
-            else if (span.IndexOf("<HS*".AsSpan()) >= 0)
-            {
-                var idx = span.IndexOf("<HS*".AsSpan());
-                var hspeedEnd = span[idx..].IndexOf('>');
-                if (hspeedEnd != -1)
-                {
-                    CheckHSpeedSyntax(context, span[idx..], checkingStartPos.Advance(span[..idx]));
-                    contentOffset += idx + hspeedEnd + 1;
-                    remaining = segment.Content[contentOffset..];
-                    noteStart = contentOffset;
-                    processedSomething = true;
-                }
+                if (consumed == 0) return;
+                contentOffset += consumed;
+                remaining = segment.Content[contentOffset..];
+                continue;
             }
 
-            if (!remaining.IsEmpty)
+            if (span.StartsWith("<SV*".AsSpan()))
             {
-                span = remaining.Span;
-                if (span.StartsWith("<SV*".AsSpan()))
-                {
-                    var consumed = CheckSVelocSyntax(context, span, checkingStartPos);
-                    if (consumed > 0)
-                    {
-                        contentOffset += consumed;
-                        remaining = segment.Content[contentOffset..];
-                        noteStart = contentOffset;
-                        processedSomething = true;
-                    }
-                }
-                else if (span.IndexOf("<SV*".AsSpan()) >= 0)
-                {
-                    var idx = span.IndexOf("<SV*".AsSpan());
-                    var svelocEnd = span[idx..].IndexOf('>');
-                    if (svelocEnd != -1)
-                    {
-                        CheckSVelocSyntax(context, span[idx..], checkingStartPos.Advance(span[..idx]));
-                        contentOffset += idx + svelocEnd + 1;
-                        remaining = segment.Content[contentOffset..];
-                        noteStart = contentOffset;
-                        processedSomething = true;
-                    }
-                }
+                var consumed = CheckSVelocSyntax(context, span, checkingStartPos);
+                if (consumed == 0) return;
+                contentOffset += consumed;
+                remaining = segment.Content[contentOffset..];
+                continue;
             }
 
-            if (!remaining.IsEmpty)
+            if (span[0] == '(')
             {
-                span = remaining.Span;
-                if (span[0] == '(')
-                {
-                    var bpmEnd = span.IndexOf(')');
-                    CheckBpmDefinition(context, span, checkingStartPos);
-                    context.HasBpmDefinition = true;
-                    if (bpmEnd == -1) return;
-                    contentOffset += bpmEnd + 1;
-                    remaining = segment.Content[contentOffset..];
-                    noteStart = contentOffset;
-                    processedSomething = true;
-                }
-                else if (span.IndexOf('(') >= 0)
-                {
-                    var idx = span.IndexOf('(');
-                    var bpmEnd = span[idx..].IndexOf(')');
-                    if (bpmEnd != -1)
-                    {
-                        CheckBpmDefinition(context, span[idx..], checkingStartPos.Advance(span[..idx]));
-                        context.HasBpmDefinition = true;
-                        contentOffset += idx + bpmEnd + 1;
-                        remaining = segment.Content[contentOffset..];
-                        noteStart = contentOffset;
-                        processedSomething = true;
-                    }
-                }
+                var bpmEnd = span.IndexOf(')');
+                CheckBpmDefinition(context, span, checkingStartPos);
+                context.HasBpmDefinition = true;
+                if (bpmEnd == -1) return;
+                contentOffset += bpmEnd + 1;
+                remaining = segment.Content[contentOffset..];
+                continue;
             }
 
-            if (!remaining.IsEmpty)
+            if (span[0] == '{')
             {
-                span = remaining.Span;
-                if (span[0] == '{')
+                var beatEnd = span.IndexOf('}');
+                if (!context.HasBpmDefinition && !span.StartsWith("{#".AsSpan()))
                 {
-                    var beatEnd = span.IndexOf('}');
-                    if (!context.HasBpmDefinition)
-                    {
-                        context.AddError(
-                            "Beat definition without prior BPM",
-                            "A BPM definition must appear before any beat definition in the chart",
-                            checkingStartPos,
-                            beatEnd != -1 ? beatEnd + 1 : 1
-                        );
-                    }
-                    CheckBeatDefinition(context, span, checkingStartPos);
-                    if (beatEnd == -1) return;
-                    contentOffset += beatEnd + 1;
-                    remaining = segment.Content[contentOffset..];
-                    noteStart = contentOffset;
-                    processedSomething = true;
+                    context.AddError(
+                        "Beat definition without prior BPM",
+                        "A BPM definition must appear before a beat-division definition",
+                        checkingStartPos,
+                        beatEnd != -1 ? beatEnd + 1 : 1
+                    );
                 }
-                else if (span.IndexOf('{') >= 0)
-                {
-                    var idx = span.IndexOf('{');
-                    var beatEnd = span[idx..].IndexOf('}');
-                    if (!context.HasBpmDefinition)
-                    {
-                        context.AddError(
-                            "Beat definition without prior BPM",
-                            "A BPM definition must appear before any beat definition in the chart",
-                            checkingStartPos.Advance(span[..idx]),
-                            beatEnd != -1 ? beatEnd + 1 : 1
-                        );
-                    }
-                    if (beatEnd != -1)
-                    {
-                        CheckBeatDefinition(context, span[idx..], checkingStartPos.Advance(span[..idx]));
-                        contentOffset += idx + beatEnd + 1;
-                        remaining = segment.Content[contentOffset..];
-                        noteStart = contentOffset;
-                        processedSomething = true;
-                    }
-                }
+                CheckBeatDefinition(context, span, checkingStartPos);
+                if (beatEnd == -1) return;
+                contentOffset += beatEnd + 1;
+                remaining = segment.Content[contentOffset..];
+                continue;
             }
 
-            if (!processedSomething) break;
+            var definitionIndex = FindNextDefinitionIndex(span);
+            if (definitionIndex > 0)
+            {
+                CheckDefinitionPrefix(context, span[..definitionIndex], checkingStartPos);
+                contentOffset += definitionIndex;
+                remaining = segment.Content[contentOffset..];
+                continue;
+            }
+
+            break;
         }
 
         if (remaining.IsEmpty) return;
-
-        var noteStartPos = startPos.Advance(segment.Content.Span[..noteStart]);
+        var noteStartPos = startPos.Advance(segment.Content.Span[..contentOffset]);
         CheckNoteGroup(context, remaining, noteStartPos);
+    }
+
+    private static int FindNextDefinitionIndex(ReadOnlySpan<char> content)
+    {
+        var result = -1;
+        foreach (var marker in new[] { "<HS*", "<SV*", "(", "{" })
+        {
+            var index = content.IndexOf(marker.AsSpan());
+            if (index > 0 && (result == -1 || index < result))
+            {
+                result = index;
+            }
+        }
+        return result;
+    }
+
+    private static void CheckDefinitionPrefix(
+        CheckerContext context,
+        ReadOnlySpan<char> prefix,
+        TextPosition startPos)
+    {
+        if (prefix.IsEmpty) return;
+        CheckNoteGroup(context, prefix.ToString().AsMemory(), startPos);
     }
 
     private static int CheckHSpeedSyntax(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
@@ -557,7 +538,7 @@ public static class SimaiChecker
             return hspeedEnd + 1;
         }
 
-        if (!double.TryParse(hspeedContent, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+        if (!TryParseFiniteDecimal(hspeedContent, allowSign: true, out _))
         {
             context.AddError(
                 $"Invalid HSpeed value: '{hspeedContent.ToString()}'",
@@ -596,7 +577,7 @@ public static class SimaiChecker
             return svelocEnd + 1;
         }
 
-        if (!double.TryParse(svelocContent, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+        if (!TryParseFiniteDecimal(svelocContent, allowSign: true, out _))
         {
             context.AddError(
                 $"Invalid SVeloc value: '{svelocContent.ToString()}'",
@@ -635,7 +616,7 @@ public static class SimaiChecker
             return;
         }
 
-        if (!double.TryParse(bpmContent, NumberStyles.Float, CultureInfo.InvariantCulture, out var bpm) || bpm <= 0)
+        if (!TryParseFiniteDecimal(bpmContent, allowSign: false, out var bpm) || bpm <= 0)
         {
             context.AddError(
                 $"Invalid BPM value: '{bpmContent.ToString()}'",
@@ -675,11 +656,11 @@ public static class SimaiChecker
         if (beatContent[0] == '#')
         {
             var timeValue = beatContent[1..];
-            if (!double.TryParse(timeValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var time) || time <= 0)
+            if (!TryParseFiniteDecimal(timeValue, allowSign: false, out var time) || time < 0)
             {
                 context.AddError(
                     $"Invalid absolute time value: '{timeValue.ToString()}'",
-                    "Absolute time must be a positive number (in seconds)",
+                    "Absolute time must be a non-negative number (in seconds)",
                     startPos.Advance("{#".AsSpan()),
                     timeValue.Length
                 );
@@ -687,11 +668,11 @@ public static class SimaiChecker
         }
         else
         {
-            if (!int.TryParse(beatContent, out var beat) || beat <= 0)
+            if (!TryParseFiniteDecimal(beatContent, allowSign: false, out var beat) || beat <= 0)
             {
                 context.AddError(
                     $"Invalid beat value: '{beatContent.ToString()}'",
-                    "Beat must be a positive integer, e.g., {4}, {8}, {16}",
+                    "Beat must be a positive number, e.g., {4}, {8}, {16}, or {4.5}",
                     startPos.Advance("{".AsSpan()),
                     beatContent.Length
                 );
@@ -713,6 +694,16 @@ public static class SimaiChecker
                     var noteSpan = content[currentStart..i];
                     CheckSingleNote(context, noteSpan, startPos.Advance(contentSpan[..currentStart]));
                 }
+                else
+                {
+                    var separatorIndex = i == contentSpan.Length ? Math.Max(0, i - 1) : i;
+                    context.AddError(
+                        "Missing note between separators",
+                        "EACH '/' and pseudo-EACH '`' separators must have a note on both sides",
+                        startPos.Advance(contentSpan[..separatorIndex]),
+                        1
+                    );
+                }
                 currentStart = i + 1;
             }
         }
@@ -729,7 +720,7 @@ public static class SimaiChecker
             return;
         }
 
-        if (char.IsDigit(span[0]))
+        if (span[0] is >= '0' and <= '9')
         {
             CheckButtonNote(context, content, startPos);
             return;
@@ -803,6 +794,7 @@ public static class SimaiChecker
         if (sensorIndex.HasValue) idx++;
 
         var isHold = false;
+        var modifierCounts = new Dictionary<char, int>();
         var durationStart = -1;
         var durationEnd = -1;
 
@@ -843,11 +835,15 @@ public static class SimaiChecker
             {
                 case 'h':
                     isHold = true;
+                    modifierCounts.TryGetValue(c, out var holdModifierCount);
+                    modifierCounts[c] = holdModifierCount + 1;
                     break;
                 case 'f':
                 case 'x':
                 case 'b':
                 case 'm':
+                    modifierCounts.TryGetValue(c, out var modifierCount);
+                    modifierCounts[c] = modifierCount + 1;
                     break;
                 default:
                     context.AddError(
@@ -860,6 +856,27 @@ public static class SimaiChecker
             }
         }
 
+        foreach (var (modifier, count) in modifierCounts)
+        {
+            if (count <= 1) continue;
+            context.AddError(
+                $"Duplicate touch modifier: '{modifier}'",
+                "Each touch-note modifier may appear at most once",
+                startPos,
+                content.Length
+            );
+        }
+
+        if (durationEnd >= 0 && durationEnd != span.Length - 1)
+        {
+            context.AddError(
+                "Modifier after TOUCH HOLD duration",
+                "TOUCH modifiers must be written before the duration bracket",
+                startPos.Advance(span[..(durationEnd + 1)]),
+                span.Length - durationEnd - 1
+            );
+        }
+
         if (isHold && durationStart != -1)
         {
             var duration = content[(durationStart + 1)..durationEnd];
@@ -867,9 +884,9 @@ public static class SimaiChecker
         }
         else if (durationStart != -1 && !isHold)
         {
-            context.AddWarning(
+            context.AddError(
                 "Duration specified for non-hold touch note",
-                "Duration is only meaningful for touch hold notes",
+                "Only a TOUCH HOLD may have a duration",
                 startPos.Advance(span[..durationStart]),
                 durationEnd - durationStart + 1
             );
@@ -893,7 +910,7 @@ public static class SimaiChecker
 
         if (span.Length == 1) return;
 
-        if (char.IsDigit(span[1]) && (span.Length == 2 || !IsSlideChar(span[1])))
+        if (span[1] is >= '0' and <= '9')
         {
             var secondDigit = span[1] - '0';
             if (secondDigit < 1 || secondDigit > 8)
@@ -905,11 +922,102 @@ public static class SimaiChecker
                     1
                 );
             }
+
+            if (span.Length > 2)
+            {
+                context.AddError(
+                    $"Invalid shorthand EACH note: '{span.ToString()}'",
+                    "The compact EACH form contains exactly two unmodified TAP button numbers. Use '/' for three or more notes or when modifiers are present",
+                    startPos,
+                    content.Length
+                );
+            }
             return;
         }
 
+        ValidateDurationBrackets(context, span, startPos);
+        ValidateButtonModifierOccurrences(context, span, startPos);
         var noteInfo = ParseNoteInfo(content);
         ValidateNoteInfo(context, span, startPos, noteInfo);
+    }
+
+    private static void ValidateButtonModifierOccurrences(
+        CheckerContext context,
+        ReadOnlySpan<char> content,
+        TextPosition startPos)
+    {
+        foreach (var modifier in new[] { 'h', 'x', '@', '?', '!' })
+        {
+            if (CountCharIgnoreCase(content, modifier) <= 1) continue;
+            context.AddError(
+                $"Duplicate note modifier: '{modifier}'",
+                "Each note modifier may appear at most once",
+                startPos,
+                content.Length
+            );
+        }
+
+        var firstStar = content.IndexOf('$');
+        if (firstStar < 0) return;
+
+        var starCount = CountChar(content, '$');
+        if (starCount > 2 ||
+            (starCount == 2 && (firstStar + 1 >= content.Length || content[firstStar + 1] != '$')))
+        {
+            context.AddError(
+                "Invalid star modifier",
+                "Use '$' for a star TAP or one consecutive '$$' pair for a rotating star TAP",
+                startPos.Advance(content[..firstStar]),
+                starCount
+            );
+        }
+    }
+
+    private static void ValidateDurationBrackets(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
+    {
+        var openIndex = -1;
+        for (var i = 0; i < content.Length; i++)
+        {
+            if (content[i] == '[')
+            {
+                if (openIndex != -1)
+                {
+                    context.AddError(
+                        "Nested duration bracket",
+                        "Duration brackets cannot be nested",
+                        startPos.Advance(content[..i]),
+                        1
+                    );
+                }
+                openIndex = i;
+            }
+            else if (content[i] == ']')
+            {
+                if (openIndex == -1)
+                {
+                    context.AddError(
+                        "Unexpected closing duration bracket",
+                        "A closing ']' must have a matching '['",
+                        startPos.Advance(content[..i]),
+                        1
+                    );
+                }
+                else
+                {
+                    openIndex = -1;
+                }
+            }
+        }
+
+        if (openIndex != -1)
+        {
+            context.AddError(
+                "Duration not closed",
+                "Duration must be enclosed in brackets, e.g., [4:1]",
+                startPos.Advance(content[..openIndex]),
+                1
+            );
+        }
     }
 
     private static NoteInfo ParseNoteInfo(ReadOnlyMemory<char> content)
@@ -961,19 +1069,23 @@ public static class SimaiChecker
                         if (idx + 1 < span.Length && span[idx + 1] == '[')
                         {
                             lastSlide.IsBreak = true;
+                            lastSlide.BreakModifierCount++;
                         }
                         else if (idx == span.Length - 1)
                         {
                             lastSlide.IsBreak = true;
+                            lastSlide.BreakModifierCount++;
                         }
                         else
                         {
                             info.IsBreak = true;
+                            info.BreakModifierCount++;
                         }
                     }
                     else
                     {
                         info.IsBreak = true;
+                        info.BreakModifierCount++;
                     }
                     idx++;
                     break;
@@ -1068,6 +1180,10 @@ public static class SimaiChecker
                     break;
                 case '*':
                     info.HasSameStartPointSlides = true;
+                    if (info.NextSlideIsSameHeadChainStart)
+                    {
+                        info.HasInvalidSameHeadSeparator = true;
+                    }
                     idx++;
                     lastSlideEndPosition = info.StartPosition;
                     info.NextSlideIsSameHeadChainStart = true;
@@ -1162,6 +1278,7 @@ public static class SimaiChecker
         if (idx < span.Length && char.ToLowerInvariant(span[idx]) == 'b')
         {
             slide.IsBreak = true;
+            slide.BreakModifierCount++;
             idx++;
         }
 
@@ -1245,6 +1362,7 @@ public static class SimaiChecker
             if (idx < span.Length && span[idx] == 'b')
             {
                 slide.IsBreak = true;
+                slide.BreakModifierCount++;
                 idx++;
             }
             if (idx < span.Length && span[idx] == 'm')
@@ -1289,6 +1407,7 @@ public static class SimaiChecker
                 if (idx < span.Length && span[idx] == 'b')
                 {
                     slide.IsBreak = true;
+                    slide.BreakModifierCount++;
                     idx++;
                 }
                 if (idx < span.Length && span[idx] == 'm')
@@ -1336,19 +1455,9 @@ public static class SimaiChecker
             );
         }
 
-        if (info.NoStar)
-        {
-            context.AddError(
-                "'@' is unsupported in most cases",
-                "MajdataViewX(this), MajdataPlay, and other Simulators using MajSimai do not support the '@' modifier, use 1/1? instead",
-                startPos,
-                content.Length
-            );
-        }
-
         if (info.HasStar && info.NoStar)
         {
-            context.AddWarning(
+            context.AddError(
                 "Conflicting star modifiers: '$' and '@'",
                 "Using both '$' (force star) and '@' (no star) is contradictory",
                 startPos,
@@ -1356,9 +1465,49 @@ public static class SimaiChecker
             );
         }
 
+        if (info.BreakModifierCount > 1 || info.Slides.Any(slide => slide.BreakModifierCount > 1))
+        {
+            context.AddError(
+                "Duplicate BREAK modifier",
+                "The TAP/HOLD head and each SLIDE chain may each contain at most one 'b' modifier",
+                startPos,
+                content.Length
+            );
+        }
+
+        if (info.HasInvalidSameHeadSeparator || info.NextSlideIsSameHeadChainStart)
+        {
+            context.AddError(
+                "Invalid same-start SLIDE separator",
+                "Each '*' must be followed by another SLIDE path from the same starting button",
+                startPos,
+                content.Length
+            );
+        }
+
+        if (info.HasSameStartPointSlides && info.Slides.Count < 2)
+        {
+            context.AddError(
+                "Same-start SLIDE needs at least two paths",
+                "The '*' notation joins two or more SLIDEs that share a starting button",
+                startPos,
+                content.Length
+            );
+        }
+
+        if (info.Slides.Count == 0 && CountChar(content, '[') > 1)
+        {
+            context.AddError(
+                "Duplicate duration bracket",
+                "A HOLD can only have one duration specification",
+                startPos,
+                content.Length
+            );
+        }
+
         if (info.FadeSlide && info.NoFadeSlide)
         {
-            context.AddWarning(
+            context.AddError(
                 "Conflicting slide fade modifiers: '?' and '!'",
                 "Using both '?' (fade in) and '!' (no fade) is contradictory",
                 startPos,
@@ -1378,7 +1527,7 @@ public static class SimaiChecker
 
         if (info.NoStar && info.Slides.Count == 0)
         {
-            context.AddWarning(
+            context.AddError(
                 "Invalid '@' modifier on non-SLIDE note",
                 "The '@' modifier (no star) is only meaningful for SLIDE notes",
                 startPos,
@@ -1388,7 +1537,7 @@ public static class SimaiChecker
 
         if (info.FadeSlide && info.Slides.Count == 0)
         {
-            context.AddWarning(
+            context.AddError(
                 "Invalid '?' modifier on non-SLIDE note",
                 "The '?' modifier (fade slide) is only meaningful for SLIDE notes",
                 startPos,
@@ -1398,7 +1547,7 @@ public static class SimaiChecker
 
         if (info.NoFadeSlide && info.Slides.Count == 0)
         {
-            context.AddWarning(
+            context.AddError(
                 "Invalid '!' modifier on non-SLIDE note",
                 "The '!' modifier (no fade slide) is only meaningful for SLIDE notes",
                 startPos,
@@ -1406,18 +1555,17 @@ public static class SimaiChecker
             );
         }
 
-        if (info.IsHold && !info.Duration.HasValue)
-        {
-            context.AddInfo(
-                "HOLD note missing duration",
-                "HOLD notes need a duration specified. When you want a short hold, it is better to explicitly mark [1:0] or [384:1]",
-                startPos.Advance(content),
-                1
-            );
-        }
-
         if (info.IsHold && info.Duration.HasValue)
         {
+            if (info.DurationEnd != content.Length - 1)
+            {
+                context.AddError(
+                    "Modifier after HOLD duration",
+                    "HOLD modifiers must be written before the duration bracket",
+                    startPos.Advance(content[..(info.DurationEnd + 1)]),
+                    content.Length - info.DurationEnd - 1
+                );
+            }
             ValidateDuration(context, content, startPos, info.Duration.Value.Span, info.DurationStart, "HOLD", allowSlideFormat: false);
         }
 
@@ -1425,9 +1573,9 @@ public static class SimaiChecker
 
         if (!info.IsHold && info.Slides.Count == 0 && info.Duration.HasValue)
         {
-            context.AddWarning(
+            context.AddError(
                 "Duration specified for non-HOLD/SLIDE note",
-                "Duration is only meaningful for HOLD and SLIDE notes",
+                "Only HOLD and SLIDE notes may have a duration",
                 startPos.Advance(content[..info.DurationStart]),
                 info.Duration.Value.Length
             );
@@ -1482,9 +1630,19 @@ public static class SimaiChecker
         var slidesWithDuration = chain.Count(s => s.Duration.HasValue);
         var lastSlide = chain[^1];
 
-        foreach (var slide in chain)
+        for (var i = 0; i < chain.Count; i++)
         {
+            var slide = chain[i];
             ValidateSlide(context, content, startPos, slide, checkDuration: false);
+            if (i < chain.Count - 1 && (slide.IsBreak || slide.IsMine))
+            {
+                context.AddError(
+                    "Modifier inside connected SLIDE",
+                    "BREAK/mine modifiers apply to the complete connected SLIDE and may only appear after its final duration",
+                    startPos.Advance(content[..Math.Max(slide.StartIndex, slide.EndIndex - 1)]),
+                    1
+                );
+            }
         }
 
         if (slidesWithDuration == 0)
@@ -1525,7 +1683,8 @@ public static class SimaiChecker
     }
 
     private static void ValidateDuration(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos,
-        ReadOnlySpan<char> duration, int durationStart, string noteType, bool allowSlideFormat)
+        ReadOnlySpan<char> duration, int durationStart, string noteType, bool allowSlideFormat,
+        bool allowBareNumber = false)
     {
         if (duration.IsEmpty)
         {
@@ -1549,11 +1708,15 @@ public static class SimaiChecker
 
         if (hashCount == 0 && colonCount == 0)
         {
-            if (!double.TryParse(duration, NumberStyles.Float, CultureInfo.InvariantCulture, out var val) || val <= 0)
+            if (!allowBareNumber ||
+                !TryParseFiniteDecimal(duration, allowSign: false, out var value) ||
+                value < 0)
             {
                 context.AddError(
-                    $"Invalid duration: '{duration.ToString()}'",
-                    "Duration must be a positive number or use format like '8:1' or '#1.5'",
+                    $"Invalid duration format: '{duration.ToString()}'",
+                    allowBareNumber
+                        ? "Duration must be a non-negative number"
+                        : "A duration cannot be a bare number. Use a ratio such as '8:1', absolute seconds such as '#1.5', or a supported SLIDE duration format",
                     startPos.Advance(content[..(durationStart + 1)]),
                     duration.Length
                 );
@@ -1566,11 +1729,11 @@ public static class SimaiChecker
         else if (hashCount == 1 && duration[0] == '#')
         {
             var timeValue = duration[1..];
-            if (!double.TryParse(timeValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var time) || time <= 0)
+            if (!TryParseFiniteDecimal(timeValue, allowSign: false, out var time) || time < 0)
             {
                 context.AddError(
                     $"Invalid absolute time: '{timeValue.ToString()}'",
-                    "Absolute time must be a positive number (in seconds)",
+                    "Absolute time must be a non-negative number (in seconds)",
                     startPos.Advance(content[..(durationStart + 2)]),
                     timeValue.Length
                 );
@@ -1594,35 +1757,33 @@ public static class SimaiChecker
     private static void ValidateSlideDuration(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos,
         ReadOnlySpan<char> duration, int durationStart)
     {
-        var partRanges = SplitByChar(duration, '#');
-
-        if (partRanges.Count < 3)
+        var separatorIndex = duration.IndexOf("##".AsSpan());
+        if (separatorIndex < 0 || duration[(separatorIndex + 2)..].IndexOf("##".AsSpan()) >= 0)
         {
             context.AddError(
                 $"Invalid slide duration format: '{duration.ToString()}'",
-                "Slide duration with '##' should be 'startTime##moveTime'",
+                "Slide duration must contain exactly one '##' separator: 'startTime##moveTime'",
                 startPos.Advance(content[..(durationStart + 1)]),
                 duration.Length
             );
             return;
         }
 
-        var startTimeStr = duration[partRanges[0]];
-        if (!startTimeStr.IsEmpty)
+        var startTimeStr = duration[..separatorIndex];
+        if (startTimeStr.IsEmpty ||
+            !TryParseFiniteDecimal(startTimeStr, allowSign: false, out var startTime) ||
+            startTime < 0)
         {
-            if (!double.TryParse(startTimeStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var startTime) || startTime < 0)
-            {
-                context.AddError(
-                    $"Invalid slide start time: '{startTimeStr.ToString()}'",
-                    "Slide start time must be a non-negative number (in seconds)",
-                    startPos.Advance(content[..(durationStart + 1)]),
-                    startTimeStr.Length
-                );
-            }
+            context.AddError(
+                $"Invalid slide start time: '{startTimeStr.ToString()}'",
+                "Slide start time before '##' must be a non-negative number (in seconds)",
+                startPos.Advance(content[..(durationStart + 1)]),
+                Math.Max(1, startTimeStr.Length)
+            );
         }
 
-        var moveTimeStr = duration[partRanges[^1]];
-        var moveTimeOffset = durationStart + 1 + duration.LastIndexOf('#') + 1;
+        var moveTimeStr = duration[(separatorIndex + 2)..];
+        var moveTimeOffset = durationStart + 1 + separatorIndex + 2;
 
         if (moveTimeStr.IsEmpty)
         {
@@ -1635,19 +1796,27 @@ public static class SimaiChecker
             return;
         }
 
-        if (moveTimeStr.Contains(':'))
-        {
-            ValidateRatioDuration(context, content, startPos, moveTimeStr, moveTimeOffset - 1);
-        }
-        else if (!double.TryParse(moveTimeStr, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+        if (moveTimeStr[0] == '#')
         {
             context.AddError(
                 $"Invalid slide move time: '{moveTimeStr.ToString()}'",
-                "Slide move time must be a number or ratio format like '8:1'",
+                "Move time after '##' must be seconds, a ratio, or a custom-BPM duration; it cannot start with '#'",
                 startPos.Advance(content[..moveTimeOffset]),
                 moveTimeStr.Length
             );
+            return;
         }
+
+        ValidateDuration(
+            context,
+            content,
+            startPos,
+            moveTimeStr,
+            moveTimeOffset - 1,
+            "SLIDE move time",
+            allowSlideFormat: false,
+            allowBareNumber: true
+        );
     }
 
     private static void ValidateRatioDuration(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos,
@@ -1707,7 +1876,7 @@ public static class SimaiChecker
             return;
         }
 
-        if (!double.TryParse(bpmStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var bpm) || bpm <= 0)
+        if (!TryParseFiniteDecimal(bpmStr, allowSign: false, out var bpm) || bpm <= 0)
         {
             context.AddError(
                 $"Invalid BPM: '{bpmStr.ToString()}'",
@@ -1733,11 +1902,11 @@ public static class SimaiChecker
         {
             ValidateRatioDuration(context, content, startPos, restStr, durationStart + 1 + hashIdx);
         }
-        else if (!double.TryParse(restStr, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+        else if (!TryParseFiniteDecimal(restStr, allowSign: false, out var durationValue) || durationValue < 0)
         {
             context.AddError(
                 $"Invalid duration: '{restStr.ToString()}'",
-                "Duration must be a number or ratio format like '8:1'",
+                "Duration must be a non-negative number or ratio format like '8:1'",
                 startPos.Advance(content[..(durationStart + 1 + hashIdx + 1)]),
                 restStr.Length
             );
@@ -1779,6 +1948,28 @@ public static class SimaiChecker
             return;
         }
 
+        if (slide.SlideType == "V" &&
+            (!slide.FlexionPoint.HasValue || slide.FlexionPoint.Value < 1 || slide.FlexionPoint.Value > 8))
+        {
+            context.AddError(
+                "Invalid V-shaped SLIDE flexion point",
+                "V-shaped SLIDE requires a flexion button between 1 and 8, e.g., 1V35",
+                startPos.Advance(content[..slide.StartIndex]),
+                Math.Max(1, slide.EndIndex - slide.StartIndex)
+            );
+            return;
+        }
+
+        if (slide.SlideType == "v" && slide.StartPosition == slide.EndPosition)
+        {
+            context.AddWarning(
+                "Same-button 'v' SLIDE",
+                "A same-button 'v' SLIDE is supported, but its use is not recommended",
+                startPos.Advance(content[..slide.StartIndex]),
+                Math.Max(1, slide.EndIndex - slide.StartIndex)
+            );
+        }
+
         if (!IsValidSlidePath(slide.SlideType!, slide.StartPosition, slide.EndPosition.Value, slide.FlexionPoint))
         {
             var detail = GetSlidePathErrorDetail(slide.SlideType!, slide.StartPosition, slide.EndPosition.Value, slide.FlexionPoint);
@@ -1803,7 +1994,8 @@ public static class SimaiChecker
         return slideType switch
         {
             "-" => interval >= 2,
-            "^" or "v" => interval is not (0 or 4),
+            "^" => interval is 1 or 2 or 3,
+            "v" => interval != 4,
             "<" or ">" => true,
             "V" => flexionPoint.HasValue &&
                    GetPointInterval(start, flexionPoint.Value) == 2 &&
@@ -1820,8 +2012,8 @@ public static class SimaiChecker
         return slideType switch
         {
             "-" => "Straight slide requires start and end positions to be at least 2 buttons apart",
-            "^" or "v" => "This slide type cannot connect adjacent buttons or opposite buttons",
-            "p" or "q" or "pp" or "qq" => "p/q/pp/qq slide cannot connect adjacent buttons",
+            "^" => "The '^' arc cannot connect the same button or the opposite button",
+            "v" => "The 'v' slide cannot connect opposite buttons",
             "V" => flexionPoint == null
                 ? "V-shaped slide requires a flexion point, e.g., 1V35"
                 : "V-shaped slide requires flexion point to be exactly 2 buttons from start, and end to be at least 2 buttons from flexion point",
@@ -1854,12 +2046,64 @@ public static class SimaiChecker
         };
     }
 
+    private static bool TryParseFiniteDecimal(ReadOnlySpan<char> value, bool allowSign, out double result)
+    {
+        result = 0;
+        if (value.IsEmpty) return false;
+
+        var index = 0;
+        if (value[0] is '+' or '-')
+        {
+            if (!allowSign) return false;
+            index++;
+            if (index == value.Length) return false;
+        }
+
+        var digitsBeforeDecimal = 0;
+        while (index < value.Length && value[index] is >= '0' and <= '9')
+        {
+            digitsBeforeDecimal++;
+            index++;
+        }
+
+        if (digitsBeforeDecimal == 0) return false;
+
+        if (index < value.Length && value[index] == '.')
+        {
+            index++;
+            var digitsAfterDecimal = 0;
+            while (index < value.Length && value[index] is >= '0' and <= '9')
+            {
+                digitsAfterDecimal++;
+                index++;
+            }
+
+            if (digitsAfterDecimal == 0) return false;
+        }
+
+        return index == value.Length &&
+               double.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+                   CultureInfo.InvariantCulture, out result) &&
+               double.IsFinite(result);
+    }
+
     private static int CountChar(ReadOnlySpan<char> s, char c)
     {
         var count = 0;
         foreach (var ch in s)
         {
             if (ch == c) count++;
+        }
+        return count;
+    }
+
+    private static int CountCharIgnoreCase(ReadOnlySpan<char> s, char c)
+    {
+        var count = 0;
+        var target = char.ToLowerInvariant(c);
+        foreach (var ch in s)
+        {
+            if (char.ToLowerInvariant(ch) == target) count++;
         }
         return count;
     }
@@ -1887,6 +2131,7 @@ public static class SimaiChecker
         public int StartPosition { get; set; }
         public bool IsHold { get; set; }
         public bool IsBreak { get; set; }
+        public int BreakModifierCount { get; set; }
         public bool IsEx { get; set; }
         public bool IsMine { get; set; }
         public bool HasStar { get; set; }
@@ -1896,6 +2141,7 @@ public static class SimaiChecker
         public bool NoFadeSlide { get; set; }
         public bool HasSameStartPointSlides { get; set; }
         public bool NextSlideIsSameHeadChainStart { get; set; }
+        public bool HasInvalidSameHeadSeparator { get; set; }
         public ReadOnlyMemory<char>? Duration { get; set; }
         public int DurationStart { get; set; }
         public int DurationEnd { get; set; }
@@ -1913,6 +2159,7 @@ public static class SimaiChecker
         public int DurationStart { get; set; }
         public int DurationEnd { get; set; }
         public bool IsBreak { get; set; }
+        public int BreakModifierCount { get; set; }
         public bool IsMine { get; set; }
         public int StartIndex { get; set; }
         public int EndIndex { get; set; }

@@ -441,4 +441,7 @@
   <data name="Msg_AskCloseView" xml:space="preserve">
     <value>是否关闭View？</value>
   </data>
+  <data name="Set_MineAutoSlide" xml:space="preserve">
+    <value>Mine Slide 自动推进</value>
+  </data>
 </root>

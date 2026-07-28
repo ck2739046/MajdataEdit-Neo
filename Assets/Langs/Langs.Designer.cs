@@ -757,6 +757,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 Mine Slide Autoplay 的本地化字符串。
+        /// </summary>
+        internal static string Set_MineAutoSlide {
+            get {
+                return ResourceManager.GetString("Set_MineAutoSlide", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Output FPS 的本地化字符串。
         /// </summary>
         internal static string Set_OutputFps {
