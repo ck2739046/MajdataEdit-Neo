@@ -444,4 +444,7 @@
   <data name="Set_MineAutoSlide" xml:space="preserve">
     <value>Mine Slide 自动推进</value>
   </data>
+  <data name="Set_BackgroundOutsideDim" xml:space="preserve">
+    <value>圆外背景暗度</value>
+  </data>
 </root>

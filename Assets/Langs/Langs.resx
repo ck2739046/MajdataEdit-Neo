@@ -277,7 +277,7 @@
     <value>Output FPS</value>
   </data>
   <data name="Set_ResizeBg" xml:space="preserve">
-    <value>Resize BG</value>
+    <value>FullScreen BG</value>
   </data>
   <data name="Set_GlobalAudioOffset" xml:space="preserve">
     <value>Global Audio Offset</value>
@@ -443,5 +443,8 @@ Do you want to download the latest update of Majdata?</value>
   </data>
   <data name="Set_MineAutoSlide" xml:space="preserve">
     <value>Mine Slide Autoplay</value>
+  </data>
+  <data name="Set_BackgroundOutsideDim" xml:space="preserve">
+    <value>Outside Background Dim</value>
   </data>
 </root>

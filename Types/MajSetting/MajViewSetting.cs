@@ -21,6 +21,10 @@ public class MajViewSetting
     [SettingControl(SettingControlType.Numeric, Max = 1, Min = 0, Step = 0.1)]
     public float BackgroundDim { get; set; } = 0.7f;
 
+    [Display(Name = nameof(Langs.Set_BackgroundOutsideDim))]
+    [SettingControl(SettingControlType.Numeric, Max = 1, Min = 0, Step = 0.1)]
+    public float BackgroundOutsideDim { get; set; } = 0.3f;
+
     [Display(Name = nameof(Langs.Set_ComboStatusType))]
     [SettingControl(SettingControlType.Selection,
         Values = new object[] { BgInfoDisplay.None,
@@ -72,7 +76,6 @@ public class MajViewSetting
     [SettingControl(SettingControlType.Numeric, Max = 1000, Min = 0, Step = 30)]
     public int OutputFps { get; set; } = 60;
 
-    [SettingUnbrowsable]
     [Display(Name = nameof(Langs.Set_ResizeBg))]
     [SettingControl(SettingControlType.Toggle)]
     public bool ResizeBg { get; set; } = false;

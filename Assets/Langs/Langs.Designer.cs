@@ -685,6 +685,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 Outside Background Dim 的本地化字符串。
+        /// </summary>
+        internal static string Set_BackgroundOutsideDim {
+            get {
+                return ResourceManager.GetString("Set_BackgroundOutsideDim", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Break 的本地化字符串。
         /// </summary>
         internal static string Set_Break {
@@ -775,7 +784,7 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
-        ///   查找类似 Resize BG 的本地化字符串。
+        ///   查找类似 FullScreen BG 的本地化字符串。
         /// </summary>
         internal static string Set_ResizeBg {
             get {
