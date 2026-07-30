@@ -123,7 +123,8 @@ public partial class MainWindowViewModel : ViewModelBase
             case "0": OpenBrowser("https://discord.gg/AcWgZN7j6K"); break;
             case "1": OpenBrowser("https://qm.qq.com/q/GAxbFZHP6A"); break;
             case "2": OpenBrowser("https://github.com/LingFeng-bbben/MajdataEdit-Neo"); break;
-            case "3": OpenBrowser("https://majdata.net/"); break;
+            case "3": OpenBrowser("https://github.com/re-poem/MajdataViewX"); break;
+            case "4": OpenBrowser("https://majdata.net/"); break;
         }
         static void OpenBrowser(string url)
         {

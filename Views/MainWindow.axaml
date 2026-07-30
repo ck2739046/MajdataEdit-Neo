@@ -1,27 +1,27 @@
 <Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
-        xmlns:controls="clr-namespace:MajdataEdit_Neo.Controls"
-        xmlns:conv="using:MajdataEdit_Neo.Converters"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:local="using:MajdataEdit_Neo"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="using:MajdataEdit_Neo.ViewModels"
-        xmlns:tp="using:MajdataEdit_Neo.Types.Plugin"
-        mc:Ignorable="d" d:DesignWidth="780" d:DesignHeight="660"
-        MinWidth="780" MinHeight="660"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+		xmlns:controls="clr-namespace:MajdataEdit_Neo.Controls"
+		xmlns:conv="using:MajdataEdit_Neo.Converters"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:local="using:MajdataEdit_Neo"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:vm="using:MajdataEdit_Neo.ViewModels"
+		xmlns:tp="using:MajdataEdit_Neo.Types.Plugin"
+		mc:Ignorable="d" d:DesignWidth="780" d:DesignHeight="660"
+		MinWidth="780" MinHeight="660"
 		x:Name="Root"
-        x:Class="MajdataEdit_Neo.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/favicon.ico"
-        Title="{Binding WindowTitle}"
-        TransparencyLevelHint="AcrylicBlur"
-        Background="Transparent"
-        ExtendClientAreaToDecorationsHint="False">
+		x:Class="MajdataEdit_Neo.Views.MainWindow"
+		x:DataType="vm:MainWindowViewModel"
+		Icon="/Assets/favicon.ico"
+		Title="{Binding WindowTitle}"
+		TransparencyLevelHint="AcrylicBlur"
+		Background="Transparent"
+		ExtendClientAreaToDecorationsHint="False">
 
 	<Design.DataContext>
 		<!-- This only sets the DataContext for the previewer in an IDE,
-        to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
 		<vm:MainWindowViewModel/>
 	</Design.DataContext>
 	<Window.Resources>
@@ -50,14 +50,14 @@
 		<ExperimentalAcrylicBorder IsHitTestVisible="False">
 			<ExperimentalAcrylicBorder.Material>
 				<ExperimentalAcrylicMaterial
-                BackgroundSource="Digger"
-                TintColor="Black"
-                TintOpacity="1"
-                MaterialOpacity="0.75" />
+					BackgroundSource="Digger"
+					TintColor="Black"
+					TintOpacity="1"
+					MaterialOpacity="0.75" />
 			</ExperimentalAcrylicBorder.Material>
 		</ExperimentalAcrylicBorder>
 		<Grid RowDefinitions="20,100,*,60,100,20"
-              ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding Session.Doc.IsLoaded}">
+			  ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding Session.Doc.IsLoaded}">
 			<Menu Grid.Row="0" Grid.ColumnSpan="4">
 				<MenuItem Header="{local:I18N Gui_File}" >
 					<MenuItem Header="{local:I18N Gui_New}" Command="{Binding NewFileCommand}"/>
@@ -100,21 +100,22 @@
 					<MenuItem Header="QQ" Command="{Binding AboutButtonClickedCommand}" CommandParameter="1"/>
 					<Separator/>
 					<MenuItem Header="Github" Command="{Binding AboutButtonClickedCommand}" CommandParameter="2"/>
-					<MenuItem Header="Majnet" Command="{Binding AboutButtonClickedCommand}" CommandParameter="3"/>
+					<MenuItem Header="Github (ViewX)" Command="{Binding AboutButtonClickedCommand}" CommandParameter="3"/>
+					<MenuItem Header="Majnet" Command="{Binding AboutButtonClickedCommand}" CommandParameter="4"/>
 				</MenuItem>
 			</Menu>
 
 			<StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="8"
-                        Margin="6 0 8 0" Width="116">
+						Margin="6 0 8 0" Width="116">
 
 				<Label Height="90" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Content="{Binding Session.Playback.DisplayTime}" Padding="0 30 0 0"/>
+					   Content="{Binding Session.Playback.DisplayTime}" Padding="0 30 0 0"/>
 				<Label Height="30" Name="LineCombo" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Content="{Binding Session.Playback.DisplayLineComboText}" Padding="0 0 0 0"/>
+					   Content="{Binding Session.Playback.DisplayLineComboText}" Padding="0 0 0 0"/>
 
 				<ComboBox Name="Difficulty"
-                          Width="116" VerticalAlignment="Center"
-                          SelectedIndex="{Binding Session.Doc.SelectedDifficulty}">
+						  Width="116" VerticalAlignment="Center"
+						  SelectedIndex="{Binding Session.Doc.SelectedDifficulty}">
 					<ComboBoxItem Content="EASY" />
 					<ComboBoxItem Content="BASIC" />
 					<ComboBoxItem Content="ADVANCED" />
@@ -147,18 +148,18 @@
 				<DockPanel Margin="0 10 0 0">
 					<Label VerticalAlignment="Center" Content="{local:I18N Gui_PlaybackSpeed}"/>
 					<NumericUpDown Name="Speed" Margin="3 0 0 0"
-                                   Value="{Binding Session.Playback.PlaybackSpeed}"
-                                   Minimum="0.1" Increment="0.1"
-                                   FormatString="0.##"
-                                   ShowButtonSpinner="False"/>
+								   Value="{Binding Session.Playback.PlaybackSpeed}"
+								   Minimum="0.1" Increment="0.1"
+								   FormatString="0.##"
+								   ShowButtonSpinner="False"/>
 				</DockPanel>
 
 				<CheckBox Grid.Row="8" Margin="0 10 0 0"
-                          IsChecked="{Binding Session.Playback.IsFollowCursor}" FontSize="12" Content="{local:I18N Gui_FollowCursor}"/>
+						  IsChecked="{Binding Session.Playback.IsFollowCursor}" FontSize="12" Content="{local:I18N Gui_FollowCursor}"/>
 				<StackPanel Orientation="Horizontal" Margin="9 0 0 0">
 					<CheckBox IsChecked="{Binding Session.Playback.IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
 					<Button
-                            Command="{Binding PlayIncludeOpCommand}" Width="64" Content="{local:I18N Gui_Record}"/>
+						Command="{Binding PlayIncludeOpCommand}" Width="64" Content="{local:I18N Gui_Record}"/>
 				</StackPanel>
 				<Label Content="{local:I18N Gui_Connected}" FontSize="8" Margin="-4 -11 0 0"/>
 			</StackPanel>
@@ -166,22 +167,22 @@
 
 
 			<Button Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
-                    Command="{Binding StopCommand}">
+					Command="{Binding StopCommand}">
 				<PathIcon Width="13" Data="{StaticResource stop}"/>
 			</Button>
 
 			<Button Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
-                    Command="{Binding PlayPauseCommand}">
+					Command="{Binding PlayPauseCommand}">
 				<PathIcon Data="{StaticResource play_pause}"/>
 			</Button>
 
 			<AvaloniaEdit:TextEditor Grid.Column="3" Grid.Row="1" Grid.RowSpan="3"
-                                     Document="{Binding Session.Doc.FumenDocument}"
-                                     Name="Editor" BorderBrush="#50FFFFFF" BorderThickness="0.5"
-                                     ShowLineNumbers="True" Margin="5 5 5 5" Padding="5"
+									 Document="{Binding Session.Doc.FumenDocument}"
+									 Name="Editor" BorderBrush="#50FFFFFF" BorderThickness="0.5"
+									 ShowLineNumbers="True" Margin="5 5 5 5" Padding="5"
 									 WordWrap="{Binding Settings.WordWrap}"
-                                     FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                                     FontSize="{Binding Settings.FontSize}">
+									 FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+									 FontSize="{Binding Settings.FontSize}">
 				<AvaloniaEdit:TextEditor.ContextFlyout>
 					<MenuFlyout>
 					</MenuFlyout>
@@ -191,11 +192,11 @@
 
 
 			<controls:SimaiVisualizerControl Name="SimaiVisual"
-                                             Height="100" Grid.Row="4" Grid.ColumnSpan="4"
-                                             Time="{Binding Session.Playback.TrackTime}" TrackIf="{Binding Session.SongTrackInfo}"
-                                             ZoomLevel="{Binding Session.Playback.TrackZoomLevel}" SimaiChart="{Binding Session.Doc.CurrentChartData}"
-                                             Offset="{Binding Session.Doc.Offset}" CaretTime="{Binding Session.Playback.CaretTime}"
-                                             IsAnimated ="{Binding Settings.IsAnimated}" Signatures="{Binding Session.Doc.Signatures}"/>
+											 Height="100" Grid.Row="4" Grid.ColumnSpan="4"
+											 Time="{Binding Session.Playback.TrackTime}" TrackIf="{Binding Session.SongTrackInfo}"
+											 ZoomLevel="{Binding Session.Playback.TrackZoomLevel}" SimaiChart="{Binding Session.Doc.CurrentChartData}"
+											 Offset="{Binding Session.Doc.Offset}" CaretTime="{Binding Session.Playback.CaretTime}"
+											 IsAnimated ="{Binding Settings.IsAnimated}" Signatures="{Binding Session.Doc.Signatures}"/>
 			<DockPanel Grid.Row="4" >
 				<Button Name="ZoomOut" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
 					<PathIcon Width="8" Data="{StaticResource zoom_out}"/>
@@ -257,10 +258,10 @@
 		</Grid>
 		<DockPanel >
 			<Image DockPanel.Dock="Right"
-                   HorizontalAlignment="Right"
-                   Margin="0 0 -30 100" ZIndex="-9999"
-                   Opacity="0.5"
-                   Source="{Binding Settings.BackgroundImage}"></Image>
+				   HorizontalAlignment="Right"
+				   Margin="0 0 -30 100" ZIndex="-9999"
+				   Opacity="0.5"
+				   Source="{Binding Settings.BackgroundImage}"></Image>
 		</DockPanel>
 
 	</Panel>
