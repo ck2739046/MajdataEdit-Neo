@@ -11,6 +11,7 @@ using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
+using CommunityToolkit.Mvvm.Input;
 using MajdataEdit_Neo.Assets.Langs;
 using MajdataEdit_Neo.Base;
 using MajdataEdit_Neo.Controls;
@@ -113,6 +114,7 @@ public partial class MainWindow : Window
         textEditor.TextArea.TextView.BackgroundRenderers.Add(markerService);
         textEditor.PointerMoved += TextEditor_PointerMoved;
         InputMethod.SetIsInputMethodEnabled(textEditor.TextArea, false);
+        ConfigureKeyBindings();
         //setup visualizer
         simaiVisual = this.FindControl<SimaiVisualizerControl>("SimaiVisual")!;
         simaiVisual.PointerWheelChanged += SimaiVisual_PointerWheelChanged;
@@ -138,6 +140,55 @@ public partial class MainWindow : Window
         //setup debounce timer
         _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(114.514) };
         _debounceTimer.Tick += _debounceTimer_Tick;
+    }
+
+    private void ConfigureKeyBindings()
+    {
+        const KeyModifiers ctrl = KeyModifiers.Control;
+        const KeyModifiers ctrlShift = KeyModifiers.Control | KeyModifiers.Shift;
+
+        // Keep the complete shortcut layout here so changes do not get scattered
+        // between XAML, controls, and plugin-generated menu items.
+        var bindings = new (KeyGesture Gesture, Action Execute)[]
+        {
+            (new(Key.S, ctrl), () => viewModel.SaveFileCommand.Execute(null)),
+            (new(Key.Z, ctrl), () => textEditor.Document.UndoStack.Undo()),
+            (new(Key.Y, ctrl), () => textEditor.Document.UndoStack.Redo()),
+
+            (new(Key.C, ctrlShift), () => viewModel.PlayStopCommand.Execute(null)),
+            (new(Key.X, ctrlShift), () => viewModel.PlayPauseCommand.Execute(null)),
+            (new(Key.Z, ctrlShift), () => viewModel.PlayIncludeOpCommand.Execute(null)),
+
+            (new(Key.P, ctrl), () => viewModel.IncreasePlaybackSpeedCommand.Execute(null)),
+            (new(Key.O, ctrl), () => viewModel.DecreasePlaybackSpeedCommand.Execute(null)),
+
+            (new(Key.J, ctrl), () => ExecutePluginAction("mirror_h")),
+            (new(Key.K, ctrl), () => ExecutePluginAction("mirror_v")),
+            (new(Key.L, ctrl), () => ExecutePluginAction("mirror_180")),
+            (new(Key.OemSemicolon, ctrl), () => ExecutePluginAction("rotate_r")),
+            (new(Key.OemQuotes, ctrl), () => ExecutePluginAction("rotate_l"))
+        };
+
+        foreach (var (gesture, execute) in bindings)
+        {
+            KeyBindings.Add(new KeyBinding
+            {
+                Gesture = gesture,
+                Command = new RelayCommand(execute)
+            });
+        }
+    }
+
+    private void ExecutePluginAction(string iconKey)
+    {
+        var action = viewModel.Session.Plugins.PluginItems
+            .OfType<PluginAction>()
+            .FirstOrDefault(item => item.IconKey == iconKey);
+
+        if (action is not null)
+        {
+            ViewModel_RequestPluginActionExecution(action);
+        }
     }
 
     private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)

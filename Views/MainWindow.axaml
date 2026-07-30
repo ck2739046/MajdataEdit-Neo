@@ -38,14 +38,6 @@
 		<StreamGeometry x:Key="new">M440-240h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z</StreamGeometry>
 		<StreamGeometry x:Key="video">M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h480q33 0 56.5 23.5T720-720v480q0 33-23.5 56.5T640-160H160Zm0-80h480v-480H160v480Zm200-40 200-160-200-160v320Z</StreamGeometry>
 	</Window.Resources>
-	<Window.KeyBindings>
-		<KeyBinding Gesture="Ctrl+S" Command="{Binding SaveFileCommand}"/>
-		<KeyBinding Gesture="Ctrl+O" Command="{Binding OpenFileCommand}"/>
-		<KeyBinding Gesture="Ctrl+Space" Command="{Binding PlayPauseCommand}"/>
-		<KeyBinding Gesture="Ctrl+Shift+Space" Command="{Binding StopCommand}"/>
-		<KeyBinding Gesture="Ctrl+Enter" Command="{Binding PlayStopCommand}"/>
-		<KeyBinding Gesture="Ctrl+Shift+R" Command="{Binding PlayIncludeOpCommand}"/>
-	</Window.KeyBindings>
 	<Panel>
 		<ExperimentalAcrylicBorder IsHitTestVisible="False">
 			<ExperimentalAcrylicBorder.Material>

@@ -311,8 +311,6 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
                 FileOptions.Asynchronous | FileOptions.WriteThrough))
             {
                 await SimaiParser.DeparseAsync(Doc.CurrentSimaiFile, stream);
-                await stream.FlushAsync();
-                stream.Flush(flushToDisk: true);
             }
 
             File.Move(tempPath, maidataPath, overwrite: true);

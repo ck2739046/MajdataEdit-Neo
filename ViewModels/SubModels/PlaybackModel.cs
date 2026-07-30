@@ -190,8 +190,16 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         return new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY - 1);
     }
 
-    public void IncreasePlaybackSpeed() => PlaybackSpeed += 0.1f;
-    public void DecreasePlaybackSpeed() => PlaybackSpeed -= 0.1f;
+    public void IncreasePlaybackSpeed()
+    {
+        PlaybackSpeed += 0.1f;
+    }
+    public void DecreasePlaybackSpeed()
+    {
+        var speed = PlaybackSpeed - 0.1f;
+        if (speed < 0.1f) speed = 0.1f;
+        PlaybackSpeed = speed;
+    }
 
     public void SetCaretPosition(int rawPosition, int line, bool setTrackTime)
     {
