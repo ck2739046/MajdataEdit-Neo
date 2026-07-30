@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="using:MajdataEdit_Neo"
-        mc:Ignorable="d" Width="800" Height="400"
+        mc:Ignorable="d" MinWidth="640" MinHeight="360"
         x:Class="MajdataEdit_Neo.Views.ChartInfoWindow"
         x:DataType="vm:ChartInfoViewModel"
         TransparencyLevelHint="AcrylicBlur"
@@ -26,38 +26,38 @@
       </ExperimentalAcrylicBorder.Material>
     </ExperimentalAcrylicBorder>
 
-    <Grid ColumnDefinitions="300,*" Margin="10">
-      <StackPanel Grid.Column="0" VerticalAlignment="Stretch" Margin="10" Spacing="10">
-        <Image Height="280" Width="280" Source="{Binding Cover}" Stretch="Fill"></Image>
-        <Button Content="{local:I18N Gui_SelectBgImage}" Command="{Binding OpenBgCover}" HorizontalAlignment="Stretch"></Button>
-        <Button Content="{local:I18N Gui_SelectBgVideo}" Command="{Binding OpenBgVideo}" HorizontalAlignment="Stretch"></Button>
-      </StackPanel>
-      <StackPanel Grid.Column="1" VerticalAlignment="Stretch" Margin="10" Spacing="10">
-		<DockPanel Margin="0 5 0 0">
+    <Grid ColumnDefinitions="3*,5*" Margin="10">
+      <Grid Grid.Column="0" RowDefinitions="*,Auto,Auto" Margin="10" RowSpacing="10">
+        <Image Grid.Row="0" Source="{Binding Cover}" Stretch="Uniform"></Image>
+        <Button Grid.Row="1" Content="{local:I18N Gui_SelectBgImage}" Command="{Binding OpenBgCover}" HorizontalAlignment="Stretch"></Button>
+        <Button Grid.Row="2" Content="{local:I18N Gui_SelectBgVideo}" Command="{Binding OpenBgVideo}" HorizontalAlignment="Stretch"></Button>
+      </Grid>
+      <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,*" Margin="10" RowSpacing="10">
+		<DockPanel Grid.Row="0" Margin="0 5 0 0">
             <Label DockPanel.Dock="Left" Content="{local:I18N Gui_Title}"/>
             <TextBox Text="{Binding Title}" Margin="20 0 0 0" />
         </DockPanel>
-		<Grid ColumnDefinitions="Auto,*,Auto,*">
+		<Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,*">
             <Label Grid.Column="0" Content="{local:I18N Gui_Artist}"/>
             <TextBox Grid.Column="1" Text="{Binding Artist}" Margin="14 0 0 0" ></TextBox>
             <Label Grid.Column="2" Margin="14 0 0 0" Content="{local:I18N Gui_FinalDesigner}"/>
             <TextBox Grid.Column="3" Text="{Binding FinalDesigner}" Margin="14 0 0 0" ></TextBox>
         </Grid>
-        <Label Content="{local:I18N Gui_Commands}"/>
-        <ScrollViewer Height="200">
+        <Label Grid.Row="2" Content="{local:I18N Gui_Commands}"/>
+        <ScrollViewer Grid.Row="3">
           <StackPanel>
           <ItemsControl ItemsSource="{Binding SimaiCommands}">
             <ItemsControl.ItemTemplate>
               
               <DataTemplate>
-                <StackPanel Margin="0 0 0 5" Orientation="Horizontal" Spacing="5">
-                  <Label Margin="0 3.5 0 0">&amp;</Label>
-                  <TextBox Width="192" Text="{Binding Prefix}"/>
-                  <Label Margin="0 3.5 0 0">=</Label>
-                  <TextBox Width="192" Text="{Binding Value}"/>
-                  <Button VerticalAlignment="Stretch" Grid.Column="2"
+                <Grid Margin="0 0 0 5" ColumnDefinitions="Auto,*,Auto,*,Auto" ColumnSpacing="5">
+                  <Label Grid.Column="0" Margin="0 3.5 0 0">&amp;</Label>
+                  <TextBox Grid.Column="1" Text="{Binding Prefix}"/>
+                  <Label Grid.Column="2" Margin="0 3.5 0 0">=</Label>
+                  <TextBox Grid.Column="3" Text="{Binding Value}"/>
+                  <Button Grid.Column="4" VerticalAlignment="Stretch"
                           Command="{Binding $parent[Window].((vm:ChartInfoViewModel)DataContext).DelCommand}" CommandParameter="{Binding $self.DataContext}">-</Button>
-                </StackPanel>
+                </Grid>
               </DataTemplate>
 
             </ItemsControl.ItemTemplate>
@@ -67,7 +67,7 @@
           </StackPanel>
         </ScrollViewer>
         
-      </StackPanel>
+      </Grid>
     </Grid>
     
   </Panel>

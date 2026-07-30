@@ -15,10 +15,11 @@ using System.Threading.Tasks;
 using Types;
 using MajdataEdit_Neo.ViewModels.SubModels;
 using MajdataEdit_Neo.Models.Plugins;
+using MajdataEdit_Neo.Base;
 
 namespace MajdataEdit_Neo.ViewModels.SubModels;
 
-public partial class FileSessionModel : ViewModelBase
+public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
 {
     //------sub-models (hierarchical ownership)
     public DocumentModel Doc { get; }
@@ -54,7 +55,7 @@ public partial class FileSessionModel : ViewModelBase
         // Note: Currently PlaybackModel uses global MainWindowViewModel.Ins.Session.Doc or maybe it doesn't? 
         // We will refactor PlaybackModel to accept IReadOnlyDocument soon.
 
-        AutoSave = new AutoSaveModel();
+        AutoSave = new AutoSaveModel(MajEnv.MajBase);
         DiscordRpc = new DiscordRpcModel();
 
         // Inject mutable interface to ToolsModel
@@ -90,9 +91,9 @@ public partial class FileSessionModel : ViewModelBase
             }
         };
 
-        Playback.LoadRequired += async (s, e) =>
+        Doc.FumenContentChanged += (s, e) =>
         {
-            await Playback.EditorLoad(MaidataDir);
+            _ = AutoSave.OnSimaiFileChangedAsync(Doc.CurrentSimaiFile);
         };
     }
 
@@ -151,9 +152,9 @@ public partial class FileSessionModel : ViewModelBase
         Doc.CurrentSimaiFile = new SimaiFile("Set Title", "Set Artist", 0, string.Empty, levels, null);
         Doc.SelectedDifficulty = 0;
         Doc.IsSaved = false;
-        AutoSave.Enabled = true;
-        AutoSave.SetContent("");
         AutoSave.UpdateContext(MaidataDir);
+        AutoSave.SetContent("");
+        AutoSave.Enabled = true;
         await Playback.EditorLoad(MaidataDir);
     }
 
@@ -164,9 +165,9 @@ public partial class FileSessionModel : ViewModelBase
         {
             var file = await FileIOManager.DoOpenFilePickerAsync(FileIOManager.FileOpenerType.Track);
             if (file is null) return;
-            var maidataPath = file.TryGetLocalPath();
-            if (maidataPath is null) return;
-            var fileInfo = new FileInfo(maidataPath);
+            var trackPath = file.TryGetLocalPath();
+            if (trackPath is null) return;
+            var fileInfo = new FileInfo(trackPath);
             var directory = fileInfo.Directory?.FullName;
             if (directory is null) return;
             if (File.Exists(Path.Combine(directory, "maidata.txt")))
@@ -175,14 +176,14 @@ public partial class FileSessionModel : ViewModelBase
                     Langs.Msg_MaidataAlreadyExist,
                     Langs.Gui_Error,
                     ButtonEnum.Ok, Icon.Error);
-                await LoadChart(maidataPath);
+                await LoadChart(Path.Combine(directory, "maidata.txt"));
                 return;
             }
             await NewChartFromDir(directory);
         }
         catch (Exception e)
         {
-            Debug.WriteLine(e.Message);
+            Debug.WriteLine(e);
         }
     }
 
@@ -199,7 +200,7 @@ public partial class FileSessionModel : ViewModelBase
         }
         catch (Exception e)
         {
-            Debug.WriteLine(e.Message);
+            Debug.WriteLine(e);
         }
     }
 
@@ -230,9 +231,9 @@ public partial class FileSessionModel : ViewModelBase
         SongTrackInfo = songTrackInfo;
         Doc.CurrentChartMetadata = metadata;
         Doc.CurrentSimaiFile = simaiFile;
-        AutoSave.Enabled = true;
-        AutoSave.SetContent(content);
         AutoSave.UpdateContext(MaidataDir);
+        AutoSave.SetContent(content);
+        AutoSave.Enabled = true;
 
         LoadEditRecord();
         await Playback.EditorLoad(MaidataDir);
@@ -285,11 +286,63 @@ public partial class FileSessionModel : ViewModelBase
                 parsedChart.NoteTimings,
                 parsedChart.CommaTimings);
         }
-        await SimaiParser.DeparseAsync(Doc.CurrentSimaiFile,
-            new FileStream(Path.Combine(MaidataDir, "maidata.txt"), FileMode.Create, FileAccess.Write));
+        var maidataPath = Path.Combine(MaidataDir, "maidata.txt");
+        var tempPath = Path.Combine(MaidataDir, $".maidata.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await using (var stream = new FileStream(
+                tempPath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.None,
+                4096,
+                FileOptions.Asynchronous | FileOptions.WriteThrough))
+            {
+                await SimaiParser.DeparseAsync(Doc.CurrentSimaiFile, stream);
+                await stream.FlushAsync();
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Move(tempPath, maidataPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
 
         Doc.MarkAsSaved();
         AutoSave.IsFileChanged = false;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await Playback.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to dispose playback resources: {ex}");
+        }
+
+        try
+        {
+            _trackReader.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to dispose audio resources: {ex}");
+        }
+
+        try
+        {
+            DiscordRpc.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to dispose Discord RPC: {ex}");
+        }
     }
 }
 

@@ -29,6 +29,7 @@ public static class SimaiChecker
         }
 
         var (cleanedFumen, positionMap, newlines) = PreprocessNewlines(fumen, context, endMarkerIndex);
+        CheckNewlinePositions(fumen, newlines, context);
 
         var segments = SplitIntoSegments(cleanedFumen, positionMap, context);
 
@@ -152,8 +153,6 @@ public static class SimaiChecker
 
     private static void CheckNewlinePositions(
         string originalFumen,
-        string cleanedFumen,
-        List<TextPosition> positionMap,
         List<(int Index, TextPosition OriginalPos)> newlines,
         CheckerContext context)
     {

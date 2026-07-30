@@ -17,10 +17,10 @@ public class AutoSaveModel
     readonly AutoSaveManager _manager;
     readonly Lock _syncLock = new();
 
-    bool _isUpdating = false;
-    DateTime _lastUpdateTime = DateTime.UnixEpoch;
-
-    const int UPDATE_INTERVAL_MS = 5000;
+    SimaiFile? _pendingSimaiFile;
+    long _updateVersion;
+    bool _updateWorkerRunning;
+    Task _updateTask = Task.CompletedTask;
 
     public bool IsFileChanged
     {
@@ -34,10 +34,14 @@ public class AutoSaveModel
         set => _manager.Enabled = value;
     }
 
-    public AutoSaveModel()
+    public AutoSaveModel(string baseDirectory)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseDirectory);
         _localContext = new InternalAutoSaveContext(_contentProvider);
-        _globalContext = new InternalAutoSaveContext(_contentProvider);
+        _globalContext = new InternalAutoSaveContext(_contentProvider)
+        {
+            WorkingPath = Path.Combine(Path.GetFullPath(baseDirectory), ".autosave")
+        };
         AutoSaveManager.Initialize(_localContext, _globalContext);
         _manager = AutoSaveManager.Instance;
     }
@@ -51,40 +55,85 @@ public class AutoSaveModel
 
     public void SetContent(string content)
     {
-        _contentProvider.Content = content;
-    }
-
-    public async Task OnSimaiFileChangedAsync(SimaiFile? simaiFile)
-    {
         lock (_syncLock)
         {
-            if ((DateTime.Now - _lastUpdateTime).TotalMilliseconds < UPDATE_INTERVAL_MS)
-                return;
-            if (_isUpdating)
-                return;
-            _isUpdating = true;
-            _lastUpdateTime = DateTime.Now;
+            _pendingSimaiFile = null;
+            _updateVersion++;
+            _contentProvider.Content = content;
+        }
+    }
+
+    public Task OnSimaiFileChangedAsync(SimaiFile? simaiFile)
+    {
+        var startWorker = false;
+        lock (_syncLock)
+        {
+            _pendingSimaiFile = simaiFile;
+            _updateVersion++;
+            if (!_updateWorkerRunning)
+            {
+                _updateWorkerRunning = true;
+                startWorker = true;
+            }
         }
 
-        try
+        if (startWorker)
+            _updateTask = ProcessPendingUpdatesAsync();
+
+        return _updateTask;
+    }
+
+    private async Task ProcessPendingUpdatesAsync()
+    {
+        while (true)
         {
-            if (simaiFile is null) return;
-            var maidata = await SimaiParser.DeparseAsync(simaiFile);
-            _contentProvider.Content = maidata;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex);
-        }
-        finally
-        {
-            _isUpdating = false;
+            SimaiFile? pendingFile;
+            long version;
+            lock (_syncLock)
+            {
+                pendingFile = _pendingSimaiFile;
+                version = _updateVersion;
+            }
+
+            if (pendingFile is null)
+            {
+                lock (_syncLock)
+                    _updateWorkerRunning = false;
+                return;
+            }
+
+            try
+            {
+                var maidata = await SimaiParser.DeparseAsync(pendingFile);
+
+                lock (_syncLock)
+                {
+                    if (version != _updateVersion)
+                        continue;
+
+                    _contentProvider.Content = maidata;
+                    _updateWorkerRunning = false;
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                lock (_syncLock)
+                {
+                    if (version != _updateVersion)
+                        continue;
+
+                    _updateWorkerRunning = false;
+                    return;
+                }
+            }
         }
     }
 
     internal class InternalAutoSaveContext : IAutoSaveContext, IAutoSaveContentProvider<string>
     {
-        public string WorkingPath { get; set; } = Path.Combine(Environment.CurrentDirectory, ".autosave");
+        public string WorkingPath { get; set; } = string.Empty;
         public string RawFilePath { get; set; } = string.Empty;
         public string Content => _contentProvider?.Content ?? string.Empty;
 

@@ -5,6 +5,7 @@
 
 using MajdataEdit_Neo.Modules.AutoSave.Contexts;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace MajdataEdit_Neo.Modules.AutoSave;
@@ -22,13 +23,8 @@ internal class AutoSaveRecoverer : IAutoSaveRecoverer
         _localContext = localContext;
         _globalContext = globalContext;
         _localIndex = new AutoSaveIndexManager(localContext, AutoSaveManager.LOCAL_AUTOSAVE_MAX_COUNT);
-        try
-        {
+        if (!string.IsNullOrWhiteSpace(_localContext.WorkingPath))
             _localIndex.ChangePath(_localContext.WorkingPath);
-        }
-        catch (LocalDirNotOpenYetException)
-        {
-        }
 
         _globalIndex = new AutoSaveIndexManager(globalContext, AutoSaveManager.GLOBAL_AUTOSAVE_MAX_COUNT);
         _globalIndex.ChangePath(_globalContext.WorkingPath);
@@ -36,14 +32,10 @@ internal class AutoSaveRecoverer : IAutoSaveRecoverer
 
     public IReadOnlyCollection<AutoSaveFileInfo> GetLocalAutoSaves()
     {
-        try
-        {
-            _localIndex.ChangePath(_localContext.WorkingPath);
-        }
-        catch (LocalDirNotOpenYetException)
-        {
+        if (string.IsNullOrWhiteSpace(_localContext.WorkingPath))
             return EMPTY_COLLECTION;
-        }
+
+        _localIndex.ChangePath(_localContext.WorkingPath);
         var result = new List<AutoSaveFileInfo>();
 
         result.AddRange(_localIndex.GetFileInfos());
@@ -84,19 +76,37 @@ internal class AutoSaveRecoverer : IAutoSaveRecoverer
         var backupMaidataPath = recoveredFileInfo.RawPath + "/maidata.before_recovery.txt";
         // 自动保存maidata路径
         var autosaveMaidataPath = recoveredFileInfo.FileName;
+        var recoveryTempPath = Path.Combine(
+            recoveredFileInfo.RawPath!,
+            $".maidata.recovery.{Guid.NewGuid():N}.tmp");
 
         try
         {
-            // 删除之前的备份（若有）
-            if (File.Exists(backupMaidataPath)) File.Delete(backupMaidataPath);
-            // 备份恢复前的maidata
-            File.Move(rawMaidataPath, backupMaidataPath);
-            // 将自动保存maidata恢复到原目录
-            File.Copy(autosaveMaidataPath!, rawMaidataPath);
+            File.Copy(autosaveMaidataPath!, recoveryTempPath);
+            using (var stream = new FileStream(recoveryTempPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                stream.Flush(flushToDisk: true);
+
+            if (File.Exists(rawMaidataPath))
+            {
+                if (File.Exists(backupMaidataPath))
+                    File.Delete(backupMaidataPath);
+
+                File.Replace(recoveryTempPath, rawMaidataPath, backupMaidataPath);
+            }
+            else
+            {
+                File.Move(recoveryTempPath, rawMaidataPath);
+            }
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"Failed to recover auto-save file: {ex}");
             return false;
+        }
+        finally
+        {
+            if (File.Exists(recoveryTempPath))
+                File.Delete(recoveryTempPath);
         }
 
         return true;

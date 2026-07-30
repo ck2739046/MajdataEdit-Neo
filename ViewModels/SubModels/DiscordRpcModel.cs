@@ -1,8 +1,10 @@
 using DiscordRPC;
 
+using System;
+
 namespace MajdataEdit_Neo.ViewModels.SubModels;
 
-public class DiscordRpcModel
+public class DiscordRpcModel : IDisposable
 {
     readonly DiscordRpcClient _client = new("1068882546932326481");
     readonly RichPresence _presence = new()
@@ -27,5 +29,10 @@ public class DiscordRpcModel
         if (details != null) _presence.Details = details;
         if (state != null) _presence.State = state;
         _client.SetPresence(_presence);
+    }
+
+    public void Dispose()
+    {
+        _client.Dispose();
     }
 }

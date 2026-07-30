@@ -31,6 +31,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using TextMateSharp.Grammars;
 using TextMateSharp.Registry;
@@ -58,6 +59,9 @@ public partial class MainWindow : Window
 
     //behind elements
     readonly DispatcherTimer _debounceTimer;
+    readonly SemaphoreSlim _analysisGate = new(1, 1);
+    CancellationTokenSource? _analysisCts;
+    PlaybackModel? _subscribedPlayback;
     bool _isTextChangedBeforeCaretMoving;
     bool _isHandlingCtrlClick;
 
@@ -235,7 +239,8 @@ public partial class MainWindow : Window
                 }
             }
 
-            viewModel.OnWindowClosing();
+            DetachEventHandlers();
+            await viewModel.OnWindowClosingAsync();
             this.Close();
         }
         else haveAsked = false;
@@ -253,6 +258,12 @@ public partial class MainWindow : Window
 
     private void MainWindow_KeyDown(object? sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Escape && viewModel.Session.Tools.CancelCurrentOperation())
+        {
+            e.Handled = true;
+            return;
+        }
+
         _pressedKeys.Add(e.Key);
     }
 
@@ -447,6 +458,7 @@ public partial class MainWindow : Window
 
     private void TextEditor_TextChanged(object? sender, EventArgs e)
     {
+        _analysisCts?.Cancel();
         _isTextChangedBeforeCaretMoving = true;
         _debounceTimer.Stop();
         _debounceTimer.Start();
@@ -458,38 +470,82 @@ public partial class MainWindow : Window
     }
     private async void TextEditor_DebouncedTextChanged()
     {
-        await viewModel.Session.Doc.SetFumenContent(textEditor.Text);
-        var seek = textEditor.CaretOffset;
-        // Text edits (especially Ctrl+V) update the parsed caret timing, but must not seek playback.
-        UpdateCaretPosition(seek, false); // 等parse完才能找到对的位
-        _isTextChangedBeforeCaretMoving = false;
-        // WHY SET false FUCKING HERE?
-        // AvaloniaEdit will trigger Caret_PositionChanged twice 
-        // after TextEditor_TextChanged...
+        var analysisCts = new CancellationTokenSource();
+        var previousCts = Interlocked.Exchange(ref _analysisCts, analysisCts);
+        previousCts?.Cancel();
+        var cancellationToken = analysisCts.Token;
+        var enteredGate = false;
 
-        var fumen = viewModel.Session.Doc.CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty].Fumen;
-
-        var diags = await Task.Run(() => SimaiChecker.Check(fumen));
-        viewModel.Session.Doc.SimaiDiagnostics = diags;
-        markerService.UpdateDiags(diags);
-
-        viewModel.Session.Doc.Signatures.Clear();
-        if (viewModel.Session.Doc.CurrentChartData != null)
+        try
         {
-            var timingList = viewModel.Session.Doc.CurrentChartData.CommaTimings;
-            var first = timingList.FirstOrDefault();
-            if (first != default)
+            await _analysisGate.WaitAsync(cancellationToken);
+            enteredGate = true;
+            cancellationToken.ThrowIfCancellationRequested();
+
+            await viewModel.Session.Doc.SetFumenContent(textEditor.Text);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var seek = textEditor.CaretOffset;
+            // Text edits update parsed caret timing, but must not seek playback.
+            UpdateCaretPosition(seek, false);
+            _isTextChangedBeforeCaretMoving = false;
+
+            var fumen = viewModel.Session.Doc
+                .CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty]
+                .Fumen;
+            var diags = await Task.Run(() =>
             {
-                var lastNum = first.SignatureNumerator;
-                var lastDeno = first.SignatureDenominator;
-                foreach (var timing in timingList)
+                cancellationToken.ThrowIfCancellationRequested();
+                var result = SimaiChecker.Check(fumen);
+                cancellationToken.ThrowIfCancellationRequested();
+                return result;
+            }, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            viewModel.Session.Doc.SimaiDiagnostics = diags;
+            markerService.UpdateDiags(diags);
+
+            var signatures = new List<(double, int, int)>();
+            var timingList = viewModel.Session.Doc.CurrentChartData.CommaTimings;
+            if (timingList.Length > 0)
+            {
+                var firstTiming = timingList[0];
+                var lastNum = firstTiming.SignatureNumerator;
+                var lastDeno = firstTiming.SignatureDenominator;
+                signatures.Add((firstTiming.Timing, lastNum, lastDeno));
+
+                for (var i = 1; i < timingList.Length; i++)
                 {
+                    var timing = timingList[i];
                     if (timing.SignatureNumerator != lastNum || timing.SignatureDenominator != lastDeno)
                     {
-                        viewModel.Session.Doc.Signatures.Add((timing.Timing, timing.SignatureNumerator, timing.SignatureDenominator));
+                        signatures.Add((timing.Timing, timing.SignatureNumerator, timing.SignatureDenominator));
+                        lastNum = timing.SignatureNumerator;
+                        lastDeno = timing.SignatureDenominator;
                     }
                 }
             }
+            else
+            {
+                signatures.Add((0, 4, 4));
+            }
+
+            viewModel.Session.Doc.Signatures = signatures;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Chart analysis failed: {ex}");
+            _isTextChangedBeforeCaretMoving = false;
+        }
+        finally
+        {
+            if (enteredGate)
+                _analysisGate.Release();
+            Interlocked.CompareExchange(ref _analysisCts, null, analysisCts);
+            analysisCts.Dispose();
         }
     }
     private void TextEditor_PointerMoved(object? sender, PointerEventArgs e)
@@ -566,10 +622,13 @@ public partial class MainWindow : Window
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
+        if (_subscribedPlayback is not null)
+            _subscribedPlayback.RequestSeekToDocPos -= Playback_RequestSeekToDocPos;
+
         if (DataContext is MainWindowViewModel vm)
         {
-            vm.Session.Playback.RequestSeekToDocPos -= Playback_RequestSeekToDocPos;
-            vm.Session.Playback.RequestSeekToDocPos += Playback_RequestSeekToDocPos;
+            _subscribedPlayback = vm.Session.Playback;
+            _subscribedPlayback.RequestSeekToDocPos += Playback_RequestSeekToDocPos;
         }
     }
 
@@ -579,6 +638,19 @@ public partial class MainWindow : Window
         {
             SeekToDocPos(point, textEditor);
         });
+    }
+
+    private void DetachEventHandlers()
+    {
+        _debounceTimer.Stop();
+        _analysisCts?.Cancel();
+        viewModel.Session.Tools.CancelCurrentOperation();
+        viewModel.RequestPluginActionExecution -= ViewModel_RequestPluginActionExecution;
+        if (_subscribedPlayback is not null)
+        {
+            _subscribedPlayback.RequestSeekToDocPos -= Playback_RequestSeekToDocPos;
+            _subscribedPlayback = null;
+        }
     }
 }
 

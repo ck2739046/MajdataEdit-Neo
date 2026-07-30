@@ -3,6 +3,7 @@ using Avalonia.Media;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,6 +13,10 @@ public class TextMarkerService(TextDocument document, TextView textView) : IBack
 {
     private readonly TextSegmentCollection<SimaiTextMarker> _markers = new(document);
     private readonly TextView _textView = textView;
+    private static readonly Pen ErrorPen = new(new SolidColorBrush(Colors.Red), 1.5);
+    private static readonly Pen WarningPen = new(new SolidColorBrush(Colors.LightGreen), 1.5);
+    private static readonly Pen InfoPen = new(new SolidColorBrush(Colors.LightBlue), 1.5);
+    private static readonly Pen TransparentPen = new(new SolidColorBrush(Colors.Transparent), 1.5);
 
     public void UpdateDiags(IEnumerable<SimaiDiagnostic> diagnostics)
     {
@@ -43,31 +48,34 @@ public class TextMarkerService(TextDocument document, TextView textView) : IBack
 
     public void Draw(TextView textView, DrawingContext drawingContext)
     {
-        if (_markers == null || textView.VisualLines.Count == 0) return;
+        if (textView.VisualLines.Count == 0) return;
 
         var visualLines = textView.VisualLines;
-        foreach (var marker in _markers)
+        var firstLine = visualLines[0];
+        var lastLine = visualLines[^1];
+        var visibleStart = firstLine.StartOffset;
+        var visibleEnd = lastLine.StartOffset + lastLine.VisualLength;
+        foreach (var marker in _markers.FindOverlappingSegments(
+                     visibleStart,
+                     Math.Max(0, visibleEnd - visibleStart)))
         {
-            // 只绘制当前可见区域内的标记
-            foreach (var line in visualLines)
+            foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, marker))
             {
-                if (line.StartOffset > marker.EndOffset ||
-                    line.StartOffset + line.VisualLength < marker.StartOffset)
-                    continue;
-
-                // 获取标记在当前行的各个矩形区域（考虑跨行情况）
-                foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, marker))
-                {
-                    DrawSquiggle(drawingContext, marker.Color, rect);
-                }
+                DrawSquiggle(drawingContext, GetPen(marker.Color), rect);
             }
         }
     }
 
-    private void DrawSquiggle(DrawingContext dc, Color color, Rect rect)
+    private static Pen GetPen(Color color)
     {
-        var pen = new Pen(new SolidColorBrush(color), 1.5);
+        if (color == Colors.Red) return ErrorPen;
+        if (color == Colors.LightGreen) return WarningPen;
+        if (color == Colors.LightBlue) return InfoPen;
+        return TransparentPen;
+    }
 
+    private static void DrawSquiggle(DrawingContext dc, Pen pen, Rect rect)
+    {
         double y = rect.Bottom - 1;
         double x = rect.Left;
         double endX = rect.Right;

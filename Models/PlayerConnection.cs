@@ -17,10 +17,17 @@ using System.Collections.Generic;
 
 namespace MajdataEdit_Neo.Models;
 
-internal class PlayerConnection : IDisposable
+internal class PlayerConnection : IDisposable, IAsyncDisposable
 {
     public bool IsConnected => _client?.IsAlive ?? false;
-    public ViewSummary ViewSummary => _viewSummary;
+    public ViewSummary ViewSummary
+    {
+        get
+        {
+            lock (_stateSync)
+                return _viewSummary;
+        }
+    }
     private ViewSummary _viewSummary;
 
     public delegate void NotifyViewStateChangedEventHandler(object sender, MajWsResponseType e);
@@ -33,10 +40,17 @@ internal class PlayerConnection : IDisposable
     public event EventHandler? OnLoadFinished;
     public event EventHandler? OnDisconnected;
 
-    bool _lastState = false;
-    Task _listenerTask = Task.CompletedTask;
+    readonly object _stateSync = new();
+    readonly object _connectionSync = new();
+    readonly CancellationTokenSource _lifetimeCts = new();
+    readonly SemaphoreSlim _connectGate = new(1, 1);
+    readonly SemaphoreSlim _messageSignal = new(0);
+    readonly SemaphoreSlim _stateChangedSignal = new(0, 1);
+    readonly Task _listenerTask;
+    bool _lastState;
+    bool _disposed;
     WebSocket? _client;
-    ConcurrentQueue<MessageEventArgs> _playerMessages = new();
+    readonly ConcurrentQueue<MessageEventArgs> _playerMessages = new();
 
     readonly static JsonSerializerOptions JSON_READER_OPTIONS = new()
     {
@@ -46,57 +60,94 @@ internal class PlayerConnection : IDisposable
         },
         TypeInfoResolver = MajWsJsonContext.Default
     };
+
+    public PlayerConnection()
+    {
+        _listenerTask = Task.Run(() => StartToListenWebSocket(_lifetimeCts.Token));
+    }
+
     public async Task<bool> ConnectAsync(string url = "ws://127.0.0.1:8083/majdata")
     {
         if (IsConnected)
             return true;
-        using var cts = new CancellationTokenSource();
-        cts.CancelAfter(2000);
 
-        return await ConnectToPlayer(url, cts.Token);
+        return await ConnectToPlayer(url);
     }
-    private async Task<bool> ConnectToPlayer(string url, CancellationToken token = default)
+
+    private async Task<bool> ConnectToPlayer(string url)
     {
+        await _connectGate.WaitAsync();
         try
         {
-            await Task.Run(async () =>
+            if (IsConnected)
+                return true;
+
+            WebSocket client;
+            lock (_connectionSync)
             {
-                _client = new WebSocket(url);
-                _client.OnClose += OnClose;
-                _client.OnOpen += OnOpen;
-                _client.OnMessage += OnMessage;
-                _client.OnError += OnError;
-                _client.Connect();
-                while (!_client.IsAlive)
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_client is not null)
+                    CloseClient(_client);
+
+                client = new WebSocket(url)
                 {
-                    token.ThrowIfCancellationRequested();
-                    await Task.Yield();
-                }
-                if (_listenerTask.IsCompleted)
-                    _listenerTask = Task.Run(StartToListenWebSocket);
-            });
+                    WaitTime = TimeSpan.FromSeconds(2)
+                };
+                client.OnClose += OnClose;
+                client.OnOpen += OnOpen;
+                client.OnMessage += OnMessage;
+                client.OnError += OnError;
+                _client = client;
+            }
+
+            await Task.Run(client.Connect);
+            if (!client.IsAlive)
+            {
+                DiscardClient(client);
+                return false;
+            }
+
+            Debug.WriteLine($"Connected to player: {url}");
             return true;
         }
-        catch
+        catch (Exception ex)
         {
-            _client?.Close();
+            Debug.WriteLine($"Failed to connect to player: {ex}");
+            var failedClient = _client;
+            if (failedClient is not null && !failedClient.IsAlive)
+                DiscardClient(failedClient);
             return false;
+        }
+        finally
+        {
+            _connectGate.Release();
         }
     }
     void OnOpen(object? sender, EventArgs args)
     {
+        if (!ReferenceEquals(sender, _client))
+            return;
+
         _lastState = true;
     }
     void OnClose(object? sender, CloseEventArgs args)
     {
+        if (!ReferenceEquals(sender, _client))
+            return;
+
         if (!_lastState)
             return;
         OnDisconnected?.Invoke(this, new EventArgs());
         _lastState = false;
+        Signal(_stateChangedSignal);
     }
     void OnMessage(object? sender, MessageEventArgs args)
     {
+        if (!ReferenceEquals(sender, _client))
+            return;
+
         _playerMessages.Enqueue(args);
+        Signal(_messageSignal);
     }
     void OnError(object? sender, ErrorEventArgs args)
     {
@@ -116,8 +167,7 @@ internal class PlayerConnection : IDisposable
             }
 
             //if busy, wait
-            while (ViewSummary.State == ViewStatus.Busy)
-                await Task.Yield();
+            await WaitUntilNotBusyAsync();
         }
         var req = new MajWsRequestBase()
         {
@@ -183,8 +233,7 @@ internal class PlayerConnection : IDisposable
             }
 
             //if busy, wait
-            while (ViewSummary.State == ViewStatus.Busy)
-                await Task.Yield();
+            await WaitUntilNotBusyAsync();
         }
 
         var req = new MajWsRequestBase()
@@ -219,81 +268,175 @@ internal class PlayerConnection : IDisposable
     }
     async Task SendAsync(MajWsRequestBase req)
     {
-        EnsureConnectedToPlayer();
+        var client = _client;
+        if (client is null || !client.IsAlive)
+            throw new PlayerNotConnectedException();
+
         var json = JsonSerializer.Serialize(req, JSON_READER_OPTIONS);
-        await Task.Run(() => _client?.Send(json));
+        await Task.Run(() => client.Send(json));
+        Debug.WriteLine($"Player request sent: {req.requestType}");
     }
-    void EnsureConnectedToPlayer()
+    private async Task WaitUntilNotBusyAsync()
     {
-        if (IsConnected)
-            return;
-        throw new PlayerNotConnectedException();
+        while (ViewSummary.State == ViewStatus.Busy)
+            await _stateChangedSignal.WaitAsync(_lifetimeCts.Token);
     }
-    async Task StartToListenWebSocket()
+
+    async Task StartToListenWebSocket(CancellationToken cancellationToken)
     {
-        while (IsConnected)
+        try
         {
-            try
+            while (true)
             {
+                await _messageSignal.WaitAsync(cancellationToken);
                 while (_playerMessages.TryDequeue(out var args))
                 {
-                    //Debug.WriteLine(args.Data);
-                    var resp = JsonSerializer.Deserialize<MajWsResponseBase>(args.Data, JSON_READER_OPTIONS);
-                    switch (resp.responseType)
+                    try
                     {
-                        case MajWsResponseType.PlayPaused:
-                        case MajWsResponseType.Heartbeat:
-                        case MajWsResponseType.Ok:
-                            var oldState1 = _viewSummary.State;
-                            _viewSummary = JsonSerializer.Deserialize<ViewSummary>(resp.responseData?.ToString() ?? string.Empty, JSON_READER_OPTIONS);
-                            if (oldState1 != _viewSummary.State)
-                                OnViewStateChanged?.Invoke(this, _viewSummary.State);
-                            break;
-                        case MajWsResponseType.LoadOk:
-                            var oldState2 = _viewSummary.State;
-                            _viewSummary = JsonSerializer.Deserialize<ViewSummary>(resp.responseData?.ToString() ?? string.Empty, JSON_READER_OPTIONS);
-                            if (oldState2 != _viewSummary.State)
-                                OnViewStateChanged?.Invoke(this, _viewSummary.State);
-                            OnLoadFinished?.Invoke(this, new EventArgs());
-                            break;
-                        case MajWsResponseType.PlayResumed:
-                        case MajWsResponseType.PlayStarted:
-                            var oldState3 = _viewSummary.State;
-                            _viewSummary = JsonSerializer.Deserialize<ViewSummary>(resp.responseData?.ToString() ?? string.Empty, JSON_READER_OPTIONS);
-                            if (oldState3 != _viewSummary.State)
-                                OnViewStateChanged?.Invoke(this, _viewSummary.State);
-                            OnPlayStarted?.Invoke(this, resp.responseType);
-                            break;
-                        case MajWsResponseType.PlayStopped:
-                            var oldState4 = _viewSummary.State;
-                            _viewSummary = JsonSerializer.Deserialize<ViewSummary>(resp.responseData?.ToString() ?? string.Empty, JSON_READER_OPTIONS);
-                            if (oldState4 != _viewSummary.State)
-                                OnViewStateChanged?.Invoke(this, _viewSummary.State);
-                            OnPlayStopped?.Invoke(this, resp.responseType);
-                            break;
-                        case MajWsResponseType.Error:
-                            OnViewStateChanged?.Invoke(this, _viewSummary.State);
-                            //TODO: Move this to View model through event
-                            await Dispatcher.UIThread.Invoke(async () =>
-                            {
-                                await MessageBox.ShowAsync(resp.responseData.ToString() ?? "Unknown Error", "Error", icon: Icon.Error);
-                            });
-                            break;
-                        default:
-                            //Debug.WriteLine(args.Data);
-                            break;
+                        await ProcessMessageAsync(args);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Failed to process player message: {ex}");
                     }
                 }
             }
-            finally
-            {
-                await Task.Delay(100);
-            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Player message listener failed: {ex}");
         }
     }
+
+    private async Task ProcessMessageAsync(MessageEventArgs args)
+    {
+        var resp = JsonSerializer.Deserialize<MajWsResponseBase>(args.Data, JSON_READER_OPTIONS);
+        switch (resp.responseType)
+        {
+            case MajWsResponseType.PlayPaused:
+            case MajWsResponseType.Heartbeat:
+            case MajWsResponseType.Ok:
+                UpdateViewSummary(DeserializeViewSummary(resp));
+                break;
+            case MajWsResponseType.LoadOk:
+                UpdateViewSummary(DeserializeViewSummary(resp));
+                OnLoadFinished?.Invoke(this, EventArgs.Empty);
+                break;
+            case MajWsResponseType.PlayResumed:
+            case MajWsResponseType.PlayStarted:
+                UpdateViewSummary(DeserializeViewSummary(resp));
+                OnPlayStarted?.Invoke(this, resp.responseType);
+                break;
+            case MajWsResponseType.PlayStopped:
+                UpdateViewSummary(DeserializeViewSummary(resp));
+                OnPlayStopped?.Invoke(this, resp.responseType);
+                break;
+            case MajWsResponseType.Error:
+                OnViewStateChanged?.Invoke(this, ViewSummary.State);
+                await Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await MessageBox.ShowAsync(
+                        resp.responseData?.ToString() ?? "Unknown Error",
+                        "Error",
+                        icon: Icon.Error);
+                });
+                break;
+        }
+    }
+
+    private static ViewSummary DeserializeViewSummary(MajWsResponseBase response)
+    {
+        return JsonSerializer.Deserialize<ViewSummary>(
+            response.responseData?.ToString() ?? string.Empty,
+            JSON_READER_OPTIONS);
+    }
+
+    private void UpdateViewSummary(ViewSummary summary)
+    {
+        ViewStatus oldState;
+        lock (_stateSync)
+        {
+            oldState = _viewSummary.State;
+            _viewSummary = summary;
+        }
+
+        Signal(_stateChangedSignal);
+        if (oldState != summary.State)
+            OnViewStateChanged?.Invoke(this, summary.State);
+    }
+
+    private static void Signal(SemaphoreSlim semaphore)
+    {
+        try
+        {
+            semaphore.Release();
+        }
+        catch (SemaphoreFullException)
+        {
+        }
+    }
+
+    private void CloseClient(WebSocket client)
+    {
+        client.OnClose -= OnClose;
+        client.OnOpen -= OnOpen;
+        client.OnMessage -= OnMessage;
+        client.OnError -= OnError;
+        try
+        {
+            client.Close();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to close player connection: {ex}");
+        }
+    }
+
+    private void DiscardClient(WebSocket client)
+    {
+        lock (_connectionSync)
+        {
+            if (ReferenceEquals(_client, client))
+                _client = null;
+        }
+        CloseClient(client);
+    }
+
     public void Dispose()
     {
-        _client?.Close();
+        lock (_connectionSync)
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            _lifetimeCts.Cancel();
+            if (_client is not null)
+            {
+                CloseClient(_client);
+                _client = null;
+            }
+        }
+
+        _lifetimeCts.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Dispose();
+        try
+        {
+            await _listenerTask;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        _messageSignal.Dispose();
+        _stateChangedSignal.Dispose();
+        _connectGate.Dispose();
     }
 }
 internal class PlayerNotConnectedException : Exception

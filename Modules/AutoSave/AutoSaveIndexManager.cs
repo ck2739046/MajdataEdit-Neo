@@ -33,13 +33,20 @@ internal class AutoSaveIndexManager : IAutoSaveIndexManager
 
     public void ChangePath(string path)
     {
-        if (path != _curPath)
+        if (string.IsNullOrWhiteSpace(path))
+            throw new LocalDirNotOpenYetException("Auto-save directory has not been configured.");
+
+        var normalizedPath = Path.GetFullPath(path);
+        if (normalizedPath == _curPath)
         {
-            // 只有当新目录和之前设置的目录不同时，才会触发index文件读写
-            _curPath = path;
-            LoadOrCreateIndexFile();
+            _isReady = true;
+            return;
         }
 
+        // 路径创建和索引读取都成功后，才提交新的当前路径。
+        var index = LoadOrCreateIndexFile(normalizedPath);
+        _curPath = normalizedPath;
+        _index = index;
         _isReady = true;
     }
 
@@ -120,21 +127,20 @@ internal class AutoSaveIndexManager : IAutoSaveIndexManager
     }
 
 
-    private void LoadOrCreateIndexFile()
+    private AutoSaveIndex LoadOrCreateIndexFile(string path)
     {
-        CreateDirectoryIfNotExists(_curPath!);
-        KeepDirectoryHidden(_curPath!);
+        CreateDirectoryIfNotExists(path);
+        KeepDirectoryHidden(path);
 
-        var indexFilePath = _curPath + "/.index.json";
+        var indexFilePath = Path.Combine(path, ".index.json");
         if (!File.Exists(indexFilePath))
         {
-            _index = new AutoSaveIndex();
-            UpdateIndexFile();
+            var index = new AutoSaveIndex();
+            UpdateIndexFile(path, index);
+            return index;
         }
-        else
-        {
-            LoadIndexFromFile();
-        }
+
+        return LoadIndexFromFile(indexFilePath);
     }
 
 
@@ -164,23 +170,27 @@ internal class AutoSaveIndexManager : IAutoSaveIndexManager
     /// </summary>
     private void UpdateIndexFile()
     {
-        var indexPath = _curPath + "/.index.json";
+        UpdateIndexFile(_curPath!, _index!);
+    }
 
-        //var jsonText = JsonConvert.SerializeObject(index);
-        var jsonText = JsonSerializer.Serialize(_index);
+    private static void UpdateIndexFile(string directory, AutoSaveIndex index)
+    {
+        var indexPath = Path.Combine(directory, ".index.json");
+
+        var jsonText = JsonSerializer.Serialize(index);
         File.WriteAllText(indexPath, jsonText);
     }
 
     /// <summary>
     ///     从index文件读取saveIndex
     /// </summary>
-    private void LoadIndexFromFile()
+    private static AutoSaveIndex LoadIndexFromFile(string indexPath)
     {
-        var indexPath = _curPath + "/.index.json";
-
         var jsonText = File.ReadAllText(indexPath);
-        //index = JsonConvert.DeserializeObject<AutoSaveIndex>(jsonText);
-        _index = JsonSerializer.Deserialize(jsonText, AutoSaveIndexJsonContext.Default.AutoSaveIndex);
+        return JsonSerializer.Deserialize(
+                   jsonText,
+                   AutoSaveIndexJsonContext.Default.AutoSaveIndex)
+               ?? throw new InvalidDataException($"Invalid auto-save index: {indexPath}");
     }
 
     /// <summary>

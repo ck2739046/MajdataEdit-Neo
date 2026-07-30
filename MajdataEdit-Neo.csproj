@@ -52,6 +52,7 @@
 		<PackageReference Include="Semver" Version="3.0.0" />
 		<PackageReference Include="websocketsharp.core" Version="1.0.1" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.8" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -85,9 +86,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="majdata_time.dat">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 		<None Update="simai.tmLanguage.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>

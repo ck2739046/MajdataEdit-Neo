@@ -35,6 +35,7 @@ public static class FFmpegChecker
         }
         catch (Exception ex)
         {
+            Debug.WriteLine($"FFmpeg availability check failed: {ex}");
             // if (ex is Win32Exception winEx && winEx.NativeErrorCode == 2) //no ffmpeg
             await MessageBox.ShowWindowDialogAsync(
                 Assets.Langs.Langs.Status_NoFfmpeg,

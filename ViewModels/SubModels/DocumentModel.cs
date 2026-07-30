@@ -18,6 +18,8 @@ namespace MajdataEdit_Neo.ViewModels.SubModels;
 /// </summary>
 public partial class DocumentModel : ViewModelBase, IMutableDocument
 {
+    public event EventHandler? FumenContentChanged;
+
     //------document state
 
     [ObservableProperty]
@@ -208,7 +210,14 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
         var difficulty = SelectedDifficulty;
         var metadata = CurrentChartMetadata[difficulty];
         metadata.Fumen = content;
+        simaiFile.Charts[difficulty] = new SimaiChart(
+            metadata.Level,
+            metadata.Designer,
+            content,
+            ReadOnlySpan<SimaiTimingPoint>.Empty,
+            ReadOnlySpan<SimaiTimingPoint>.Empty);
         UpdateFumenContextChanged();
+        FumenContentChanged?.Invoke(this, EventArgs.Empty);
 
         if (string.IsNullOrEmpty(content))
         {

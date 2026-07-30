@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Threading;
 using AvaloniaEdit;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MajdataEdit_Neo.Base;
@@ -12,12 +13,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Types;
 
 namespace MajdataEdit_Neo.ViewModels.SubModels;
 
-public partial class PlaybackModel : ViewModelBase
+public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
 {
     private readonly IReadOnlyDocument _doc;
     private readonly Func<string> _getMaidataDir;
@@ -35,18 +37,20 @@ public partial class PlaybackModel : ViewModelBase
         _playerConnection.OnDisconnected += OnDisconnected;
         _playerConnection.OnViewStateChanged += OnViewStateChanged;
 
+        Directory.CreateDirectory(MajEnv.MajdataViewPersistentDataPath);
         var mmfAudioTimeFileStream = new FileStream(
-            //这个文件在库里包含并在发布时也包含，避免第一次打开crash
-            Path.Combine(MajEnv.MajBase, "majdata_time.dat"),
-            FileMode.Open,
-            FileAccess.Read,
+            MajEnv.MajdataViewTimeFile,
+            FileMode.OpenOrCreate,
+            FileAccess.ReadWrite,
             FileShare.ReadWrite
         );
+        if (mmfAudioTimeFileStream.Length < sizeof(float))
+            mmfAudioTimeFileStream.SetLength(sizeof(float));
         mmfAudioTime = MemoryMappedFile.CreateFromFile(
             mmfAudioTimeFileStream,
             null,
             sizeof(float),
-            MemoryMappedFileAccess.Read,
+            MemoryMappedFileAccess.ReadWrite,
             HandleInheritability.None,
             false
         );
@@ -86,8 +90,15 @@ public partial class PlaybackModel : ViewModelBase
     internal bool _isBackToStartOnPlayStop = false;
     internal bool _isStopping = false;
     internal bool _isLastPlayIncludeOp = false;
+    private readonly Lock _playbackTrackingLock = new();
+    private CancellationTokenSource? _playbackTrackingCts;
+    private Task _playbackTrackingTask = Task.CompletedTask;
+    private SimaiChart? _followChart;
+    private int _followTimingIndex = -1;
+    private int _lastReportedFollowTimingIndex = -1;
+    private double _lastFollowChartTime = double.NegativeInfinity;
+    private bool _disposed;
 
-    public event EventHandler? LoadRequired;
     public event Action<Point>? RequestSeekToDocPos;
 
 
@@ -162,20 +173,20 @@ public partial class PlaybackModel : ViewModelBase
         TrackTime = time;
         if (chartData is null) return new Point();
 
-        SimaiTimingPoint? nearestNote = null;
-        double minDiff = double.MaxValue;
-
-        foreach (var o in chartData.CommaTimings)
+        var timings = chartData.CommaTimings;
+        if (timings.Length == 0) return new Point();
+        var chartTime = time - offset;
+        var index = FindTimingIndexAtOrBefore(timings, chartTime);
+        if (index + 1 < timings.Length &&
+            (index < 0 ||
+             Math.Abs(timings[index + 1].Timing - chartTime) <
+             Math.Abs(timings[index].Timing - chartTime)))
         {
-            double diff = Math.Abs(o.Timing + offset - time);
-            if (diff < minDiff)
-            {
-                minDiff = diff;
-                nearestNote = o;
-            }
+            index++;
         }
+        if (index < 0) index = 0;
+        var nearestNote = timings[index];
 
-        if (nearestNote is null) return new Point();
         return new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY - 1);
     }
 
@@ -354,51 +365,58 @@ public partial class PlaybackModel : ViewModelBase
 
     private async void OnPlayStarted(object sender, MajWsResponseType e)
     {
-        CurrentViewState = ViewStatus.Playing;
-
-        await Task.Run(async () =>
+        var cts = new CancellationTokenSource();
+        var cancellationToken = cts.Token;
+        Task trackingTask;
+        lock (_playbackTrackingLock)
         {
-            try
+            var previousCts = _playbackTrackingCts;
+            _playbackTrackingCts = cts;
+            previousCts?.Cancel();
+            previousCts?.Dispose();
+
+            Dispatcher.UIThread.Post(() =>
             {
-                while (_playerConnection.ViewSummary.State == ViewStatus.Playing &&
-                       _playerConnection.IsConnected)
-                {
-                    TrackTime = mmvAudioTime.ReadSingle(0);
-                    if (IsFollowCursor)
-                    {
-                        var chartData = _doc.CurrentChartData;
-                        if (chartData is not null)
-                        {
-                            SimaiTimingPoint? nearestNote = null;
-                            foreach (var o in chartData.CommaTimings)
-                            {
-                                if (TrackTime - (o.Timing + _doc.Offset) > 0)
-                                {
-                                    nearestNote = o;
-                                }
-                            }
-                            if (nearestNote != null)
-                            {
-                                var point = new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY - 1);
-                                RequestSeekToDocPos?.Invoke(point);
-                            }
-                        }
-                    }
-                    await Task.Delay(16);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Start Read Play Time MMV Err:{ex}");
-            }
-        });
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                CurrentViewState = ViewStatus.Playing;
+                ResetFollowCursorIndex();
+            });
+
+            trackingTask = TrackPlaybackAsync(cancellationToken);
+            _playbackTrackingTask = trackingTask;
+        }
+
+        try
+        {
+            await trackingTask;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Start Read Play Time MMV Err:{ex}");
+        }
     }
 
     private async void OnPlayStopped(object sender, MajWsResponseType e)
     {
-        await Task.Delay(32); // Wait the OnPlayStarted Loop to end
-        CurrentViewState = ViewStatus.Idle;
-        if (_isBackToStartOnPlayStop) TrackTime = _playStartTime;
+        var trackingTask = CancelPlaybackTracking();
+        try
+        {
+            await trackingTask;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            CurrentViewState = ViewStatus.Idle;
+            if (_isBackToStartOnPlayStop) TrackTime = _playStartTime;
+        });
     }
 
     private async void OnLoadRequired(object? sender, EventArgs e)
@@ -413,11 +431,148 @@ public partial class PlaybackModel : ViewModelBase
 
     private void OnDisconnected(object? sender, EventArgs e)
     {
-        OnPropertyChanged(nameof(IsConnected));
+        CancelPlaybackTracking();
+        Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(IsConnected)));
     }
 
     private void OnViewStateChanged(object? sender, ViewStatus e)
     {
-        CurrentViewState = e;
+        Dispatcher.UIThread.Post(() => CurrentViewState = e);
+    }
+
+    private async Task TrackPlaybackAsync(CancellationToken cancellationToken)
+    {
+        while (_playerConnection.ViewSummary.State == ViewStatus.Playing &&
+               _playerConnection.IsConnected)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var trackTime = mmvAudioTime.ReadSingle(0);
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                TrackTime = trackTime;
+                if (!IsFollowCursor)
+                    return;
+
+                var point = GetFollowCursorPoint(trackTime);
+                if (point is not null)
+                    RequestSeekToDocPos?.Invoke(point.Value);
+            });
+
+            await Task.Delay(16, cancellationToken);
+        }
+    }
+
+    private Point? GetFollowCursorPoint(double trackTime)
+    {
+        var chart = _doc.CurrentChartData;
+        var timings = chart.CommaTimings;
+        if (timings.Length == 0)
+            return null;
+
+        var chartTime = trackTime - _doc.Offset;
+        if (!ReferenceEquals(chart, _followChart) ||
+            chartTime < _lastFollowChartTime ||
+            chartTime - _lastFollowChartTime > 0.5 ||
+            _followTimingIndex >= timings.Length)
+        {
+            if (!ReferenceEquals(chart, _followChart))
+                _lastReportedFollowTimingIndex = -1;
+            _followChart = chart;
+            _followTimingIndex = FindTimingIndexAtOrBefore(timings, chartTime);
+        }
+        else
+        {
+            while (_followTimingIndex + 1 < timings.Length &&
+                   timings[_followTimingIndex + 1].Timing <= chartTime)
+            {
+                _followTimingIndex++;
+            }
+        }
+
+        _lastFollowChartTime = chartTime;
+        if (_followTimingIndex < 0 ||
+            _followTimingIndex == _lastReportedFollowTimingIndex)
+            return null;
+
+        _lastReportedFollowTimingIndex = _followTimingIndex;
+        var timing = timings[_followTimingIndex];
+        return new Point(timing.RawTextPositionX, timing.RawTextPositionY - 1);
+    }
+
+    private void ResetFollowCursorIndex()
+    {
+        _followChart = null;
+        _followTimingIndex = -1;
+        _lastReportedFollowTimingIndex = -1;
+        _lastFollowChartTime = double.NegativeInfinity;
+    }
+
+    private Task CancelPlaybackTracking()
+    {
+        lock (_playbackTrackingLock)
+        {
+            var cts = _playbackTrackingCts;
+            _playbackTrackingCts = null;
+            cts?.Cancel();
+            cts?.Dispose();
+            return _playbackTrackingTask;
+        }
+    }
+
+    private static int FindTimingIndexAtOrBefore(ReadOnlySpan<SimaiTimingPoint> timings, double chartTime)
+    {
+        var low = 0;
+        var high = timings.Length - 1;
+        var result = -1;
+        while (low <= high)
+        {
+            var middle = low + ((high - low) >> 1);
+            if (timings[middle].Timing <= chartTime)
+            {
+                result = middle;
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        return result;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        var trackingTask = CancelPlaybackTracking();
+        try
+        {
+            await trackingTask;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        _playerConnection.OnPlayStarted -= OnPlayStarted;
+        _playerConnection.OnPlayStopped -= OnPlayStopped;
+        _playerConnection.OnLoadRequired -= OnLoadRequired;
+        _playerConnection.OnStopRequired -= OnStopRequired;
+        _playerConnection.OnDisconnected -= OnDisconnected;
+        _playerConnection.OnViewStateChanged -= OnViewStateChanged;
+        try
+        {
+            await _playerConnection.DisposeAsync();
+        }
+        finally
+        {
+            mmvAudioTime.Dispose();
+            mmfAudioTime.Dispose();
+        }
     }
 }

@@ -7,6 +7,7 @@ using MsBox.Avalonia.Enums;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Types;
 using static MajdataEdit_Neo.Utils.FFmpegChecker;
@@ -30,6 +31,20 @@ public partial class ToolsModel(
 
     private static readonly string[] VideoFilter = ["*.mp4", "*.mkv", "*.avi", "*.mov", "*.flv", "*.wmv"];
     private static readonly string[] AllFilter = ["*.*"];
+    private readonly object _ffmpegSync = new();
+    private CancellationTokenSource? _ffmpegCts;
+
+    public bool CancelCurrentOperation()
+    {
+        lock (_ffmpegSync)
+        {
+            if (_ffmpegCts is null || _ffmpegCts.IsCancellationRequested)
+                return false;
+
+            _ffmpegCts.Cancel();
+            return true;
+        }
+    }
 
     public async Task CompressBgVideoAsync()
     {
@@ -49,14 +64,17 @@ public partial class ToolsModel(
 
         var videoBaseName = Path.GetFileNameWithoutExtension(bgVideoPath);
         var outputPath = Path.Combine(maidataDir, $"{videoBaseName}_compressed.mp4");
+        var operation = BeginFfmpegOperation();
 
-        _mainWindow.ShowStatusMessage(Langs.Status_Compressing);
+        _mainWindow.ShowStatusMessage($"{Langs.Status_Compressing}（按Esc终止）");
 
         try
         {
-            var success = await Task.Run(() => RunFfmpegCompress("ffmpeg", bgVideoPath, outputPath));
+            await Task.Run(
+                () => TrackProcessor.CompressVideo("ffmpeg", bgVideoPath, outputPath, operation.Token),
+                operation.Token);
 
-            if (success && File.Exists(outputPath))
+            if (File.Exists(outputPath))
             {
                 var backupPath = Path.Combine(maidataDir, $"{videoBaseName}_original.mp4");
                 if (File.Exists(backupPath))
@@ -72,23 +90,28 @@ public partial class ToolsModel(
                     "Success", icon: MsBox.Avalonia.Enums.Icon.Success);
                 await _session.ReloadFile();
             }
-            else
-            {
-                await MessageBox.ShowWindowDialogAsync(Langs.Status_CompressFailed, "Error", icon: MsBox.Avalonia.Enums.Icon.Error);
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("FFmpeg video compression was cancelled.");
+            if (File.Exists(outputPath))
+                File.Delete(outputPath);
         }
         catch (Exception ex)
         {
+            Debug.WriteLine(ex);
             await MessageBox.ShowWindowDialogAsync($"Error: {ex.Message}", "Error", icon: MsBox.Avalonia.Enums.Icon.Error);
         }
         finally
         {
-            _mainWindow.ResetStatusMessage();
+            if (CompleteFfmpegOperation(operation))
+                _mainWindow.ResetStatusMessage();
         }
     }
 
     public async Task MediaQuickProcessAsync()
     {
+        CancellationTokenSource? operation = null;
         try
         {
             if (_doc.CurrentChartData is null || _doc.CurrentChartData.CommaTimings.Length == 0)
@@ -106,10 +129,16 @@ public partial class ToolsModel(
             var maidataDir = _session.MaidataDir;
             var audioPath = Path.Combine(maidataDir, "track.mp3");
             if (!File.Exists(audioPath)) audioPath = Path.Combine(maidataDir, "track.ogg");
-            _mainWindow.ShowStatusMessage(Langs.Status_Processing);
+            operation = BeginFfmpegOperation();
+            _mainWindow.ShowStatusMessage($"{Langs.Status_Processing}（按Esc终止）");
             await Task.Run(() =>
             {
-                TrackProcessor.AdjustMediaTime("ffmpeg", audioPath, 60.0 / bpm * beatsCount, offset);
+                TrackProcessor.AdjustMediaTime(
+                    "ffmpeg",
+                    audioPath,
+                    60.0 / bpm * beatsCount,
+                    offset,
+                    cancellationToken: operation.Token);
                 string? videoPath = null;
                 foreach (var name in new[] { "pv.mp4", "mv.mp4", "bg.mp4" })
                 {
@@ -120,24 +149,41 @@ public partial class ToolsModel(
                         break;
                     }
                 }
-                if (videoPath != null) TrackProcessor.AdjustMediaTime("ffmpeg", videoPath, 60.0 / bpm * beatsCount, offset, freezeFrame);
-            });
+                if (videoPath != null)
+                    TrackProcessor.AdjustMediaTime(
+                        "ffmpeg",
+                        videoPath,
+                        60.0 / bpm * beatsCount,
+                        offset,
+                        freezeFrame,
+                        operation.Token);
+            }, operation.Token);
             _doc.Offset = 0;
             await _session.SaveFile();
             await Task.Delay(30);
             await _session.ReloadFile();
-            _mainWindow.ResetStatusMessage();
             await MessageBox.ShowWindowDialogAsync(Langs.Msg_MediaProcessComplete, Langs.Gui_Success, ButtonEnum.Ok, MsBox.Avalonia.Enums.Icon.Success);
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("FFmpeg media processing was cancelled.");
         }
         catch (Exception ex)
         {
-            _mainWindow.ResetStatusMessage();
+            Debug.WriteLine(ex);
             await MessageBox.ShowWindowDialogAsync(string.Format(Langs.Msg_MediaProcessFailed, ex.Message), Langs.Gui_Error, ButtonEnum.Ok, MsBox.Avalonia.Enums.Icon.Error);
+        }
+        finally
+        {
+            if (operation is not null && CompleteFfmpegOperation(operation))
+                _mainWindow.ResetStatusMessage();
         }
     }
 
     public async Task NewChartFromVideoAsync()
     {
+        CancellationTokenSource? operation = null;
+        string? audioTempPath = null;
         try
         {
             var files = await StorageUtils.OpenFilePickerAsync(new FilePickerOpenOptions
@@ -160,45 +206,55 @@ public partial class ToolsModel(
                     File.Delete(newFile); File.Move(file, newFile);
             }
             if (!await EnsureFFmpeg()) return;
-            _mainWindow.ShowStatusMessage(Langs.Status_ExtractingAudio);
+            operation = BeginFfmpegOperation();
+            _mainWindow.ShowStatusMessage($"{Langs.Status_ExtractingAudio}（按Esc终止）");
             var audioPath = Path.Combine(parent, "track.mp3");
-            await Task.Run(() => TrackProcessor.ExtractAudio("ffmpeg", newFile, audioPath));
-            _mainWindow.ResetStatusMessage();
+            audioTempPath = Path.Combine(parent, $".track.{Guid.NewGuid():N}.tmp.mp3");
+            await Task.Run(
+                () => TrackProcessor.ExtractAudio("ffmpeg", newFile, audioTempPath, operation.Token),
+                operation.Token);
+            File.Move(audioTempPath, audioPath, overwrite: true);
+            audioTempPath = null;
             await _session.NewChartFromDir(parent);
             _mainWindow.OpenChartInfoWindow();
         }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("FFmpeg audio extraction was cancelled.");
+        }
         catch (Exception ex)
         {
-            _mainWindow.ResetStatusMessage();
+            Debug.WriteLine(ex);
             await MessageBox.ShowWindowDialogAsync(string.Format(Langs.Msg_ExtractAudioFailed, ex.Message), Langs.Gui_Error, ButtonEnum.Ok, MsBox.Avalonia.Enums.Icon.Error);
+        }
+        finally
+        {
+            if (audioTempPath is not null && File.Exists(audioTempPath))
+                File.Delete(audioTempPath);
+            if (operation is not null && CompleteFfmpegOperation(operation))
+                _mainWindow.ResetStatusMessage();
         }
     }
 
-    private static bool RunFfmpegCompress(string ffmpegPath, string inputPath, string outputPath)
+    private CancellationTokenSource BeginFfmpegOperation()
     {
-        try
+        lock (_ffmpegSync)
         {
-            var args = $"-y -i \"{inputPath}\" -vf \"scale=-2:540,fps=30\" -c:v libx264 -preset veryfast -b:v 540k -an \"{outputPath}\"";
-
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = ffmpegPath,
-                    Arguments = args,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                }
-            };
-
-            process.Start();
-            process.WaitForExit();
-
-            return process.ExitCode == 0;
+            _ffmpegCts?.Cancel();
+            _ffmpegCts = new CancellationTokenSource();
+            return _ffmpegCts;
         }
-        catch
+    }
+
+    private bool CompleteFfmpegOperation(CancellationTokenSource operation)
+    {
+        lock (_ffmpegSync)
         {
-            return false;
+            var isCurrent = ReferenceEquals(_ffmpegCts, operation);
+            if (isCurrent)
+                _ffmpegCts = null;
+            operation.Dispose();
+            return isCurrent;
         }
     }
 }

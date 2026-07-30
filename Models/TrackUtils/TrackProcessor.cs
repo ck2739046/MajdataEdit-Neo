@@ -1,74 +1,103 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Threading;
 
 namespace MajdataEdit_Neo.Models.TrackUtils;
 
 public static class TrackProcessor
 {
-    public static void ExtractAudio(string ffmpegPath, string videoPath, string audioOutputPath)
+    public static void ExtractAudio(
+        string ffmpegPath,
+        string videoPath,
+        string audioOutputPath,
+        CancellationToken cancellationToken = default)
     {
         if (!File.Exists(videoPath)) return;
 
-        var args = $"-y -i \"{videoPath}\" -vn -ar 44100 -acodec libmp3lame -q:a 2 \"{audioOutputPath}\"";
-        RunFFmpeg(ffmpegPath, args);
+        RunFFmpeg(ffmpegPath, [
+            "-y",
+            "-i", videoPath,
+            "-vn",
+            "-ar", "44100",
+            "-acodec", "libmp3lame",
+            "-q:a", "2",
+            audioOutputPath
+        ], cancellationToken);
     }
 
-    public static void AdjustMediaTime(string ffmpegPath, string filePath, double targetTime, double offset, bool clone = false)
+    public static void AdjustMediaTime(
+        string ffmpegPath,
+        string filePath,
+        double targetTime,
+        double offset,
+        bool clone = false,
+        CancellationToken cancellationToken = default)
     {
         if (!File.Exists(filePath)) return;
 
         var diff = targetTime - offset;
         if (Math.Abs(diff) < 0.01) return;
 
-        var ext = Path.GetExtension(filePath).ToLower();
+        var ext = Path.GetExtension(filePath).ToLowerInvariant();
         var isAudio = ext == ".mp3" || ext == ".wav" || ext == ".ogg" || ext == ".flac";
-        var audioCodec = (ext == ".mp3") ? "libmp3lame" : "aac";
+        var audioCodec = ext switch
+        {
+            ".mp3" => "libmp3lame",
+            ".ogg" => "libvorbis",
+            ".wav" => "pcm_s16le",
+            ".flac" => "flac",
+            _ => "aac"
+        };
 
         var tempPath = Path.Combine(Path.GetDirectoryName(filePath)!, $"t_{Guid.NewGuid()}{ext}");
-        string args;
+        string[] arguments;
 
         if (diff < 0)
         {
-            var cut = Math.Abs(diff);
+            var cut = Math.Abs(diff).ToString(CultureInfo.InvariantCulture);
             if (isAudio)
-                args = $"-y -i \"{filePath}\" -ss {cut} -c:a {audioCodec} \"{tempPath}\"";
+                arguments = ["-y", "-i", filePath, "-ss", cut, "-c:a", audioCodec, tempPath];
             else
-                args = $"-y -i \"{filePath}\" -ss {cut} -c:v libx264 -c:a {audioCodec} -preset superfast \"{tempPath}\"";
+                arguments = [
+                    "-y", "-i", filePath,
+                    "-ss", cut,
+                    "-c:v", "libx264",
+                    "-c:a", audioCodec,
+                    "-preset", "superfast",
+                    tempPath
+                ];
         }
         else
         {
-            var delayMs = diff * 1000;
+            var delayMs = (diff * 1000).ToString(CultureInfo.InvariantCulture);
+            var duration = diff.ToString(CultureInfo.InvariantCulture);
             if (isAudio)
             {
-                args = $"-y -i \"{filePath}\" -af \"adelay={delayMs}:all=1\" -c:a {audioCodec} \"{tempPath}\"";
+                arguments = [
+                    "-y", "-i", filePath,
+                    "-af", $"adelay={delayMs}:all=1",
+                    "-c:a", audioCodec,
+                    tempPath
+                ];
             }
             else
             {
-                if (clone)
-                {
-                    args =
-                        $"-y -i \"{filePath}\" " +
-                        $"-vf \"tpad=start_duration={diff}:start_mode=clone\" " +
-                        $"-an " +
-                        $"-c:v libx264 -preset superfast " +
-                        $"\"{tempPath}\"";
-                }
-                else
-                {
-                    args =
-                        $"-y -i \"{filePath}\" " +
-                        $"-vf \"tpad=start_duration={diff}:start_mode=add\" " +
-                        $"-an " +
-                        $"-c:v libx264 -preset superfast " +
-                        $"\"{tempPath}\"";
-                }
+                arguments = [
+                    "-y", "-i", filePath,
+                    "-vf", $"tpad=start_duration={duration}:start_mode={(clone ? "clone" : "add")}",
+                    "-an",
+                    "-c:v", "libx264",
+                    "-preset", "superfast",
+                    tempPath
+                ];
             }
         }
 
         try
         {
-            RunFFmpeg(ffmpegPath, args);
+            RunFFmpeg(ffmpegPath, arguments, cancellationToken);
             if (File.Exists(tempPath))
             {
                 var rawPath = Path.Combine(Path.GetDirectoryName(filePath)!, $"raw{ext}");
@@ -85,23 +114,63 @@ public static class TrackProcessor
         }
     }
 
-    static void RunFFmpeg(string ffmpegPath, string arguments)
+    public static void CompressVideo(
+        string ffmpegPath,
+        string inputPath,
+        string outputPath,
+        CancellationToken cancellationToken = default)
     {
+        RunFFmpeg(ffmpegPath, [
+            "-y",
+            "-i", inputPath,
+            "-vf", "scale=-2:540,fps=30",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-b:v", "540k",
+            "-an",
+            outputPath
+        ], cancellationToken);
+    }
+
+    static void RunFFmpeg(
+        string ffmpegPath,
+        string[] arguments,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = ffmpegPath,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true
+        };
+        foreach (var argument in arguments)
+            startInfo.ArgumentList.Add(argument);
+
         using var process = new Process
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = ffmpegPath,
-                Arguments = arguments,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardError = true
-            }
+            StartInfo = startInfo
         };
 
         process.Start();
-        var error = process.StandardError.ReadToEnd();
+        var errorTask = process.StandardError.ReadToEndAsync();
+        using var cancellationRegistration = cancellationToken.Register(() =>
+        {
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to terminate FFmpeg: {ex}");
+            }
+        });
+
         process.WaitForExit();
+        var error = errorTask.GetAwaiter().GetResult();
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (process.ExitCode != 0) throw new Exception($"FFmpeg Error: {error}");
     }

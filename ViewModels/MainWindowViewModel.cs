@@ -91,9 +91,26 @@ public partial class MainWindowViewModel : ViewModelBase
     public void ShowStatusMessage(string message) => StatusBarMessage = message;
     public void ResetStatusMessage() => StatusBarMessage = null;
 
-    public void OnWindowClosing()
+    public async Task OnWindowClosingAsync()
     {
-        Session.SaveEditRecord();
+        try
+        {
+            Session.SaveEditRecord();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to save edit record while closing: {ex}");
+        }
+
+        await Session.DisposeAsync();
+        try
+        {
+            Settings.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to dispose settings resources: {ex}");
+        }
         _editDb.Dispose();
     }
 
@@ -144,8 +161,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (Session.Doc.CurrentSimaiFile is null) return;
         var mainWindow = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
         if (mainWindow is null || mainWindow.MainWindow is null) return;
-        var window = new ChartInfoWindow();
-        window.DataContext = new ChartInfoViewModel()
+        using var chartInfo = new ChartInfoViewModel()
         {
             Title = Session.Doc.CurrentSimaiFile.Title,
             Artist = Session.Doc.CurrentSimaiFile.Artist,
@@ -153,9 +169,14 @@ public partial class MainWindowViewModel : ViewModelBase
             SimaiCommands = [.. Session.Doc.CurrentSimaiFile.Commands.Select(c => new MutSimaiCommand(c.Prefix, c.Value))],
             MaidataDir = Session.MaidataDir
         };
+        var window = new ChartInfoWindow
+        {
+            DataContext = chartInfo
+        };
         await window.ShowDialog(mainWindow.MainWindow);
         var datacontext = window.DataContext as ChartInfoViewModel;
-        if (datacontext is null) throw new Exception("Wtf");
+        if (datacontext is null)
+            throw new InvalidOperationException("Chart info window has an unexpected data context.");
 
         Session.Doc.CurrentSimaiFile.Title = datacontext.Title ?? string.Empty;
         Session.Doc.CurrentSimaiFile.Artist = datacontext.Artist ?? string.Empty;

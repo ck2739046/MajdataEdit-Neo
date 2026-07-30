@@ -13,10 +13,12 @@ namespace MajdataEdit_Neo.Modules.AutoSave;
 /// </summary>
 internal sealed class SafeTerminationDetector
 {
-    public readonly string RecordPath = Environment.CurrentDirectory + "/PROGRAM_RUNNING";
+    public string RecordPath { get; }
 
-    private SafeTerminationDetector()
+    private SafeTerminationDetector(string baseDirectory)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseDirectory);
+        RecordPath = Path.Combine(Path.GetFullPath(baseDirectory), "PROGRAM_RUNNING");
     }
 
     /// <summary>
@@ -54,11 +56,16 @@ internal sealed class SafeTerminationDetector
 
     #region Singleton
 
-    private static readonly SafeTerminationDetector _instance = new();
+    private static readonly Lock _syncLock = new();
+    private static SafeTerminationDetector? _instance;
 
-    public static SafeTerminationDetector Of()
+    public static SafeTerminationDetector Of(string baseDirectory)
     {
-        return _instance;
+        lock (_syncLock)
+        {
+            _instance ??= new SafeTerminationDetector(baseDirectory);
+            return _instance;
+        }
     }
 
     #endregion

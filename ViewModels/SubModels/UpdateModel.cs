@@ -17,6 +17,8 @@ namespace MajdataEdit_Neo.ViewModels.SubModels;
 
 public partial class UpdateModel : ViewModelBase
 {
+    private static readonly HttpClient SharedHttpClient = new();
+
     [ObservableProperty]
     public partial bool IsCheckingUpdate { get; set; }
 
@@ -25,11 +27,11 @@ public partial class UpdateModel : ViewModelBase
         if (IsCheckingUpdate) return;
         IsCheckingUpdate = true;
 
-        var response = await RequestGETAsync("http://api.github.com/repos/re-poem/MajdataViewX/releases/latest");
-
         try
         {
-            if (response == "ERROR")
+            var response = await RequestGETAsync(
+                "https://api.github.com/repos/re-poem/MajdataViewX/releases/latest");
+            if (response is null)
             {
                 if (!onStart) await MessageBox.ShowWindowDialogAsync(Langs.Msg_CheckUpdateRequestFail, Langs.Gui_CheckUpdate);
                 return;
@@ -77,10 +79,10 @@ public partial class UpdateModel : ViewModelBase
                 if (!onStart) await MessageBox.ShowWindowDialogAsync(Langs.Msg_NoNewVersion, Langs.Gui_CheckUpdate);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"Failed to parse update response: {ex}");
             if (!onStart) await MessageBox.ShowWindowDialogAsync(Langs.Msg_CheckUpdateParseFail, Langs.Gui_CheckUpdate);
-            return;
         }
         finally
         {
@@ -88,19 +90,21 @@ public partial class UpdateModel : ViewModelBase
         }
     }
 
-    public static async Task<string> RequestGETAsync(string url)
+    public static async Task<string?> RequestGETAsync(string url)
     {
         try
         {
             var executingAssembly = Assembly.GetExecutingAssembly();
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Add("User-Agent", $"{executingAssembly.GetName().Name!} / {executingAssembly.GetName().Version!.ToString(3)}");
-            var response = await new HttpClient().SendAsync(request);
+            using var response = await SharedHttpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsStringAsync();
         }
-        catch
+        catch (Exception ex)
         {
-            return "ERROR";
+            Debug.WriteLine($"Update request failed: {ex}");
+            return null;
         }
     }
 }

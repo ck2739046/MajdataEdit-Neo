@@ -17,7 +17,7 @@ using Types;
 
 namespace MajdataEdit_Neo.ViewModels;
 
-partial class ChartInfoViewModel : ViewModelBase
+partial class ChartInfoViewModel : ViewModelBase, IDisposable
 {
     [ObservableProperty]
     private string? title;
@@ -30,19 +30,14 @@ partial class ChartInfoViewModel : ViewModelBase
     private ObservableCollection<MutSimaiCommand> simaiCommands = new();
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Cover))]
     private string? maidataDir;
 
-    public Bitmap Cover
+    [ObservableProperty]
+    private Bitmap? cover;
+
+    partial void OnMaidataDirChanged(string? value)
     {
-        get
-        {
-            var coverPath = MaidataDir + "/bg.png";
-            if (File.Exists(coverPath)) return new Bitmap(coverPath);
-            coverPath = MaidataDir + "/bg.jpg";
-            if (File.Exists(coverPath)) return new Bitmap(coverPath);
-            return new Bitmap(AssetLoader.Open(new Uri("avares://MajdataEdit-Neo/Assets/dummy.png")));
-        }
+        ReloadCover();
     }
 
     public void AddNewCommand()
@@ -57,23 +52,52 @@ partial class ChartInfoViewModel : ViewModelBase
 
     public async Task OpenBgCover()
     {
+        string? tempPath = null;
         try
         {
             var file = await FileIOManager.DoOpenFilePickerAsync(FileIOManager.FileOpenerType.Image);
             if (file is null) return;
             var path = file.TryGetLocalPath();
             if (path is null || MaidataDir is null) return;
-            File.Delete(MaidataDir + "/bg.jpg");
-            File.Delete(MaidataDir + "/bg.png");
-            if (path.EndsWith("jpg"))
-                File.Copy(path, MaidataDir + "/bg.jpg", true);
-            if (path.EndsWith("png"))
-                File.Copy(path, MaidataDir + "/bg.png", true);
-            OnPropertyChanged(nameof(Cover));
+
+            var extension = Path.GetExtension(path);
+            var isPng = extension.Equals(".png", StringComparison.OrdinalIgnoreCase);
+            var isJpeg = extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                         extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase);
+            if (!isPng && !isJpeg)
+                return;
+
+            var targetPath = Path.Combine(MaidataDir, isPng ? "bg.png" : "bg.jpg");
+            var otherPath = Path.Combine(MaidataDir, isPng ? "bg.jpg" : "bg.png");
+            var pathComparison = OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            if (!Path.GetFullPath(path).Equals(Path.GetFullPath(targetPath), pathComparison))
+            {
+                tempPath = Path.Combine(
+                    MaidataDir,
+                    $".bg.{Guid.NewGuid():N}{(isPng ? ".png" : ".jpg")}.tmp");
+                File.Copy(path, tempPath);
+
+                DisposeCover();
+                File.Move(tempPath, targetPath, overwrite: true);
+                tempPath = null;
+            }
+
+            if (File.Exists(otherPath))
+                File.Delete(otherPath);
+            ReloadCover();
         }
         catch (Exception e)
         {
-            Debug.WriteLine(e.Message);
+            Debug.WriteLine(e);
+            ReloadCover();
+        }
+        finally
+        {
+            if (tempPath is not null && File.Exists(tempPath))
+                File.Delete(tempPath);
         }
     }
 
@@ -100,7 +124,44 @@ partial class ChartInfoViewModel : ViewModelBase
         }
         catch (Exception e)
         {
-            Debug.WriteLine(e.Message);
+            Debug.WriteLine(e);
         }
+    }
+
+    private void ReloadCover()
+    {
+        DisposeCover();
+        if (MaidataDir is not null)
+        {
+            var coverPath = Path.Combine(MaidataDir, "bg.png");
+            if (File.Exists(coverPath))
+            {
+                Cover = new Bitmap(coverPath);
+                return;
+            }
+
+            coverPath = Path.Combine(MaidataDir, "bg.jpg");
+            if (File.Exists(coverPath))
+            {
+                Cover = new Bitmap(coverPath);
+                return;
+            }
+        }
+
+        using var stream = AssetLoader.Open(
+            new Uri("avares://MajdataEdit-Neo/Assets/dummy.png"));
+        Cover = new Bitmap(stream);
+    }
+
+    private void DisposeCover()
+    {
+        var previous = Cover;
+        Cover = null;
+        previous?.Dispose();
+    }
+
+    public void Dispose()
+    {
+        DisposeCover();
     }
 }

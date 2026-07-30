@@ -6,6 +6,8 @@ namespace MajdataEdit_Neo.Models;
 
 class TrackReader : IDisposable
 {
+    private bool _disposed;
+
     public TrackReader()
     {
         Bass.Init(Bass.NoSoundDevice);
@@ -13,8 +15,13 @@ class TrackReader : IDisposable
 
     public void Dispose()
     {
-        Bass.Free();
+        if (_disposed)
+            return;
+
+        _disposed = true;
         Bass.StreamFree(bgmStream);
+        bgmStream = 0;
+        Bass.Free();
     }
 
     public void Play(double time)
@@ -61,7 +68,9 @@ class TrackReader : IDisposable
         }
         catch (Exception e)
         {
-            throw new Exception("mp3/ogg解码失败。\nMP3/OGG Decode fail.\n" + e.Message + Bass.LastError);
+            throw new Exception(
+                "mp3/ogg解码失败。\nMP3/OGG Decode fail.\n" + e.Message + Bass.LastError,
+                e);
         }
         finally
         {
@@ -96,6 +105,5 @@ public class TrackInfo
         for (var i = 0; i < sampleCount; i = i + 50) waveThumbnails[1][i / 50] = RawWave[i];
         waveThumbnails[2] = new short[sampleCount / 100 + 1];
         for (var i = 0; i < sampleCount; i = i + 100) waveThumbnails[2][i / 100] = RawWave[i];
-
     }
 }

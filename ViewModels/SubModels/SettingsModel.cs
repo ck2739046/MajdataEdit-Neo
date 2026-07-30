@@ -13,7 +13,7 @@ using Types;
 
 namespace MajdataEdit_Neo.ViewModels.SubModels;
 
-public partial class SettingsModel : ViewModelBase
+public partial class SettingsModel : ViewModelBase, IDisposable
 {
     //reload setting required
     [ObservableProperty] public partial MajSetting Settings { get; set; }
@@ -23,7 +23,14 @@ public partial class SettingsModel : ViewModelBase
     [ObservableProperty] public partial bool WordWrap { get; set; }
 
 
-    private static readonly WriteableBitmap emptyBitmap = new(new PixelSize(1, 1), new Vector(96, 96), PixelFormat.Bgra8888);
+    private readonly WriteableBitmap _emptyBitmap =
+        new(new PixelSize(1, 1), new Vector(96, 96), PixelFormat.Bgra8888);
+    private string? _loadedBackgroundPath;
+
+    public SettingsModel()
+    {
+        BackgroundImage = _emptyBitmap;
+    }
 
 
     public bool Initialize()
@@ -58,7 +65,17 @@ public partial class SettingsModel : ViewModelBase
         FontSize = Settings.EditSetting.FontSize;
         IsAnimated = Settings.EditSetting.WaveAnimated;
         var bgPath = GetPath(Settings.EditSetting.BackgroundImagePath);
-        BackgroundImage = File.Exists(bgPath) ? new Bitmap(bgPath) : emptyBitmap;
+        var normalizedPath = File.Exists(bgPath) ? Path.GetFullPath(bgPath) : null;
+        if (!string.Equals(_loadedBackgroundPath, normalizedPath, StringComparison.Ordinal))
+        {
+            var previous = BackgroundImage;
+            BackgroundImage = normalizedPath is null
+                ? _emptyBitmap
+                : new Bitmap(normalizedPath);
+            _loadedBackgroundPath = normalizedPath;
+            if (!ReferenceEquals(previous, _emptyBitmap))
+                previous.Dispose();
+        }
         WordWrap = Settings.EditSetting.WordWrap;
     }
 
@@ -77,5 +94,12 @@ public partial class SettingsModel : ViewModelBase
     public void SaveSettings()
     {
         File.WriteAllText(SettingsFile, JsonConvert.SerializeObject(Settings, Formatting.Indented));
+    }
+
+    public void Dispose()
+    {
+        if (!ReferenceEquals(BackgroundImage, _emptyBitmap))
+            BackgroundImage.Dispose();
+        _emptyBitmap.Dispose();
     }
 }

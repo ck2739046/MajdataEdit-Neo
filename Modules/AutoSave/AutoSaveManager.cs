@@ -33,6 +33,10 @@ public sealed class AutoSaveManager
         set
         {
             EnsureManagerIsInitialized();
+            if (_enabled == value)
+                return;
+
+            _enabled = value;
             if (value)
             {
                 _autoSaveTimer.Start();
@@ -177,6 +181,6 @@ public sealed class AutoSaveManager
             return;
         }
 
-        throw new NotInitializedException();
+        throw new InvalidOperationException("AutoSaveManager has not been initialized.");
     }
 }

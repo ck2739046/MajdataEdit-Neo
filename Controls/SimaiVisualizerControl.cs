@@ -5,6 +5,7 @@ using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using MajdataEdit_Neo.Models;
 using MajSimai;
 using SkiaSharp;
@@ -12,12 +13,17 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 
 namespace MajdataEdit_Neo.Controls;
 
 class SimaiVisualizerControl : Control
 {
     private static readonly SimaiChart EmptyChart = SimaiChart.Empty;
+    private readonly AnimationState _animationState = new();
+    private RenderCache _renderCache = new();
+    private bool _renderCacheDisposed;
+    private int _animationFramePending;
 
     //Set the properties
     //The naming of this should be strictly followed "Xxx" and "XxxProperty"
@@ -129,8 +135,101 @@ class SimaiVisualizerControl : Control
     {
         ClipToBounds = true;
 
-        AffectsRender<SimaiVisualizerControl>(TimeProperty, TrackIfProperty, ZoomLevelProperty, SimaiChartProperty, OffsetProperty, CaretTimeProperty);
+        AffectsRender<SimaiVisualizerControl>(TimeProperty, TrackIfProperty, ZoomLevelProperty,
+            SimaiChartProperty, OffsetProperty, CaretTimeProperty, IsAnimatedProperty);
     }
+
+    private sealed class AnimationState
+    {
+        public double Time;
+        public double Zoom;
+    }
+
+    private sealed class RenderCache : IDisposable
+    {
+        public readonly SKTypeface Typeface = SKTypeface.FromFamilyName(
+            OperatingSystem.IsWindows()
+                ? "Consolas"
+                : OperatingSystem.IsMacOS()
+                    ? "Menlo"
+                    : "monospace",
+            SKFontStyle.Bold);
+        public readonly SKFont TextFont;
+        public readonly SKPaint Paint = new();
+        public readonly SKPaint HanabiPaint = new() { Style = SKPaintStyle.Fill };
+        public readonly SKShader HanabiShader;
+        public readonly SKPath CursorPath = new();
+        public readonly SKPath WavePath = new();
+        public readonly List<SKPoint> WavePoints = new(1024);
+        public readonly List<double> BpmChangeTimes = new(32);
+        public readonly List<float> BpmChangeValues = new(32);
+        public readonly List<double> StrongBeats = new(64);
+        public readonly List<double> WeakBeats = new(128);
+        public SimaiChart? LastSimaiChart;
+        public TrackInfo? LastTrackInfo;
+        public float LastOffset = float.NaN;
+        public int LastSignatureHash;
+
+        public RenderCache()
+        {
+            TextFont = new SKFont(Typeface, 12);
+            HanabiShader = SKShader.CreateLinearGradient(
+                new SKPoint(0, 0),
+                new SKPoint(1, 0),
+                [new SKColor(255, 0, 0, 100), new SKColor(255, 0, 0, 0)],
+                SKShaderTileMode.Clamp);
+            HanabiPaint.Shader = HanabiShader;
+
+            CursorPath.MoveTo(-5, 0);
+            CursorPath.LineTo(5, 0);
+            CursorPath.LineTo(0, 8f);
+            CursorPath.Close();
+        }
+
+        public void Dispose()
+        {
+            WavePath.Dispose();
+            CursorPath.Dispose();
+            HanabiPaint.Dispose();
+            Paint.Dispose();
+            HanabiShader.Dispose();
+            TextFont.Dispose();
+            Typeface.Dispose();
+        }
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (!_renderCacheDisposed)
+            return;
+
+        _renderCache = new RenderCache();
+        _renderCacheDisposed = false;
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        if (!_renderCacheDisposed)
+        {
+            _renderCache.Dispose();
+            _renderCacheDisposed = true;
+        }
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void RequestNextAnimationFrame()
+    {
+        if (Interlocked.Exchange(ref _animationFramePending, 1) != 0)
+            return;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            Volatile.Write(ref _animationFramePending, 0);
+            InvalidateVisual();
+        }, DispatcherPriority.Background);
+    }
+
     class CustomDrawOp : ICustomDrawOperation
     {
         private readonly TrackInfo _trackInfo;
@@ -140,21 +239,10 @@ class SimaiVisualizerControl : Control
         private readonly double _caretTime;
         private readonly float _zoomLevel;
         private readonly float _offset;
-        private static double _lastTime;
-        private static double _lastZoom;
         private readonly bool _isAnimated;
-        public static bool NeedsRender { get; set; }
-        private static SimaiChart? _lastSimaiChart;
-        private static float _lastOffset = float.NaN;
-
-        // Cached resources to avoid per-frame allocations
-        static readonly SKTypeface ConsolasBold = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Bold);
-        static readonly SKFont TextFont = new(ConsolasBold, 12);
-
-        static readonly SKPaint HanabiPaint = new()
-        {
-            Style = SKPaintStyle.Fill
-        };
+        private readonly AnimationState _animationState;
+        private readonly RenderCache _renderCache;
+        private readonly Action _requestNextFrame;
 
         // Note colors
         static readonly SKColor WaveformColor = new(0, 100, 0, 150);
@@ -171,10 +259,6 @@ class SimaiVisualizerControl : Control
         static readonly SKColor MineColor = new(160, 32, 240);
         static readonly SKColor MineBreakColor = new(220, 80, 160);
         static readonly SKColor MineSlideColor = new(160, 32, 240);
-        static readonly SKColor HanabiColorStart = new(255, 0, 0, 100);
-        static readonly SKColor HanabiColorEnd = new(255, 0, 0, 0);
-        static readonly SKColor[] HanabiColors = [HanabiColorStart, HanabiColorEnd];
-
         static readonly float[] DashIntervals = [4, 4];
         static readonly SKPathEffect DashEffect = SKPathEffect.CreateDash(DashIntervals, 0);
 
@@ -187,27 +271,12 @@ class SimaiVisualizerControl : Control
         static readonly SKColor[] TouchHoldNormalColors = [TouchHoldLayer1, TouchHoldLayer2, TouchHoldLayer3, TouchHoldLayer4];
 
         static readonly SKColor CaretColor = new(200, 0, 0, 200);
-        static readonly SKPath CursorPath = new();
         static readonly SKColor GhostCursorColor = SKColors.Orange;
-
-        // Cached lists reused across frames
-        static readonly List<SKPoint> WavePoints = new(1024);
-        static readonly List<double> BpmChangeTimes = new(32);
-        static readonly List<float> BpmChangeValues = new(32);
-        static readonly List<double> StrongBeat = new(64);
-        static readonly List<double> WeakBeat = new(128);
-
-        static CustomDrawOp()
-        {
-            CursorPath.MoveTo(-5, 0);
-            CursorPath.LineTo(5, 0);
-            CursorPath.LineTo(0, 8f);
-            CursorPath.Close();
-        }
 
         public CustomDrawOp(Rect bounds,
             TrackInfo trackInfo, double time, float zoomLevel, SimaiChart simaiChart, List<(double, int, int)> signatures,
-            float offset, double caretTime, bool isAnimated)
+            float offset, double caretTime, bool isAnimated, AnimationState animationState,
+            RenderCache renderCache, Action requestNextFrame)
         {
             _trackInfo = trackInfo;
             _time = time;
@@ -217,12 +286,48 @@ class SimaiVisualizerControl : Control
             _offset = offset;
             _caretTime = caretTime;
             _isAnimated = isAnimated;
+            _animationState = animationState;
+            _renderCache = renderCache;
+            _requestNextFrame = requestNextFrame;
             Bounds = bounds;
         }
         public void Dispose() { }
         public Rect Bounds { get; }
         public bool HitTest(Point p) => true;
         public bool Equals(ICustomDrawOperation? other) => false;
+
+        private static int LowerBound(IReadOnlyList<double> values, double target)
+        {
+            var low = 0;
+            var high = values.Count;
+            while (low < high)
+            {
+                var middle = low + ((high - low) >> 1);
+                if (values[middle] < target)
+                    low = middle + 1;
+                else
+                    high = middle;
+            }
+
+            return low;
+        }
+
+        private static int LowerBound(ReadOnlySpan<SimaiTimingPoint> timings, double target)
+        {
+            var low = 0;
+            var high = timings.Length;
+            while (low < high)
+            {
+                var middle = low + ((high - low) >> 1);
+                if (timings[middle].Timing < target)
+                    low = middle + 1;
+                else
+                    high = middle;
+            }
+
+            return low;
+        }
+
         public void Render(ImmediateDrawingContext context)
         {
             if (_trackInfo is null) return;
@@ -233,12 +338,11 @@ class SimaiVisualizerControl : Control
             {
                 using var lease = leaseFeature.Lease();
                 var canvas = lease.SkCanvas;
-                var paint = new SKPaint
-                {
-                    Style = SKPaintStyle.Fill,
-                    Color = WaveformColor,
-                    //StrokeCap = SKStrokeCap.Round
-                };
+                var cache = _renderCache;
+                var paint = cache.Paint;
+                paint.Reset();
+                paint.Style = SKPaintStyle.Fill;
+                paint.Color = WaveformColor;
                 canvas.Save();
                 var width = Bounds.Width;
                 var height = Bounds.Height;
@@ -247,33 +351,38 @@ class SimaiVisualizerControl : Control
                 //TODO; Add Deltatime
                 if (_isAnimated)
                 {
-                    _lastTime += 0.2 * (_time - _lastTime);
-
+                    _animationState.Time += 0.2 * (_time - _animationState.Time);
+                    _animationState.Zoom += 0.2 * (_zoomLevel - _animationState.Zoom);
                 }
                 else
                 {
-                    _lastTime = _time;
+                    _animationState.Time = _time;
+                    _animationState.Zoom = _zoomLevel;
                 }
 
-                _lastZoom += 0.2 * (_zoomLevel - _lastZoom);
-
-                NeedsRender = _isAnimated && (Math.Abs(_time - _lastTime) > 0.005 || Math.Abs(_zoomLevel - _lastZoom) > 0.005);
+                var needsNextFrame = _isAnimated &&
+                    (Math.Abs(_time - _animationState.Time) > 0.005 ||
+                     Math.Abs(_zoomLevel - _animationState.Zoom) > 0.005);
+                if (needsNextFrame)
+                    _requestNextFrame();
 
                 var waveLevels = _trackInfo.RawWave;
-                if (_lastZoom > 3) waveLevels = _trackInfo.GetWaveThumbnails(2);
-                if (_lastZoom > 2) waveLevels = _trackInfo.GetWaveThumbnails(1);
-                if (_lastZoom > 1) waveLevels = _trackInfo.GetWaveThumbnails(0);
+                if (_animationState.Zoom > 3) waveLevels = _trackInfo.GetWaveThumbnails(2);
+                if (_animationState.Zoom > 2) waveLevels = _trackInfo.GetWaveThumbnails(1);
+                if (_animationState.Zoom > 1) waveLevels = _trackInfo.GetWaveThumbnails(0);
                 var songLength = _trackInfo.Length;
 
-                var currentTime = _lastTime;
+                var currentTime = _animationState.Time;
                 var step = songLength / waveLevels.Length;
-                var deltatime = _lastZoom;
+                var deltatime = _animationState.Zoom;
 
                 var startindex = (int)((currentTime - deltatime) / step);
                 var stopindex = (int)((currentTime + deltatime) / step);
                 var linewidth = (float)(width / (stopindex - startindex));
+                var virtualStartIndex = (double)startindex;
 
-                WavePoints.Clear();
+                var wavePoints = cache.WavePoints;
+                wavePoints.Clear();
                 for (var i = startindex; i < stopindex; i++)
                 {
                     if (i < 0) i = 0;
@@ -282,44 +391,58 @@ class SimaiVisualizerControl : Control
                     var x = (i - startindex) * linewidth;
                     var y = waveLevels[i] / 65535f * height + height / 2;
 
-                    WavePoints.Add(new SKPoint((float)x, (float)y));
+                    wavePoints.Add(new SKPoint((float)x, (float)y));
                 }
-                canvas.DrawPoints(SKPointMode.Polygon, WavePoints.ToArray(), paint);
+                canvas.DrawPoints(SKPointMode.Polygon, wavePoints.ToArray(), paint);
 
                 paint.IsAntialias = true;
 
                 //Draw Bpm Lines
-                if (!ReferenceEquals(_simaiChart, _lastSimaiChart) || _offset != _lastOffset)
+                var bpmChangeTimes = cache.BpmChangeTimes;
+                var bpmChangeValues = cache.BpmChangeValues;
+                var strongBeats = cache.StrongBeats;
+                var weakBeats = cache.WeakBeats;
+                var signatureHash = new HashCode();
+                foreach (var signature in _signatures)
+                    signatureHash.Add(signature);
+                var currentSignatureHash = signatureHash.ToHashCode();
+
+                if (!ReferenceEquals(_simaiChart, cache.LastSimaiChart) ||
+                    !ReferenceEquals(_trackInfo, cache.LastTrackInfo) ||
+                    _offset != cache.LastOffset ||
+                    currentSignatureHash != cache.LastSignatureHash)
                 {
-                    _lastSimaiChart = _simaiChart;
-                    _lastOffset = _offset;
+                    cache.LastSimaiChart = _simaiChart;
+                    cache.LastTrackInfo = _trackInfo;
+                    cache.LastOffset = _offset;
+                    cache.LastSignatureHash = currentSignatureHash;
                     var lastbpm = -1f;
-                    BpmChangeTimes.Clear();
-                    BpmChangeValues.Clear();
+                    bpmChangeTimes.Clear();
+                    bpmChangeValues.Clear();
 
                     //scan to get bpm change time and value
                     foreach (var timing in _simaiChart.CommaTimings)
                     {
                         if (timing.Bpm != lastbpm)
                         {
-                            BpmChangeTimes.Add(timing.Timing + _offset);
-                            BpmChangeValues.Add(timing.Bpm);
+                            bpmChangeTimes.Add(timing.Timing + _offset);
+                            bpmChangeValues.Add(timing.Bpm);
                             lastbpm = timing.Bpm;
                         }
                     }
-                    BpmChangeTimes.Add(_trackInfo.Length);
+                    bpmChangeTimes.Add(_trackInfo.Length);
 
-                    double timeBeats = BpmChangeTimes.Count > 0 ? BpmChangeTimes[0] : 0;
+                    double timeBeats = bpmChangeTimes.Count > 0 ? bpmChangeTimes[0] : 0;
                     var signatureNum = 4; // Time signature
                     var signatureDeno = 4; // Time signature
                     var currentBeat = 1;
                     double timePerBeat;
-                    StrongBeat.Clear();
-                    WeakBeat.Clear();
+                    strongBeats.Clear();
+                    weakBeats.Clear();
 
-                    for (var i = 1; i < BpmChangeTimes.Count; i++)
+                    for (var i = 1; i < bpmChangeTimes.Count; i++)
                     {
-                        while (timeBeats < BpmChangeTimes[i] - 0.05)
+                        while (timeBeats < bpmChangeTimes[i] - 0.05)
                         {
                             var sig = default((double, int, int));
                             for (var s = _signatures.Count - 1; s >= 0; s--)
@@ -337,58 +460,63 @@ class SimaiVisualizerControl : Control
                             }
 
                             if (currentBeat > signatureNum) currentBeat = 1;
-                            timePerBeat = 60.0 / BpmChangeValues[i - 1] * 4 / signatureDeno;
+                            timePerBeat = 60.0 / bpmChangeValues[i - 1] * 4 / signatureDeno;
 
                             if (currentBeat == 1)
-                                StrongBeat.Add(timeBeats);
+                                strongBeats.Add(timeBeats);
                             else
-                                WeakBeat.Add(timeBeats);
+                                weakBeats.Add(timeBeats);
 
                             currentBeat++;
                             timeBeats += timePerBeat;
                         }
-                        timeBeats = BpmChangeTimes[i];
+                        timeBeats = bpmChangeTimes[i];
                         currentBeat = 1;
                     }
                 }
 
-                double time = BpmChangeTimes.Count > 0 ? BpmChangeTimes[0] : 0;
+                double time = bpmChangeTimes.Count > 0 ? bpmChangeTimes[0] : 0;
                 paint.Color = BpmLineColor;
                 paint.StrokeWidth = 1;
 
-                for (var i = 1; i < BpmChangeTimes.Count; i++)
+                var visibleStartTime = currentTime - deltatime;
+                var visibleEndTime = currentTime + deltatime;
+                var firstBpmIndex = Math.Max(0, LowerBound(bpmChangeTimes, visibleStartTime) - 1);
+                for (var i = firstBpmIndex; i < bpmChangeValues.Count; i++)
                 {
-                    time = BpmChangeTimes[i - 1];
-                    if (time - currentTime > deltatime) continue;
-                    var x = ((float)(time / step) - startindex) * linewidth;
-                    canvas.DrawText(BpmChangeValues[i - 1].ToString(), (float)x + 3f, 10, TextFont, paint);
+                    time = bpmChangeTimes[i];
+                    if (time > visibleEndTime) break;
+                    var x = (float)((time / step - virtualStartIndex) * linewidth);
+                    canvas.DrawText(bpmChangeValues[i].ToString(), x + 3f, 10, cache.TextFont, paint);
                 }
 
-                foreach (var btime in StrongBeat)
+                for (var i = LowerBound(strongBeats, visibleStartTime); i < strongBeats.Count; i++)
                 {
-                    if (btime - currentTime < -deltatime) continue;
-                    if (btime - currentTime > deltatime) break;
-                    var x = ((float)(btime / step) - startindex) * linewidth;
-                    canvas.DrawLine((float)x, 0, (float)x, (float)height, paint);
+                    var beatTime = strongBeats[i];
+                    if (beatTime > visibleEndTime) break;
+                    var x = (float)((beatTime / step - virtualStartIndex) * linewidth);
+                    canvas.DrawLine(x, 0, x, (float)height, paint);
                 }
 
-                foreach (var btime in WeakBeat)
+                for (var i = LowerBound(weakBeats, visibleStartTime); i < weakBeats.Count; i++)
                 {
-                    if (btime - currentTime < -deltatime) continue;
-                    if (btime - currentTime > deltatime) break;
-                    var x = ((float)(btime / step) - startindex) * linewidth;
-                    canvas.DrawLine((float)x, 0, (float)x, 10, paint);
+                    var beatTime = weakBeats[i];
+                    if (beatTime > visibleEndTime) break;
+                    var x = (float)((beatTime / step - virtualStartIndex) * linewidth);
+                    canvas.DrawLine(x, 0, x, 10, paint);
                 }
 
                 //timing white line
                 paint.Color = TimingTickColor;
-                foreach (var note in _simaiChart.CommaTimings)
+                var commaTimings = _simaiChart.CommaTimings;
+                var firstCommaIndex = LowerBound(commaTimings, visibleStartTime - _offset);
+                for (var i = firstCommaIndex; i < commaTimings.Length; i++)
                 {
+                    var note = commaTimings[i];
                     time = note.Timing + _offset;
-                    if (time - currentTime < -deltatime) continue;
-                    if (time - currentTime > deltatime) break;
-                    var x = ((float)(time / step) - startindex) * linewidth;
-                    canvas.DrawLine((float)x, (float)height - 10, (float)x, (float)height, paint);
+                    if (time > visibleEndTime) break;
+                    var x = (float)((time / step - virtualStartIndex) * linewidth);
+                    canvas.DrawLine(x, (float)height - 10, x, (float)height, paint);
                 }
 
                 paint.Color = CaretColor;
@@ -397,11 +525,13 @@ class SimaiVisualizerControl : Control
 
                 paint.Style = SKPaintStyle.Stroke;
                 // Draw notes
-                foreach (var note in _simaiChart.NoteTimings)
+                var noteTimings = _simaiChart.NoteTimings;
+                var firstNoteIndex = LowerBound(noteTimings, visibleStartTime - _offset - 10.0);
+                for (var noteIndex = firstNoteIndex; noteIndex < noteTimings.Length; noteIndex++)
                 {
+                    var note = noteTimings[noteIndex];
                     time = note.Timing + _offset;
-                    if (time - currentTime < -deltatime - 10.0) continue;
-                    if (time - currentTime > deltatime) break;
+                    if (time > visibleEndTime) break;
                     var notes = note.Notes;
 
                     // manual count non-slide-head notes
@@ -415,7 +545,7 @@ class SimaiVisualizerControl : Control
                     foreach (var n in notes)
                         if (n.Type == SimaiNoteType.Slide) slideCount++;
 
-                    var x = (float)(((float)(time / step) - startindex) * linewidth);
+                    var x = (float)((time / step - virtualStartIndex) * linewidth);
 
                     foreach (var noteD in notes)
                     {
@@ -430,14 +560,13 @@ class SimaiVisualizerControl : Control
                             if (noteD.Type == SimaiNoteType.TouchHold)
                                 rectangleF.Left += (float)(noteD.HoldTime / step) * linewidth;
 
-                            HanabiPaint.Shader = SKShader.CreateLinearGradient(
-                                new SKPoint(rectangleF.Left, rectangleF.Top),
-                                new SKPoint(rectangleF.Right, rectangleF.Top),
-                                HanabiColors,
-                                null,
-                                SKShaderTileMode.Clamp
-                            );
-                            canvas.DrawRect(rectangleF, HanabiPaint);
+                            canvas.Save();
+                            canvas.Translate(rectangleF.Left, rectangleF.Top);
+                            canvas.Scale(Math.Max(rectangleF.Width, 0.0001f), 1);
+                            canvas.DrawRect(
+                                new SKRect(0, 0, 1, rectangleF.Height),
+                                cache.HanabiPaint);
+                            canvas.Restore();
                         }
 
                         switch (noteD.Type)
@@ -451,7 +580,7 @@ class SimaiVisualizerControl : Control
 
                                 if (noteD.IsForceStar)
                                 {
-                                    canvas.DrawText("*", x - 7f, y - 7f, TextFont, paint);
+                                    canvas.DrawText("*", x - 7f, y - 7f, cache.TextFont, paint);
                                 }
                                 else
                                 {
@@ -516,7 +645,7 @@ class SimaiVisualizerControl : Control
                                               slideCount >= 2 ? EachColor :
                                               SlideBodyColor;
                                 paint.PathEffect = DashEffect;
-                                var xSlide = (float)((noteD.SlideStartTime + _offset) / step - startindex) * linewidth;
+                                var xSlide = (float)((noteD.SlideStartTime + _offset) / step - virtualStartIndex) * linewidth;
                                 var xSlideRight = (float)(noteD.SlideTime / step) * linewidth + xSlide;
 
                                 if (!float.IsNormal(xSlideRight)) xSlideRight = ushort.MaxValue;
@@ -535,10 +664,11 @@ class SimaiVisualizerControl : Control
                     //Draw ghost cusor
                     paint.Color = GhostCursorColor;
                     paint.Style = SKPaintStyle.Fill;
-                    var x2 = (float)(time / step - startindex) * linewidth;
-                    CursorPath.Transform(SKMatrix.CreateTranslation(x2, 0));
-                    canvas.DrawPath(CursorPath, paint);
-                    CursorPath.Transform(SKMatrix.CreateTranslation(-x2, 0));
+                    var x2 = (float)(time / step - virtualStartIndex) * linewidth;
+                    canvas.Save();
+                    canvas.Translate(x2, 0);
+                    canvas.DrawPath(cache.CursorPath, paint);
+                    canvas.Restore();
                 }
 
                 canvas.Restore();
@@ -550,11 +680,7 @@ class SimaiVisualizerControl : Control
         if (TrackIf == null) return;
 
         context.Custom(new CustomDrawOp(new Rect(0, 0, Bounds.Width, Bounds.Height),
-            TrackIf, Time, ZoomLevel, SimaiChart ?? EmptyChart, Signatures ?? [], Offset, CaretTime, IsAnimated));
-
-        if (CustomDrawOp.NeedsRender)
-        {
-            Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
-        }
+            TrackIf, Time, ZoomLevel, SimaiChart ?? EmptyChart, Signatures ?? [], Offset, CaretTime,
+            IsAnimated, _animationState, _renderCache, RequestNextAnimationFrame));
     }
 }
