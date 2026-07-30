@@ -8,15 +8,15 @@ namespace MajdataEdit_Neo.Models.TrackUtils;
 
 public static class TrackProcessor
 {
-    public static void ExtractAudio(
+    public static bool ExtractAudio(
         string ffmpegPath,
         string videoPath,
         string audioOutputPath,
         CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(videoPath)) return;
+        if (!File.Exists(videoPath)) return true;
 
-        RunFFmpeg(ffmpegPath, [
+        return RunFFmpeg(ffmpegPath, [
             "-y",
             "-i", videoPath,
             "-vn",
@@ -27,7 +27,7 @@ public static class TrackProcessor
         ], cancellationToken);
     }
 
-    public static void AdjustMediaTime(
+    public static bool AdjustMediaTime(
         string ffmpegPath,
         string filePath,
         double targetTime,
@@ -35,10 +35,10 @@ public static class TrackProcessor
         bool clone = false,
         CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(filePath)) return;
+        if (!File.Exists(filePath)) return true;
 
         var diff = targetTime - offset;
-        if (Math.Abs(diff) < 0.01) return;
+        if (Math.Abs(diff) < 0.01) return true;
 
         var ext = Path.GetExtension(filePath).ToLowerInvariant();
         var isAudio = ext == ".mp3" || ext == ".wav" || ext == ".ogg" || ext == ".flac";
@@ -97,7 +97,12 @@ public static class TrackProcessor
 
         try
         {
-            RunFFmpeg(ffmpegPath, arguments, cancellationToken);
+            if (!RunFFmpeg(ffmpegPath, arguments, cancellationToken))
+            {
+                if (File.Exists(tempPath)) File.Delete(tempPath);
+                return false;
+            }
+
             if (File.Exists(tempPath))
             {
                 var rawPath = Path.Combine(Path.GetDirectoryName(filePath)!, $"raw{ext}");
@@ -106,6 +111,7 @@ public static class TrackProcessor
                 File.Move(filePath, rawPath);
                 File.Move(tempPath, filePath);
             }
+            return true;
         }
         catch
         {
@@ -114,13 +120,13 @@ public static class TrackProcessor
         }
     }
 
-    public static void CompressVideo(
+    public static bool CompressVideo(
         string ffmpegPath,
         string inputPath,
         string outputPath,
         CancellationToken cancellationToken = default)
     {
-        RunFFmpeg(ffmpegPath, [
+        return RunFFmpeg(ffmpegPath, [
             "-y",
             "-i", inputPath,
             "-vf", "scale=-2:540,fps=30",
@@ -132,12 +138,14 @@ public static class TrackProcessor
         ], cancellationToken);
     }
 
-    static void RunFFmpeg(
+    static bool RunFFmpeg(
         string ffmpegPath,
         string[] arguments,
         CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
+        if (cancellationToken.IsCancellationRequested)
+            return false;
+
         var startInfo = new ProcessStartInfo
         {
             FileName = ffmpegPath,
@@ -170,8 +178,10 @@ public static class TrackProcessor
 
         process.WaitForExit();
         var error = errorTask.GetAwaiter().GetResult();
-        cancellationToken.ThrowIfCancellationRequested();
+        if (cancellationToken.IsCancellationRequested)
+            return false;
 
         if (process.ExitCode != 0) throw new Exception($"FFmpeg Error: {error}");
+        return true;
     }
 }

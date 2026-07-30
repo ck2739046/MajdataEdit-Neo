@@ -66,13 +66,20 @@ public partial class ToolsModel(
         var outputPath = Path.Combine(maidataDir, $"{videoBaseName}_compressed.mp4");
         var operation = BeginFfmpegOperation();
 
-        _mainWindow.ShowStatusMessage($"{Langs.Status_Compressing}（按Esc终止）");
+        _mainWindow.ShowStatusMessage($"{Langs.Status_Compressing}");
 
         try
         {
-            await Task.Run(
+            var completed = await Task.Run(
                 () => TrackProcessor.CompressVideo("ffmpeg", bgVideoPath, outputPath, operation.Token),
                 operation.Token);
+            if (!completed)
+            {
+                Debug.WriteLine("FFmpeg video compression was cancelled.");
+                if (File.Exists(outputPath))
+                    File.Delete(outputPath);
+                return;
+            }
 
             if (File.Exists(outputPath))
             {
@@ -130,15 +137,17 @@ public partial class ToolsModel(
             var audioPath = Path.Combine(maidataDir, "track.mp3");
             if (!File.Exists(audioPath)) audioPath = Path.Combine(maidataDir, "track.ogg");
             operation = BeginFfmpegOperation();
-            _mainWindow.ShowStatusMessage($"{Langs.Status_Processing}（按Esc终止）");
-            await Task.Run(() =>
+            _mainWindow.ShowStatusMessage($"{Langs.Status_Processing}");
+            var completed = await Task.Run(() =>
             {
-                TrackProcessor.AdjustMediaTime(
+                if (!TrackProcessor.AdjustMediaTime(
                     "ffmpeg",
                     audioPath,
                     60.0 / bpm * beatsCount,
                     offset,
-                    cancellationToken: operation.Token);
+                    cancellationToken: operation.Token))
+                    return false;
+
                 string? videoPath = null;
                 foreach (var name in new[] { "pv.mp4", "mv.mp4", "bg.mp4" })
                 {
@@ -150,14 +159,21 @@ public partial class ToolsModel(
                     }
                 }
                 if (videoPath != null)
-                    TrackProcessor.AdjustMediaTime(
+                    return TrackProcessor.AdjustMediaTime(
                         "ffmpeg",
                         videoPath,
                         60.0 / bpm * beatsCount,
                         offset,
                         freezeFrame,
                         operation.Token);
+                return true;
             }, operation.Token);
+            if (!completed)
+            {
+                Debug.WriteLine("FFmpeg media processing was cancelled.");
+                return;
+            }
+
             _doc.Offset = 0;
             await _session.SaveFile();
             await Task.Delay(30);
@@ -207,12 +223,18 @@ public partial class ToolsModel(
             }
             if (!await EnsureFFmpeg()) return;
             operation = BeginFfmpegOperation();
-            _mainWindow.ShowStatusMessage($"{Langs.Status_ExtractingAudio}（按Esc终止）");
+            _mainWindow.ShowStatusMessage($"{Langs.Status_ExtractingAudio}");
             var audioPath = Path.Combine(parent, "track.mp3");
             audioTempPath = Path.Combine(parent, $".track.{Guid.NewGuid():N}.tmp.mp3");
-            await Task.Run(
+            var completed = await Task.Run(
                 () => TrackProcessor.ExtractAudio("ffmpeg", newFile, audioTempPath, operation.Token),
                 operation.Token);
+            if (!completed)
+            {
+                Debug.WriteLine("FFmpeg audio extraction was cancelled.");
+                return;
+            }
+
             File.Move(audioTempPath, audioPath, overwrite: true);
             audioTempPath = null;
             await _session.NewChartFromDir(parent);

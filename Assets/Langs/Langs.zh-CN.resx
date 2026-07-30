@@ -129,15 +129,6 @@
   <data name="Gui_Difficulty" xml:space="preserve">
     <value>难度</value>
   </data>
-  <data name="Gui_AutoSaves" xml:space="preserve">
-    <value>自动保存</value>
-  </data>
-  <data name="Gui_Global" xml:space="preserve">
-    <value>全局</value>
-  </data>
-  <data name="Gui_Local" xml:space="preserve">
-    <value>本地</value>
-  </data>
   <data name="Gui_File" xml:space="preserve">
     <value>文件</value>
   </data>
@@ -334,7 +325,7 @@
     <value>已断开连接</value>
   </data>
   <data name="Status_Compressing" xml:space="preserve">
-    <value>视频压缩中。。。</value>
+    <value>视频压缩中。。。（按Esc终止）</value>
   </data>
   <data name="Status_CompressComplete" xml:space="preserve">
     <value>视频压缩完成</value>
@@ -415,10 +406,10 @@
     <value>提取失败：{0}</value>
   </data>
   <data name="Status_Processing" xml:space="preserve">
-    <value>处理媒体中...</value>
+    <value>处理媒体中...（按Esc终止）</value>
   </data>
   <data name="Status_ExtractingAudio" xml:space="preserve">
-    <value>提取音频中...</value>
+    <value>提取音频中...（按Esc终止）</value>
   </data>
   <data name="Gui_NewChartFromVideo" xml:space="preserve">
     <value>从视频新建谱面</value>
@@ -467,5 +458,14 @@
   </data>
   <data name="Msg_NoAutoSaveFound" xml:space="preserve">
     <value>没有可用的自动保存文件。</value>
+  </data>
+  <data name="Gui_AutoSaves" xml:space="preserve">
+    <value>自动保存</value>
+  </data>
+  <data name="Gui_Global" xml:space="preserve">
+    <value>全局</value>
+  </data>
+  <data name="Gui_Local" xml:space="preserve">
+    <value>本地</value>
   </data>
 </root>

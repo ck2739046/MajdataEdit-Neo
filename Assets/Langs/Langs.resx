@@ -129,15 +129,6 @@
   <data name="Gui_Difficulty" xml:space="preserve">
     <value>Difficulty</value>
   </data>
-  <data name="Gui_AutoSaves" xml:space="preserve">
-    <value>Autosaves</value>
-  </data>
-  <data name="Gui_Global" xml:space="preserve">
-    <value>Global</value>
-  </data>
-  <data name="Gui_Local" xml:space="preserve">
-    <value>Local</value>
-  </data>
   <data name="Gui_File" xml:space="preserve">
     <value>File</value>
   </data>
@@ -334,7 +325,7 @@
     <value>Disconnected</value>
   </data>
   <data name="Status_Compressing" xml:space="preserve">
-    <value>Compressing video...</value>
+    <value>Compressing video... (Press Esc to cancel)</value>
   </data>
   <data name="Status_CompressComplete" xml:space="preserve">
     <value>Video compression complete</value>
@@ -418,7 +409,7 @@ Do you want to download the latest update of Majdata?</value>
     <value>Processing media...</value>
   </data>
   <data name="Status_ExtractingAudio" xml:space="preserve">
-    <value>Extracting audio...</value>
+    <value>Extracting audio... (Press Esc to cancel)</value>
   </data>
   <data name="Gui_NewChartFromVideo" xml:space="preserve">
     <value>New Chart From Video</value>
@@ -467,5 +458,14 @@ Do you want to download the latest update of Majdata?</value>
   </data>
   <data name="Msg_NoAutoSaveFound" xml:space="preserve">
     <value>No autosave files are available.</value>
+  </data>
+  <data name="Gui_AutoSaves" xml:space="preserve">
+    <value>Autosaves</value>
+  </data>
+  <data name="Gui_Global" xml:space="preserve">
+    <value>Global</value>
+  </data>
+  <data name="Gui_Local" xml:space="preserve">
+    <value>Local</value>
   </data>
 </root>
