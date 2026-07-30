@@ -10,6 +10,7 @@ using MajdataEdit_Neo.ViewModels.SubModels;
 using MajdataEdit_Neo.Views;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -188,6 +189,38 @@ public partial class MainWindowViewModel : ViewModelBase
         await Task.Delay(100);
         Session.Doc.NotifySimaiFileChanged();
         await Session.Playback.EditorLoad(Session.MaidataDir);
+    }
+
+    public async void OpenRecoverWindow()
+    {
+        var desktop = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+        if (desktop?.MainWindow is null) return;
+
+        var maidataDirectory = Session.Doc.IsLoaded ? Session.MaidataDir : null;
+        var recoverViewModel = await RecoverViewModel.CreateAsync(Session.AutoSave, maidataDirectory);
+        var window = new RecoverWindow(recoverViewModel);
+        var result = await window.ShowDialog<RecoverDialogResult?>(desktop.MainWindow);
+        if (result is null) return;
+
+        if (result.Action == RecoverDialogAction.Load)
+        {
+            await Session.OpenFile(result.MaidataPath);
+            return;
+        }
+
+        if (!Session.Doc.IsLoaded) return;
+        var currentMaidataPath = Path.GetFullPath(Path.Combine(Session.MaidataDir, "maidata.txt"));
+        var recoveredMaidataPath = Path.GetFullPath(result.MaidataPath);
+        var pathComparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+        if (string.Equals(
+            currentMaidataPath,
+            recoveredMaidataPath,
+            pathComparison))
+        {
+            await Session.ReloadFile();
+        }
     }
 
     public void OpenBpmTapWindow()

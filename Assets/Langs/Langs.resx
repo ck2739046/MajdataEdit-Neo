@@ -129,6 +129,15 @@
   <data name="Gui_Difficulty" xml:space="preserve">
     <value>Difficulty</value>
   </data>
+  <data name="Gui_AutoSaves" xml:space="preserve">
+    <value>Autosaves</value>
+  </data>
+  <data name="Gui_Global" xml:space="preserve">
+    <value>Global</value>
+  </data>
+  <data name="Gui_Local" xml:space="preserve">
+    <value>Local</value>
+  </data>
   <data name="Gui_File" xml:space="preserve">
     <value>File</value>
   </data>
@@ -446,5 +455,17 @@ Do you want to download the latest update of Majdata?</value>
   </data>
   <data name="Set_BackgroundOutsideDim" xml:space="preserve">
     <value>Outside Background Dim</value>
+  </data>
+  <data name="Win_Recover" xml:space="preserve">
+    <value>Autosave Recover</value>
+  </data>
+  <data name="Gui_Recover" xml:space="preserve">
+    <value>Recover</value>
+  </data>
+  <data name="Msg_RecoverFailed" xml:space="preserve">
+    <value>Failed to recover the autosave file.</value>
+  </data>
+  <data name="Msg_NoAutoSaveFound" xml:space="preserve">
+    <value>No autosave files are available.</value>
   </data>
 </root>

@@ -203,6 +203,18 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
             Debug.WriteLine(e);
         }
     }
+    public async Task OpenFile(string maidataPath)
+    {
+        if (await AskSave()) return;
+        try
+        {
+            await LoadChart(maidataPath);
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine(e);
+        }
+    }
 
     private async Task LoadChart(string maidataPath)
     {

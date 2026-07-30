@@ -104,6 +104,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
                 return ResourceManager.GetString("Gui_Artist", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Autosaves 的本地化字符串。
+        /// </summary>
+        internal static string Gui_AutoSaves {
+            get {
+                return ResourceManager.GetString("Gui_AutoSaves", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Beats 的本地化字符串。
@@ -266,6 +275,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
                 return ResourceManager.GetString("Gui_FreezeFrame", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Global 的本地化字符串。
+        /// </summary>
+        internal static string Gui_Global {
+            get {
+                return ResourceManager.GetString("Gui_Global", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Info 的本地化字符串。
@@ -282,6 +300,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static string Gui_Level {
             get {
                 return ResourceManager.GetString("Gui_Level", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Local 的本地化字符串。
+        /// </summary>
+        internal static string Gui_Local {
+            get {
+                return ResourceManager.GetString("Gui_Local", resourceCulture);
             }
         }
         
@@ -381,6 +408,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static string Gui_Record {
             get {
                 return ResourceManager.GetString("Gui_Record", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Recover 的本地化字符串。
+        /// </summary>
+        internal static string Gui_Recover {
+            get {
+                return ResourceManager.GetString("Gui_Recover", resourceCulture);
             }
         }
         
@@ -572,6 +608,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
                 return ResourceManager.GetString("Msg_ExtractAudioFailed", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Failed to recover the autosave file. 的本地化字符串。
+        /// </summary>
+        internal static string Msg_RecoverFailed {
+            get {
+                return ResourceManager.GetString("Msg_RecoverFailed", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Invalid Beats Count! 的本地化字符串。
@@ -579,6 +624,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static string Msg_InvalidBeatsCount {
             get {
                 return ResourceManager.GetString("Msg_InvalidBeatsCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 No autosave file is available for this chart. 的本地化字符串。
+        /// </summary>
+        internal static string Msg_NoAutoSaveFound {
+            get {
+                return ResourceManager.GetString("Msg_NoAutoSaveFound", resourceCulture);
             }
         }
         
@@ -1035,6 +1089,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
             }
         }
         
+        /// <summary>
+        ///   查找类似 Autosave Recover 的本地化字符串。
+        /// </summary>
+        internal static string Win_Recover {
+            get {
+                return ResourceManager.GetString("Win_Recover", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Settings 的本地化字符串。
         /// </summary>

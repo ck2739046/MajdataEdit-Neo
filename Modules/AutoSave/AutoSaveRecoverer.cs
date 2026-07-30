@@ -49,6 +49,7 @@ internal class AutoSaveRecoverer : IAutoSaveRecoverer
 
     public IReadOnlyCollection<AutoSaveFileInfo> GetGlobalAutoSaves()
     {
+        _globalIndex.ChangePath(_globalContext.WorkingPath);
         var result = new List<AutoSaveFileInfo>();
         result.AddRange(_globalIndex.GetFileInfos());
         result.Sort(delegate (AutoSaveFileInfo f1, AutoSaveFileInfo f2)
@@ -70,14 +71,24 @@ internal class AutoSaveRecoverer : IAutoSaveRecoverer
     }
     public bool RecoverFile(AutoSaveFileInfo recoveredFileInfo)
     {
+        if (string.IsNullOrWhiteSpace(recoveredFileInfo.RawPath) ||
+            string.IsNullOrWhiteSpace(recoveredFileInfo.FileName))
+            return false;
+
         // 原始的maidata路径
-        var rawMaidataPath = recoveredFileInfo.RawPath + "/maidata.txt";
+        var rawMaidataPath = Directory.Exists(recoveredFileInfo.RawPath)
+            ? Path.Combine(recoveredFileInfo.RawPath, "maidata.txt")
+            : recoveredFileInfo.RawPath;
+        var rawDirectory = Path.GetDirectoryName(rawMaidataPath);
+        if (string.IsNullOrWhiteSpace(rawDirectory))
+            return false;
+
         // 原始maidata恢复前备份路径
-        var backupMaidataPath = recoveredFileInfo.RawPath + "/maidata.before_recovery.txt";
+        var backupMaidataPath = Path.Combine(rawDirectory, "maidata.before_recovery.txt");
         // 自动保存maidata路径
         var autosaveMaidataPath = recoveredFileInfo.FileName;
         var recoveryTempPath = Path.Combine(
-            recoveredFileInfo.RawPath!,
+            rawDirectory,
             $".maidata.recovery.{Guid.NewGuid():N}.tmp");
 
         try

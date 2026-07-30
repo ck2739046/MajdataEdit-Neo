@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="using:MajdataEdit_Neo"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:MajdataEdit_Neo.ViewModels"
+        mc:Ignorable="d"
+        Width="1100"
+        Height="650"
+        MinWidth="720"
+        MinHeight="420"
+        x:Class="MajdataEdit_Neo.Views.RecoverWindow"
+        x:DataType="vm:RecoverViewModel"
+        TransparencyLevelHint="AcrylicBlur"
+        Background="Transparent"
+        Icon="/Assets/favicon.ico"
+        Title="{local:I18N Win_Recover}">
+    <Panel>
+        <ExperimentalAcrylicBorder IsHitTestVisible="False">
+            <ExperimentalAcrylicBorder.Material>
+                <ExperimentalAcrylicMaterial
+                    BackgroundSource="Digger"
+                    TintColor="Black"
+                    TintOpacity="1"
+                    MaterialOpacity="0.75" />
+            </ExperimentalAcrylicBorder.Material>
+        </ExperimentalAcrylicBorder>
+
+        <Grid ColumnDefinitions="380,*" Margin="16" ColumnSpacing="12">
+            <Grid Grid.Column="0" RowDefinitions="Auto,2*,Auto,*,Auto" RowSpacing="10">
+                <TextBlock Grid.Row="0"
+                           Text="{local:I18N Gui_AutoSaves}"
+                           FontSize="16"
+                           FontWeight="SemiBold"/>
+                <ListBox x:Name="AutoSaveList"
+                         Grid.Row="1"
+                         ItemsSource="{Binding AutoSaves}"
+                         SelectedItem="{Binding SelectedAutoSave, Mode=TwoWay}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:RecoverAutoSaveItem">
+                            <TextBlock Text="{Binding DisplayName}"
+                                       Padding="4"
+                                       TextWrapping="Wrap"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <TextBlock Grid.Row="2"
+                           Text="{local:I18N Gui_Difficulty}"
+                           FontSize="16"
+                           FontWeight="SemiBold"/>
+                <ListBox x:Name="DifficultyList"
+                         Grid.Row="3"
+                         ItemsSource="{Binding Difficulties}"
+                         SelectionChanged="DifficultyList_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:RecoverDifficultyItem">
+                            <TextBlock Text="{Binding DisplayName}" Padding="4"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Button Grid.Column="0"
+                            Content="{local:I18N Gui_Open}"
+                            IsEnabled="{Binding CanLoadSelectedChart}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Click="LoadButton_Click"/>
+                    <Button Grid.Column="1"
+                            Content="{local:I18N Gui_Recover}"
+                            IsEnabled="{Binding HasAutoSave}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Click="RecoverButton_Click"/>
+                </Grid>
+            </Grid>
+
+            <Border Grid.Column="1"
+                    BorderBrush="#50FFFFFF"
+                    BorderThickness="0.5">
+                <Grid>
+                    <AvaloniaEdit:TextEditor x:Name="RecoverEditor"
+                                             IsVisible="{Binding HasAutoSave}"
+                                             IsReadOnly="True"
+                                             ShowLineNumbers="True"
+                                             Padding="6"
+                                             Background="#70000000"
+                                             FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                             FontSize="14"/>
+                    <TextBlock IsVisible="{Binding !HasAutoSave}"
+                               Text="{local:I18N Msg_NoAutoSaveFound}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Opacity="0.7"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Panel>
+</Window>

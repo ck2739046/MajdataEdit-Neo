@@ -39,6 +39,7 @@ internal class AutoSaveIndexManager : IAutoSaveIndexManager
         var normalizedPath = Path.GetFullPath(path);
         if (normalizedPath == _curPath)
         {
+            _index = LoadOrCreateIndexFile(normalizedPath);
             _isReady = true;
             return;
         }
@@ -76,7 +77,7 @@ internal class AutoSaveIndexManager : IAutoSaveIndexManager
         var fileInfo = new AutoSaveFileInfo
         {
             FileName = path,
-            SavedTime = DateTimeOffset.Now.AddHours(8).ToUnixTimeSeconds(),
+            SavedTime = DateTimeOffset.Now.ToUnixTimeSeconds(),
             RawPath = _context.RawFilePath
         };
         _index!.FilesInfo.Add(fileInfo);

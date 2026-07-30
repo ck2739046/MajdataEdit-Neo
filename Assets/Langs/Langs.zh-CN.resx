@@ -129,6 +129,15 @@
   <data name="Gui_Difficulty" xml:space="preserve">
     <value>难度</value>
   </data>
+  <data name="Gui_AutoSaves" xml:space="preserve">
+    <value>自动保存</value>
+  </data>
+  <data name="Gui_Global" xml:space="preserve">
+    <value>全局</value>
+  </data>
+  <data name="Gui_Local" xml:space="preserve">
+    <value>本地</value>
+  </data>
   <data name="Gui_File" xml:space="preserve">
     <value>文件</value>
   </data>
@@ -446,5 +455,17 @@
   </data>
   <data name="Set_BackgroundOutsideDim" xml:space="preserve">
     <value>圆外背景暗度</value>
+  </data>
+  <data name="Win_Recover" xml:space="preserve">
+    <value>自动保存恢复</value>
+  </data>
+  <data name="Gui_Recover" xml:space="preserve">
+    <value>恢复</value>
+  </data>
+  <data name="Msg_RecoverFailed" xml:space="preserve">
+    <value>自动保存文件恢复失败。</value>
+  </data>
+  <data name="Msg_NoAutoSaveFound" xml:space="preserve">
+    <value>没有可用的自动保存文件。</value>
   </data>
 </root>

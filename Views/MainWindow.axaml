@@ -65,6 +65,8 @@
 					<MenuItem Header="{local:I18N Gui_Save}" Command="{Binding SaveFileCommand}"/>
 					<Separator/>
 					<MenuItem Header="{local:I18N Gui_ExportVideo}" Command="{Binding PlayRecordCommand}"/>
+					<Separator/>
+					<MenuItem Header="{local:I18N Win_Recover}" Command="{Binding OpenRecoverWindow}"/>
 				</MenuItem>
 				<MenuItem x:Name="EditMenu" Header="{local:I18N Gui_Edit}">
 					<MenuItem Header="{local:I18N Gui_ChartInfo}" Command="{Binding OpenChartInfoWindow}"/>
@@ -220,7 +222,7 @@
 
 		<Grid RowDefinitions="22.7*,54.6*,22.7*" ColumnDefinitions="19.2*,61.6*,19.2*"
 			  ZIndex="5" IsVisible="{Binding !Session.Doc.IsLoaded}">
-			<Grid Grid.Row="1" Grid.Column="1" RowDefinitions="1*,2*" ColumnDefinitions="*,*,*">
+			<Grid Grid.Row="1" Grid.Column="1" RowDefinitions="1*,2*" ColumnDefinitions="*,*,*,*">
 				<Grid Grid.Column="0" ColumnDefinitions="1*,6*,1*">
 					<Button Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
 							Command="{Binding NewFileCommand}">
@@ -239,10 +241,18 @@
 						<PathIcon Data="{StaticResource video}"/>
 					</Button>
 				</Grid>
+				<Grid Grid.Column="3" ColumnDefinitions="1*,6*,1*">
+					<Button Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+							Command="{Binding OpenRecoverWindow}">
+						<PathIcon Data="{StaticResource rotate_l}"/>
+					</Button>
+				</Grid>
 				<TextBlock Grid.Column="0" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_New}"/>
 				<TextBlock Grid.Column="1" Grid.Row="1" FontSize="16" HorizontalAlignment="Center" Text="{local:I18N Gui_Open}"/>
 				<TextBlock Grid.Column="2" Grid.Row="1" FontSize="16" HorizontalAlignment="Center"
 						   Text="{local:I18N Gui_NewChartFromVideo}" TextWrapping="Wrap" TextAlignment="Center"/>
+				<TextBlock Grid.Column="3" Grid.Row="1" FontSize="16" HorizontalAlignment="Center"
+						   Text="{local:I18N Win_Recover}" TextWrapping="Wrap" TextAlignment="Center"/>
 			</Grid>
 		</Grid>
 		<DockPanel >

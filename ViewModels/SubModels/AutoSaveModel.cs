@@ -2,6 +2,7 @@ using MajdataEdit_Neo.Modules.AutoSave;
 using MajdataEdit_Neo.Modules.AutoSave.Contexts;
 using MajSimai;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -51,6 +52,21 @@ public class AutoSaveModel
         _localContext.RawFilePath = Path.Combine(maidataDir, "maidata.txt");
         _localContext.WorkingPath = Path.Combine(maidataDir, ".autosave");
         _globalContext.RawFilePath = Path.Combine(maidataDir, "maidata.txt");
+    }
+
+    public IReadOnlyCollection<AutoSaveFileInfo> GetLocalAutoSaves()
+    {
+        return _manager.Recoverer.GetLocalAutoSaves();
+    }
+
+    public IReadOnlyCollection<AutoSaveFileInfo> GetGlobalAutoSaves()
+    {
+        return _manager.Recoverer.GetGlobalAutoSaves();
+    }
+
+    public bool RecoverFile(AutoSaveFileInfo autoSaveFile)
+    {
+        return _manager.Recoverer.RecoverFile(autoSaveFile);
     }
 
     public void SetContent(string content)

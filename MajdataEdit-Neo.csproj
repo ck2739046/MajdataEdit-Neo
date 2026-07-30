@@ -64,6 +64,9 @@
 		<Compile Update="ViewLocator.cs">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</Compile>
+		<Compile Update="Views\RecoverWindow.axaml.cs">
+		  <DependentUpon>RecoverWindow.axaml</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<!--runtimes按需复制-->
