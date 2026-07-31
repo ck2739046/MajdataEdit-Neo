@@ -256,18 +256,18 @@ class SimaiVisualizerControl : Control
 
         static readonly SKColor BreakColor = SKColors.OrangeRed;
         static readonly SKColor EachColor = SKColors.Gold;
-        static readonly SKColor MineColor = new(160, 32, 240);
-        static readonly SKColor MineBreakColor = new(220, 80, 160);
-        static readonly SKColor MineSlideColor = new(160, 32, 240);
+        static readonly SKColor MineColor = new(0x4F, 0x4F, 0x4F);
+        static readonly SKColor MineBreakColor = new(0x83, 0x83, 0x83);
+        static readonly SKColor MineSlideColor = new(0x4F, 0x4F, 0x4F);
         static readonly float[] DashIntervals = [4, 4];
         static readonly SKPathEffect DashEffect = SKPathEffect.CreateDash(DashIntervals, 0);
 
         // TouchHold layer colors
-        static readonly SKColor TouchHoldLayer1 = SKColors.Blue;
-        static readonly SKColor TouchHoldLayer2 = SKColors.Green;
-        static readonly SKColor TouchHoldLayer3 = SKColors.Yellow;
-        static readonly SKColor TouchHoldLayer4 = SKColors.Orange;
-        static readonly SKColor[] TouchHoldMineColors = [MineBreakColor, MineColor, MineColor, MineColor];
+        static readonly SKColor TouchHoldLayer1 = new(0x00, 0xA5, 0xF7);
+        static readonly SKColor TouchHoldLayer2 = new(0x16, 0xAC, 0x6E);
+        static readonly SKColor TouchHoldLayer3 = new(0xF6, 0xEB, 0x00);
+        static readonly SKColor TouchHoldLayer4 = new(0xF7, 0x46, 0x01);
+        static readonly SKColor[] TouchHoldMineColors = [MineBreakColor, MineColor, MineBreakColor, MineColor];
         static readonly SKColor[] TouchHoldNormalColors = [TouchHoldLayer1, TouchHoldLayer2, TouchHoldLayer3, TouchHoldLayer4];
 
         static readonly SKColor CaretColor = new(200, 0, 0, 200);
