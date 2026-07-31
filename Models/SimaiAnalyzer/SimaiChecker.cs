@@ -1504,11 +1504,16 @@ public static class SimaiChecker
             );
         }
 
-        if (info.FadeSlide && info.NoFadeSlide)
+        // '!', '?', and '@' are mutually exclusive slide head flags
+        var headStyleFlags = 0;
+        if (info.NoFadeSlide) headStyleFlags++;
+        if (info.FadeSlide) headStyleFlags++;
+        if (info.NoStar) headStyleFlags++;
+        if (headStyleFlags > 1)
         {
             context.AddError(
-                "Conflicting slide fade modifiers: '?' and '!'",
-                "Using both '?' (fade in) and '!' (no fade) is contradictory",
+                $"Conflicting slide head modifiers: '{string.Join("', '", headStyleFlags)}'",
+                "The slide head flags '!', '?', and '@' are mutually exclusive; use at most one",
                 startPos,
                 content.Length
             );

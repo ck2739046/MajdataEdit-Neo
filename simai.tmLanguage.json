@@ -98,27 +98,27 @@
     "slide-code": {
       "comment": "SlideCode pattern like 5Q9A1P98CQ49K5, 1K2, 7K4 - command letters A/B/C/P/Q with digits 0-9, ending with K+digit",
       "name": "entity.name.function.slidecode.simai",
-      "match": "[1-8]([ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bx!m]*"
+      "match": "[1-8]([ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bxm]*[!?@]?[bxm]*"
     },
     "slide-code-star": {
       "comment": "SlideCode with star connector like *P7K6, *Q1K6, *P77CQ3K2",
       "name": "entity.name.function.slidecode-star.simai",
-      "match": "\\*(?:[ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bx!m]*"
+      "match": "\\*(?:[ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bxm]*[!?@]?[bxm]*"
     },
     "slide-code-break": {
       "comment": "SlideCode with break flag like bP46824K3, bQ1K6",
       "name": "entity.name.function.slidecode-break.simai",
-      "match": "b(?:[ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bx!m]*"
+      "match": "b(?:[ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bxm]*[!?@]?[bxm]*"
     },
     "slide-with-star": {
       "comment": "Star slide connector like *>6p1, *V53, *<2p5, *-3[0##0.01]",
       "name": "entity.name.function.slide-star.simai",
-      "match": "\\*([<>^\\-qpwszvV][qp]?[1-8*]+)+(\\[[^\\]]*\\])?[bx!m]*"
+      "match": "\\*([<>^\\-qpwszvV][qp]?[1-8*]+)+(\\[[^\\]]*\\])?[bxm]*[!?@]?[bxm]*"
     },
     "slide-complex": {
-      "comment": "Complex slide patterns: 2?>4q2>4q2, 1-4[4:1], 1qq7[0##0.02]b, 7<5[0##0.01]b",
+      "comment": "Complex slide patterns: 2?>4q2>4q2, 1-4[4:1], 1qq7[0##0.02]b, 7<5[0##0.01]b, 5@-6[1:1] (flags b/x/m combinable, at most one of !/?/@)",
       "name": "entity.name.function.slide.simai",
-      "match": "[1-8*][bx!m]*\\??([<>^\\-qpwszvV][qp]?[1-8*]+)+(\\[[^\\]]*\\])?[bx!m]*"
+      "match": "[1-8*][bxm]*[!?@]?[bxm]*([<>^\\-qpwszvV][qp]?[1-8*]+)+(\\[[^\\]]*\\])?[bxm]*[!?@]?[bxm]*"
     },
     "touch-hold": {
       "comment": "Touch hold notes like B2bh[4:2], Cbh[4:2], E4bh, A5bh[1:3]",

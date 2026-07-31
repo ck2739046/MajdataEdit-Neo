@@ -572,7 +572,6 @@ class SimaiVisualizerControl : Control
                         switch (noteD.Type)
                         {
                             case SimaiNoteType.Tap:
-                                paint.StrokeWidth = noteD.IsForceStar ? 3 : 2;
                                 paint.Color = noteD.IsMine ? (noteD.IsBreak ? MineBreakColor : MineColor) :
                                               noteD.IsBreak ? BreakColor :
                                               isEach ? EachColor :
@@ -580,10 +579,12 @@ class SimaiVisualizerControl : Control
 
                                 if (noteD.IsForceStar)
                                 {
+                                    paint.StrokeWidth = 3;
                                     canvas.DrawText("*", x - 7f, y - 7f, cache.TextFont, paint);
                                 }
                                 else
                                 {
+                                    paint.StrokeWidth = 2;
                                     canvas.DrawOval(x, y, 3.5f, 3.5f, paint);
                                 }
                                 break;
@@ -623,20 +624,28 @@ class SimaiVisualizerControl : Control
                                 break;
 
                             case SimaiNoteType.Slide:
-                                paint.StrokeWidth = 1.5f;
-
                                 if (!noteD.IsSlideNoHead)
                                 {
                                     paint.Color = noteD.IsMine ? (noteD.IsBreak ? MineBreakColor : MineColor) :
                                                   noteD.IsBreak ? BreakColor :
                                                   isEach ? EachColor :
                                                   SlideHeadColor;
-                                    var rad = 5f;
-                                    var rad2 = rad * 1.414f / 2f;
-                                    canvas.DrawLine(x - rad2, y - rad2, x + rad2, y + rad2, paint);
-                                    canvas.DrawLine(x + rad2, y - rad2, x - rad2, y + rad2, paint);
-                                    canvas.DrawLine(x, y - rad, x, y + rad, paint);
-                                    canvas.DrawLine(x - rad, y, x + rad, y, paint);
+
+                                    if (noteD.IsTapHeadSlide)
+                                    {
+                                        paint.StrokeWidth = 2;
+                                        canvas.DrawOval(x, y, 3.5f, 3.5f, paint);
+                                    }
+                                    else
+                                    {
+                                        paint.StrokeWidth = 1.5f;
+                                        var rad = 5f;
+                                        var rad2 = rad * 1.414f / 2f;
+                                        canvas.DrawLine(x - rad2, y - rad2, x + rad2, y + rad2, paint);
+                                        canvas.DrawLine(x + rad2, y - rad2, x - rad2, y + rad2, paint);
+                                        canvas.DrawLine(x, y - rad, x, y + rad, paint);
+                                        canvas.DrawLine(x - rad, y, x + rad, y, paint);
+                                    }
                                 }
 
                                 paint.StrokeWidth = 3.5f;
