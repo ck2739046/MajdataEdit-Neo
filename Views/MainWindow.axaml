@@ -56,9 +56,9 @@
 					<MenuItem Header="{local:I18N Gui_Open}" Command="{Binding OpenFileCommand}"/>
 					<MenuItem Header="{local:I18N Gui_Save}" Command="{Binding SaveFileCommand}"/>
 					<Separator/>
-					<MenuItem Header="{local:I18N Gui_ExportVideo}" Command="{Binding PlayRecordCommand}"/>
-					<Separator/>
 					<MenuItem Header="{local:I18N Win_Recover}" Command="{Binding OpenRecoverWindow}"/>
+					<Separator/>
+					<MenuItem Header="{local:I18N Gui_ExportVideo}" Command="{Binding PlayRecordCommand}"/>
 				</MenuItem>
 				<MenuItem x:Name="EditMenu" Header="{local:I18N Gui_Edit}">
 					<MenuItem Header="{local:I18N Gui_ChartInfo}" Command="{Binding OpenChartInfoWindow}"/>
