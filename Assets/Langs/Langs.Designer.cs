@@ -775,6 +775,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 Export Quality 的本地化字符串。
+        /// </summary>
+        internal static string Set_ExportQuality {
+            get {
+                return ResourceManager.GetString("Set_ExportQuality", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Font Size 的本地化字符串。
         /// </summary>
         internal static string Set_FontSize {

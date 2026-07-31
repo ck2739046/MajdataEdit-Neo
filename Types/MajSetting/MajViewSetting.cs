@@ -78,6 +78,18 @@ public class MajViewSetting
     [SettingControl(SettingControlType.Numeric, Max = 1000, Min = 0, Step = 30)]
     public int OutputFps { get; set; } = 60;
 
+    [Display(Name = nameof(Langs.Set_ExportQuality))]
+    [SettingControl(SettingControlType.Selection,
+    Values = new object[] {     ExportQuality.Low,
+                                ExportQuality.Medium,
+                                ExportQuality.High,
+                                ExportQuality.Ultra },
+    Labels = new[] {            "Low",
+                                "Medium",
+                                "High",
+                                "Ultra" })]
+    public ExportQuality ExportQuality { get; set; } = ExportQuality.High;
+
     [Display(Name = nameof(Langs.Set_ResizeBg))]
     [SettingControl(SettingControlType.Toggle)]
     public bool ResizeBg { get; set; } = false;

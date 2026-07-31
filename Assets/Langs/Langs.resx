@@ -468,4 +468,7 @@ Do you want to download the latest update of Majdata?</value>
   <data name="Gui_Local" xml:space="preserve">
     <value>Local</value>
   </data>
+  <data name="Set_ExportQuality" xml:space="preserve">
+    <value>Export Quality</value>
+  </data>
 </root>

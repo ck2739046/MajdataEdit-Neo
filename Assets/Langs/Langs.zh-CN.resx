@@ -468,4 +468,7 @@
   <data name="Gui_Local" xml:space="preserve">
     <value>本地</value>
   </data>
+  <data name="Set_ExportQuality" xml:space="preserve">
+    <value>导出质量</value>
+  </data>
 </root>
