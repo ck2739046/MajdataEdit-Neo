@@ -18,16 +18,6 @@ public static class SimaiChecker
         var context = new CheckerContext(fumen);
         var endMarkerIndex = FindEndMarkerIndex(fumen);
 
-        if (endMarkerIndex < 0)
-        {
-            context.AddError(
-                "Missing chart end marker",
-                "A simai chart must end with a standalone 'E' after the final comma",
-                TextPosition.Start.Advance(fumen),
-                1
-            );
-        }
-
         var (cleanedFumen, positionMap, newlines) = PreprocessNewlines(fumen, context, endMarkerIndex);
         CheckNewlinePositions(fumen, newlines, context);
 
