@@ -206,6 +206,12 @@ PublishScripts/
 *.nuget.props
 *.nuget.targets
 
+# Keep the forked AvaloniaEdit package in-tree so CI can restore from the local feed
+# (see nuget.config). Overrides the *.nupkg / *.snupkg rules above.
+!nuget-local/
+!nuget-local/*.nupkg
+!nuget-local/*.snupkg
+
 # Microsoft Azure Build Output
 csx/
 *.build.csdef

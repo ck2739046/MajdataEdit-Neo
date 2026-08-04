@@ -1,6 +1,4 @@
-﻿using MajdataEdit_Neo.Models.SimaiAnalyzer;
-
-namespace MajdataEdit_Neo.Types.SimaiAnalyzer;
+﻿namespace MajdataEdit_Neo.Types.SimaiAnalyzer;
 
 public enum Severity
 {

@@ -1,6 +1,6 @@
 using System;
 
-namespace MajdataEdit_Neo.Models.SimaiAnalyzer;
+namespace MajdataEdit_Neo.Types.SimaiAnalyzer;
 
 public readonly struct TextPosition(int absolute, int line, int column) : IComparable<TextPosition>, IEquatable<TextPosition>
 {
