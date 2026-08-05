@@ -38,12 +38,11 @@
 		<PackageReference Include="Avalonia.Desktop" Version="12.0.4" />
 		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.4" />
 		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.4" />
-		<!--Avalonia 12.0 no longer ships an Avalonia.Diagnostics package; the legacy 11.3.x Diagnostics
-		auto-hooked F12 and threw TypeLoadException on Chrome.TitleBar (removed in 12.0). Dropped.-->
 		<PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
-		<PackageReference Include="Lingfeng-bbben.MajSimai" Version="2.1.1" />
+		<!--fork build 2.2.0 (local feed nuget-local/): includes IsTapHeadSlide-->
+		<PackageReference Include="Lingfeng-bbben.MajSimai" Version="2.2.0" />
 		<PackageReference Include="ManagedBass" Version="4.0.2" />
 		<PackageReference Include="MessageBox.Avalonia" Version="12.0.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
