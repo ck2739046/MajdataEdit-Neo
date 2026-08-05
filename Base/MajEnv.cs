@@ -58,6 +58,48 @@ public static class MajEnv
     public static string MajdataViewTimeFile =>
         Path.Combine(MajdataViewPersistentDataPath, "majdata_time.dat");
 
+    public static string MajdataViewBassDllFile
+    {
+        get
+        {
+#if DEBUG
+            if (OperatingSystem.IsWindows())
+            {
+                return GetPath("..\\..\\..\\runtimes\\win-x64\\native\\bass.dll");
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                return GetPath("..\\..\\..\\runtimes\\osx\\native\\libbass.dylib");
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                return GetPath("..\\..\\..\\runtimes\\linux-x64\\native\\libbass.so");
+            }
+            else
+            {
+                throw new PlatformNotSupportedException("Unsupported platform for MajdataViewBassDllFile.");
+            }
+#else
+            if (OperatingSystem.IsWindows())
+            {
+                return GetPath("MajdataViewX_Data\\Plugins\\x86_64\\bass.dll");
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                return GetPath("MajdataViewX_Data/Plugins/x86_64/libbass.dylib");
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                return GetPath("MajdataViewX_Data/Plugins/x86_64/libbass.so");
+            }
+            else
+            {
+                throw new PlatformNotSupportedException("Unsupported platform for MajdataViewBassDllFile.");
+            }
+#endif
+        }
+    }
+
     public static string SettingsFile => GetPath("Settings.json");
     public static string CrashFile => GetPath("crash.log");
     public static string DatabaseFile => GetPath("editor.db");

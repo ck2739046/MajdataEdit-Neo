@@ -1,6 +1,8 @@
-﻿using System;
-using System.IO;
+﻿using MajdataEdit_Neo.Base;
 using ManagedBass;
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace MajdataEdit_Neo.Models;
 
@@ -10,6 +12,8 @@ class TrackReader : IDisposable
 
     public TrackReader()
     {
+        if (File.Exists(MajEnv.MajdataViewBassDllFile))
+            NativeLibrary.Load(MajEnv.MajdataViewBassDllFile);
         Bass.Init(Bass.NoSoundDevice);
     }
 
