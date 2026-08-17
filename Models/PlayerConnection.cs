@@ -1,25 +1,24 @@
 using System;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using WebSocketSharp;
 using ErrorEventArgs = WebSocketSharp.ErrorEventArgs;
 using System.Diagnostics;
-using MajdataEdit_Neo.Utils;
 using Avalonia.Threading;
 using System.Collections.Concurrent;
 using MsBox.Avalonia.Enums;
 using MajdataEdit_Neo.Types.MajWs;
 using MajdataEdit_Neo.Types.MajSetting;
+using MajdataEdit_Neo.Utils;
+using MemoryPack;
 using MajSimai;
-using System.Collections.Generic;
 
 namespace MajdataEdit_Neo.Models;
 
 internal class PlayerConnection : IDisposable, IAsyncDisposable
 {
     public bool IsConnected => _client?.IsAlive ?? false;
+
     public ViewSummary ViewSummary
     {
         get
@@ -28,7 +27,18 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
                 return _viewSummary;
         }
     }
-    private ViewSummary _viewSummary;
+
+    /// <summary>本地 ViewStatus 视图（State 在两端都是 ViewStatus 枚举）。</summary>
+    public ViewStatus State
+    {
+        get
+        {
+            lock (_stateSync)
+                return _viewSummary.State;
+        }
+    }
+
+    private ViewSummary _viewSummary = new();
 
     public delegate void NotifyViewStateChangedEventHandler(object sender, MajWsResponseType e);
     public event NotifyViewStateChangedEventHandler? OnPlayStarted;
@@ -52,22 +62,14 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
     WebSocket? _client;
     readonly ConcurrentQueue<MessageEventArgs> _playerMessages = new();
 
-    readonly static JsonSerializerOptions JSON_READER_OPTIONS = new()
-    {
-        Converters =
-        {
-            new JsonStringEnumConverter()
-        },
-        TypeInfoResolver = MajWsJsonContext.Default
-    };
-
     public PlayerConnection()
     {
         _listenerTask = Task.Run(() => StartToListenWebSocket(_lifetimeCts.Token));
     }
 
-    public async Task<bool> ConnectAsync(string url = "ws://127.0.0.1:8083/majdata")
+    public async Task<bool> ConnectAsync(string? url = null)
     {
+        url ??= WsProtocol.ServerUrl;
         if (IsConnected)
             return true;
 
@@ -157,11 +159,11 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
                                        string coverPath,
                                        string mvPath)
     {
-        if (ViewSummary.State == ViewStatus.Error) await StopAsync();
+        if (State == ViewStatus.Error) await StopAsync();
 
-        if (ViewSummary.State != ViewStatus.Loaded)
+        if (State != ViewStatus.Loaded)
         {
-            if (ViewSummary.State is ViewStatus.Paused or ViewStatus.Playing)
+            if (State is ViewStatus.Paused or ViewStatus.Playing)
             {
                 OnStopRequired?.Invoke(this, new EventArgs());
             }
@@ -169,116 +171,84 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
             //if busy, wait
             await WaitUntilNotBusyAsync();
         }
-        var req = new MajWsRequestBase()
+        var req = new MajWsLoadRequest()
         {
-            requestType = MajWsRequestType.Load,
-            requestData = new MajWsRequestLoad()
-            {
-                ImagePath = coverPath,
-                TrackPath = trackPath,
-                VideoPath = mvPath
-            }
+            TrackPath = trackPath,
+            ImagePath = coverPath,
+            VideoPath = mvPath
         };
         await SendAsync(req);
     }
     public async Task SettingAsync(MajViewSetting viewSetting, MajVolumeSetting volumeSetting)
     {
-        var req = new MajWsRequestBase()
+        var req = new MajWsSettingRequest()
         {
-            requestType = MajWsRequestType.Setting,
-            requestData = new MajWsRequestSetting()
-            {
-                ViewSetting = viewSetting,
-                VolumeSetting = volumeSetting
-            }
+            ViewSetting = viewSetting,
+            VolumeSetting = volumeSetting
         };
         await SendAsync(req);
     }
-    public async Task PauseAsync()
-    {
-        var req = new MajWsRequestBase()
-        {
-            requestType = MajWsRequestType.Pause,
-            requestData = null
-        };
-        await SendAsync(req);
-    }
-    public async Task StopAsync()
-    {
-        var req = new MajWsRequestBase()
-        {
-            requestType = MajWsRequestType.Stop,
-            requestData = null
-        };
-        await SendAsync(req);
-    }
-    public async Task ParseAndPlayAsync(PlaybackMode mode,
-        double startAt, float speed,
-        string title, string artist, float offset,
-        string designer, string level, string fumen,
-        IList<SimaiCommand> commands, int difficulty, string? maidataPath = null)
-    {
-        if (ViewSummary.State == ViewStatus.Error) await StopAsync();
 
-        if (ViewSummary.State != ViewStatus.Loaded)
+    /// <summary>
+    /// 把已解析的 SimaiFile 推给播放器（MemoryPack 二进制）。服务器直接替换内存 DTO，不重新解析。
+    /// </summary>
+    public async Task UpdateAsync(SimaiFile file, int selectedDifficulty)
+    {
+        var req = new MajWsUpdateRequest()
         {
-            if (ViewSummary.State is ViewStatus.Paused or ViewStatus.Playing)
-            {
-                OnStopRequired?.Invoke(this, new EventArgs());
-                await Task.Delay(114); //wait for stop
-            }
-            else
-            {
-                OnLoadRequired?.Invoke(this, new EventArgs());
-            }
+            File = MajWsMapper.ToDto(file),
+            SelectedDifficulty = selectedDifficulty
+        };
+        await SendAsync(req);
+    }
+
+    /// <summary>
+    /// 瘦身后的 Play：图数据已由 Update 提供，这里只带播放参数。
+    /// </summary>
+    public async Task PlayAsync(PlaybackMode mode, double startAt, float speed, string? maidataPath = null)
+    {
+        if (State == ViewStatus.Error) await StopAsync();
+
+        if (State == ViewStatus.Idle)
+        {
+            OnLoadRequired?.Invoke(this, new EventArgs());
 
             //if busy, wait
             await WaitUntilNotBusyAsync();
         }
 
-        var req = new MajWsRequestBase()
+        var req = new MajWsPlayRequest()
         {
-            requestType = MajWsRequestType.Play,
-            requestData = new MajWsRequestPlay()
-            {
-                Mode = mode,
-                StartAt = startAt,
-                Speed = speed,
-                Title = title,
-                Artist = artist,
-                Offset = offset,
-                Designer = designer,
-                Level = level,
-                Fumen = fumen,
-                Commands = commands,
-                Difficulty = difficulty,
-                MaidataPath = maidataPath
-            }
+            Mode = mode,
+            StartAt = startAt,
+            Speed = speed,
+            MaidataPath = maidataPath
         };
         await SendAsync(req);
     }
-    public async Task ResumeAsync()
+    public async Task PauseAsync()
     {
-        var req = new MajWsRequestBase()
-        {
-            requestType = MajWsRequestType.Resume,
-            requestData = null
-        };
+        var req = new MajWsPauseRequest();
         await SendAsync(req);
     }
-    async Task SendAsync(MajWsRequestBase req)
+    public async Task StopAsync()
+    {
+        var req = new MajWsStopRequest();
+        await SendAsync(req);
+    }
+    async Task SendAsync(MajWsRequest req)
     {
         var client = _client;
         if (client is null || !client.IsAlive)
             throw new PlayerNotConnectedException();
 
-        var json = JsonSerializer.Serialize(req, JSON_READER_OPTIONS);
-        await Task.Run(() => client.Send(json));
-        Debug.WriteLine($"Player request sent: {req.requestType}");
+        var bytes = MemoryPackSerializer.Serialize<MajWsRequest>(req);
+        await Task.Run(() => client.Send(bytes));
+        Debug.WriteLine($"Player request sent: {req.GetType().Name}");
     }
     private async Task WaitUntilNotBusyAsync()
     {
-        while (ViewSummary.State == ViewStatus.Busy)
+        while (State == ViewStatus.Busy)
             await _stateChangedSignal.WaitAsync(_lifetimeCts.Token);
     }
 
@@ -313,45 +283,40 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
 
     private async Task ProcessMessageAsync(MessageEventArgs args)
     {
-        var resp = JsonSerializer.Deserialize<MajWsResponseBase>(args.Data, JSON_READER_OPTIONS);
-        switch (resp.responseType)
+        var resp = MemoryPackSerializer.Deserialize<MajWsResponse>(args.RawData);
+        if (resp is null)
+            return;
+        switch (resp.ResponseType)
         {
             case MajWsResponseType.PlayPaused:
             case MajWsResponseType.Heartbeat:
             case MajWsResponseType.Ok:
-                UpdateViewSummary(DeserializeViewSummary(resp));
+                UpdateViewSummary(resp.Summary);
                 break;
             case MajWsResponseType.LoadOk:
-                UpdateViewSummary(DeserializeViewSummary(resp));
+                UpdateViewSummary(resp.Summary);
                 OnLoadFinished?.Invoke(this, EventArgs.Empty);
                 break;
             case MajWsResponseType.PlayResumed:
             case MajWsResponseType.PlayStarted:
-                UpdateViewSummary(DeserializeViewSummary(resp));
-                OnPlayStarted?.Invoke(this, resp.responseType);
+                UpdateViewSummary(resp.Summary);
+                OnPlayStarted?.Invoke(this, resp.ResponseType);
                 break;
             case MajWsResponseType.PlayStopped:
-                UpdateViewSummary(DeserializeViewSummary(resp));
-                OnPlayStopped?.Invoke(this, resp.responseType);
+                UpdateViewSummary(resp.Summary);
+                OnPlayStopped?.Invoke(this, resp.ResponseType);
                 break;
             case MajWsResponseType.Error:
-                OnViewStateChanged?.Invoke(this, ViewSummary.State);
+                OnViewStateChanged?.Invoke(this, State);
                 await Dispatcher.UIThread.InvokeAsync(async () =>
                 {
                     await MessageBox.ShowAsync(
-                        resp.responseData?.ToString() ?? "Unknown Error",
+                        resp.Error ?? "Unknown Error",
                         "Error",
                         icon: Icon.Error);
                 });
                 break;
         }
-    }
-
-    private static ViewSummary DeserializeViewSummary(MajWsResponseBase response)
-    {
-        return JsonSerializer.Deserialize<ViewSummary>(
-            response.responseData?.ToString() ?? string.Empty,
-            JSON_READER_OPTIONS);
     }
 
     private void UpdateViewSummary(ViewSummary summary)
@@ -443,4 +408,3 @@ internal class PlayerNotConnectedException : Exception
 {
     public PlayerNotConnectedException() : base() { }
 }
-

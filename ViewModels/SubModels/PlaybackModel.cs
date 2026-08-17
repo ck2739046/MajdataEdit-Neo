@@ -54,7 +54,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
             HandleInheritability.None,
             false
         );
-        mmvAudioTime = mmfAudioTime.CreateViewAccessor(0, sizeof(float), MemoryMappedFileAccess.Read);
+        mmvAudioTime = mmfAudioTime.CreateViewAccessor();
     }
 
     [ObservableProperty]
@@ -90,6 +90,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
     internal bool _isBackToStartOnPlayStop = false;
     internal bool _isStopping = false;
     internal bool _isLastPlayIncludeOp = false;
+    private bool _updateDirty; // 播放中收到的文本变更标记，停播/播放前补发
     private readonly Lock _playbackTrackingLock = new();
     private CancellationTokenSource? _playbackTrackingCts;
     private Task _playbackTrackingTask = Task.CompletedTask;
@@ -115,17 +116,6 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
             return string.Format("{0}:{1:00}", minute, second);
         }
     }
-
-    public record PlayContext(
-        string Title,
-        string Artist,
-        float Offset,
-        string Designer,
-        string Level,
-        string Fumen,
-        IList<SimaiCommand> Commands,
-        int SelectedDifficulty
-    );
 
     public async Task<bool> ConnectToPlayerAsync()
     {
@@ -166,13 +156,14 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         var time = TrackTime - delta * 0.2 * TrackZoomLevel;
         if (time < 0) time = 0;
         else if (time > songTrackInfo.Length) time = songTrackInfo.Length;
-        if (_playerConnection.ViewSummary.State is ViewStatus.Playing or ViewStatus.Paused)
+        if (_playerConnection.State is ViewStatus.Playing)
         {
-            Stop(false);
+            Pause();
         }
         TrackTime = time;
-        if (chartData is null) return new Point();
+        mmvAudioTime.Write(0, (float)time);
 
+        if (chartData is null) return new Point();
         var timings = chartData.CommaTimings;
         if (timings.Length == 0) return new Point();
         var chartTime = time - offset;
@@ -261,31 +252,58 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         }
     }
 
-    public async Task PlayPause(PlayContext ctx, MajSetting settings)
+    public async Task PushUpdateAsync(MajSetting settings, bool force = false)
+    {
+        var simai = _doc.CurrentSimaiFile;
+        if (simai is null || !_playerConnection.IsConnected)
+            return;
+
+        if (!force && _playerConnection.State is ViewStatus.Playing or ViewStatus.Paused)
+        {
+            _updateDirty = true;
+            return;
+        }
+
+        _updateDirty = false;
+        await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
+        await _playerConnection.UpdateAsync(simai, _doc.SelectedDifficulty);
+    }
+
+    public async Task PlayPause(MajSetting settings)
     {
         if (!await CheckPlayerConnectionAndReconnect(true))
         {
             return;
         }
 
-        switch (_playerConnection.ViewSummary.State)
+        switch (_playerConnection.State)
+        {
+            case ViewStatus.Playing:
+                await _playerConnection.PauseAsync();
+                return;
+        }
+        _playStartTime = TrackTime;
+        if (_updateDirty) await PushUpdateAsync(settings, force: true);
+        await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
+        await _playerConnection.PlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed);
+        _isLastPlayIncludeOp = false;
+    }
+
+    public async void Pause()
+    {
+        if (!await CheckPlayerConnectionAndReconnect(true))
+        {
+            return;
+        }
+
+        switch (_playerConnection.State)
         {
             case ViewStatus.Playing:
                 await _playerConnection.PauseAsync();
                 return;
             case ViewStatus.Paused:
-                await _playerConnection.ResumeAsync();
-                _playStartTime = TrackTime;
-                _isLastPlayIncludeOp = false;
                 return;
         }
-        _playStartTime = TrackTime;
-        await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-        await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed,
-            ctx.Title, ctx.Artist, ctx.Offset,
-            ctx.Designer, ctx.Level, ctx.Fumen,
-            ctx.Commands, ctx.SelectedDifficulty);
-        _isLastPlayIncludeOp = false;
     }
 
     public async void Stop(bool toStart = true)
@@ -310,7 +328,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         }
     }
 
-    public async Task PlayStop(PlayContext ctx, MajSetting settings)
+    public async Task PlayStop(MajSetting settings)
     {
         if (!await CheckPlayerConnectionAndReconnect(true))
         {
@@ -318,43 +336,34 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
             return;
         }
 
-        switch (_playerConnection.ViewSummary.State)
+        switch (_playerConnection.State)
         {
             case ViewStatus.Playing:
                 _isBackToStartOnPlayStop = true;
                 await _playerConnection.StopAsync();
                 return;
-            case ViewStatus.Paused:
-                await _playerConnection.ResumeAsync();
-                _isLastPlayIncludeOp = false;
-                _playStartTime = TrackTime;
-                return;
         }
         _playStartTime = TrackTime;
+        if (_updateDirty) await PushUpdateAsync(settings, force: true);
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-        await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed,
-            ctx.Title, ctx.Artist, ctx.Offset,
-            ctx.Designer, ctx.Level, ctx.Fumen,
-            ctx.Commands, ctx.SelectedDifficulty);
+        await _playerConnection.PlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed);
         _isLastPlayIncludeOp = false;
     }
 
-    public async Task PlayIncludeOp(PlayContext ctx, MajSetting settings)
+    public async Task PlayIncludeOp(MajSetting settings)
     {
         if (!await CheckPlayerConnectionAndReconnect(true))
         {
             return;
         }
         _playStartTime = TrackTime;
+        if (_updateDirty) await PushUpdateAsync(settings, force: true);
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-        await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, _playStartTime, PlaybackSpeed,
-            ctx.Title, ctx.Artist, ctx.Offset,
-            ctx.Designer, ctx.Level, ctx.Fumen,
-            ctx.Commands, ctx.SelectedDifficulty);
+        await _playerConnection.PlayAsync(PlaybackMode.IncludeOp, _playStartTime, PlaybackSpeed);
         _isLastPlayIncludeOp = true;
     }
 
-    public async Task PlayRecord(PlayContext ctx, MajSetting settings, string maidataDir)
+    public async Task PlayRecord(MajSetting settings, string maidataDir)
     {
         if (!await CheckPlayerConnectionAndReconnect(true))
         {
@@ -362,11 +371,9 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         }
 
         _playStartTime = TrackTime;
+        if (_updateDirty) await PushUpdateAsync(settings, force: true);
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-        await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, _playStartTime, PlaybackSpeed,
-            ctx.Title, ctx.Artist, ctx.Offset,
-            ctx.Designer, ctx.Level, ctx.Fumen,
-            ctx.Commands, ctx.SelectedDifficulty, maidataDir);
+        await _playerConnection.PlayAsync(PlaybackMode.Record, _playStartTime, PlaybackSpeed, maidataDir);
         _isLastPlayIncludeOp = false;
     }
 
@@ -425,6 +432,9 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
             CurrentViewState = ViewStatus.Idle;
             if (_isBackToStartOnPlayStop) TrackTime = _playStartTime;
         });
+
+        // 播放中堆积的文本变更：停播后补发最新一份
+        if (_updateDirty) await PushUpdateAsync(MainWindowViewModel.Ins.Settings.Settings, force: true);
     }
 
     private async void OnLoadRequired(object? sender, EventArgs e)
@@ -450,7 +460,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
 
     private async Task TrackPlaybackAsync(CancellationToken cancellationToken)
     {
-        while (_playerConnection.ViewSummary.State == ViewStatus.Playing &&
+        while (_playerConnection.State == ViewStatus.Playing &&
                _playerConnection.IsConnected)
         {
             cancellationToken.ThrowIfCancellationRequested();

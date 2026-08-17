@@ -1,9 +1,12 @@
-﻿using MajdataEdit_Neo.Assets.Langs;
+using MajdataEdit_Neo.Assets.Langs;
+using MemoryPack;
 using System.ComponentModel.DataAnnotations;
 
 namespace MajdataEdit_Neo.Types.MajSetting;
 
-public class MajViewSetting
+// 线格式契约：成员声明顺序即序列化顺序，必须与 ViewX 端 MajViewSetting 完全一致
+[MemoryPackable]
+public partial class MajViewSetting
 {
     [Display(Name = nameof(Langs.Set_TapSpeed))]
     [SettingControl(SettingControlType.Numeric, Max = 20, Min = 0, Step = 0.25)]

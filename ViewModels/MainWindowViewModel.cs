@@ -257,73 +257,29 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     public void PlayRecord()
     {
-        var simai = Session.Doc.CurrentSimaiFile;
-        if (simai == null) return;
-        var ctx = new PlaybackModel.PlayContext(
-            simai.Title ?? "",
-            simai.Artist ?? "",
-            Session.Doc.Offset,
-            Session.Doc.Designer,
-            Session.Doc.Level,
-            Session.Doc.CurrentFumen,
-            simai.Commands,
-            Session.Doc.SelectedDifficulty
-        );
-        _ = Session.Playback.PlayRecord(ctx, Settings.Settings, Session.MaidataDir);
+        if (Session.Doc.CurrentSimaiFile == null) return;
+        _ = Session.Playback.PlayRecord(Settings.Settings, Session.MaidataDir);
     }
 
     [RelayCommand]
     public void PlayIncludeOp()
     {
-        var simai = Session.Doc.CurrentSimaiFile;
-        if (simai == null) return;
-        var ctx = new PlaybackModel.PlayContext(
-            simai.Title ?? "",
-            simai.Artist ?? "",
-            Session.Doc.Offset,
-            Session.Doc.Designer,
-            Session.Doc.Level,
-            Session.Doc.CurrentFumen,
-            simai.Commands,
-            Session.Doc.SelectedDifficulty
-        );
-        _ = Session.Playback.PlayIncludeOp(ctx, Settings.Settings);
+        if (Session.Doc.CurrentSimaiFile == null) return;
+        _ = Session.Playback.PlayIncludeOp(Settings.Settings);
     }
 
     [RelayCommand]
     public void PlayStop()
     {
-        var simai = Session.Doc.CurrentSimaiFile;
-        if (simai == null) return;
-        var ctx = new PlaybackModel.PlayContext(
-            simai.Title ?? "",
-            simai.Artist ?? "",
-            Session.Doc.Offset,
-            Session.Doc.Designer,
-            Session.Doc.Level,
-            Session.Doc.CurrentFumen,
-            simai.Commands,
-            Session.Doc.SelectedDifficulty
-        );
-        _ = Session.Playback.PlayStop(ctx, Settings.Settings);
+        if (Session.Doc.CurrentSimaiFile == null) return;
+        _ = Session.Playback.PlayStop(Settings.Settings);
     }
 
     [RelayCommand]
     public void PlayPause()
     {
-        var simai = Session.Doc.CurrentSimaiFile;
-        if (simai == null) return;
-        var ctx = new PlaybackModel.PlayContext(
-            simai.Title ?? "",
-            simai.Artist ?? "",
-            Session.Doc.Offset,
-            Session.Doc.Designer,
-            Session.Doc.Level,
-            Session.Doc.CurrentFumen,
-            simai.Commands,
-            Session.Doc.SelectedDifficulty
-        );
-        _ = Session.Playback.PlayPause(ctx, Settings.Settings);
+        if (Session.Doc.CurrentSimaiFile == null) return;
+        _ = Session.Playback.PlayPause(Settings.Settings);
     }
 
     [RelayCommand]
