@@ -39,7 +39,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
 
         Directory.CreateDirectory(MajEnv.MajdataViewPersistentDataPath);
         var mmfAudioTimeFileStream = new FileStream(
-            MajEnv.MajdataViewTimeFile,
+            MajEnv.MmfAudioTimePath,
             FileMode.OpenOrCreate,
             FileAccess.ReadWrite,
             FileShare.ReadWrite
@@ -252,7 +252,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         }
     }
 
-    public async Task PushUpdateAsync(MajSetting settings, bool force = false)
+    public async Task PushUpdateAsync(bool force = false)
     {
         var simai = _doc.CurrentSimaiFile;
         if (simai is null || !_playerConnection.IsConnected)
@@ -265,8 +265,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         }
 
         _updateDirty = false;
-        await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-        await _playerConnection.UpdateAsync(simai, _doc.SelectedDifficulty);
+        await _playerConnection.UpdateAsync(simai, _doc.CurrentChartData, _doc.SelectedDifficulty);
     }
 
     public async Task PlayPause(MajSetting settings)
@@ -283,7 +282,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
                 return;
         }
         _playStartTime = TrackTime;
-        if (_updateDirty) await PushUpdateAsync(settings, force: true);
+        if (_updateDirty) await PushUpdateAsync(force: true);
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
         await _playerConnection.PlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed);
         _isLastPlayIncludeOp = false;
@@ -344,7 +343,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
                 return;
         }
         _playStartTime = TrackTime;
-        if (_updateDirty) await PushUpdateAsync(settings, force: true);
+        if (_updateDirty) await PushUpdateAsync(force: true);
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
         await _playerConnection.PlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed);
         _isLastPlayIncludeOp = false;
@@ -357,7 +356,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
             return;
         }
         _playStartTime = TrackTime;
-        if (_updateDirty) await PushUpdateAsync(settings, force: true);
+        if (_updateDirty) await PushUpdateAsync(force: true);
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
         await _playerConnection.PlayAsync(PlaybackMode.IncludeOp, _playStartTime, PlaybackSpeed);
         _isLastPlayIncludeOp = true;
@@ -371,7 +370,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         }
 
         _playStartTime = TrackTime;
-        if (_updateDirty) await PushUpdateAsync(settings, force: true);
+        if (_updateDirty) await PushUpdateAsync(force: true);
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
         await _playerConnection.PlayAsync(PlaybackMode.Record, _playStartTime, PlaybackSpeed, maidataDir);
         _isLastPlayIncludeOp = false;
@@ -434,7 +433,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         });
 
         // 播放中堆积的文本变更：停播后补发最新一份
-        if (_updateDirty) await PushUpdateAsync(MainWindowViewModel.Ins.Settings.Settings, force: true);
+        if (_updateDirty) await PushUpdateAsync(force: true);
     }
 
     private async void OnLoadRequired(object? sender, EventArgs e)

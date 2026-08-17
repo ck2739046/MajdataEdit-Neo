@@ -35,11 +35,12 @@ internal partial class MajWsLoadRequest : MajWsRequest
     public string VideoPath { get; set; } = string.Empty;
 }
 
-/// <summary>Update 携带已解析的 SimaiFileDto，服务器不再重新解析。</summary>
+/// <summary>Update 携带 FileLength/ChartLength（共享内存中两段 MemoryPack 字节的长度），服务器不再重新解析。</summary>
 [MemoryPackable]
 internal partial class MajWsUpdateRequest : MajWsRequest
 {
-    public SimaiFileDto File { get; set; } = new();
+    public long FileLength { get; set; }
+    public long ChartLength { get; set; }
     public int SelectedDifficulty { get; set; }
 }
 

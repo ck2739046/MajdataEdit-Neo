@@ -1,17 +1,21 @@
+using Avalonia.Threading;
+using MajdataEdit_Neo.Base;
+using MajdataEdit_Neo.Types.MajSetting;
+using MajdataEdit_Neo.Types.MajWs;
+using MajdataEdit_Neo.Utils;
+using MajSimai;
+using MemoryPack;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
 using System;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Threading;
 using System.Threading.Tasks;
 using WebSocketSharp;
 using ErrorEventArgs = WebSocketSharp.ErrorEventArgs;
-using System.Diagnostics;
-using Avalonia.Threading;
-using System.Collections.Concurrent;
-using MsBox.Avalonia.Enums;
-using MajdataEdit_Neo.Types.MajWs;
-using MajdataEdit_Neo.Types.MajSetting;
-using MajdataEdit_Neo.Utils;
-using MemoryPack;
-using MajSimai;
 
 namespace MajdataEdit_Neo.Models;
 
@@ -61,10 +65,29 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
     bool _disposed;
     WebSocket? _client;
     readonly ConcurrentQueue<MessageEventArgs> _playerMessages = new();
-
+    private readonly MemoryMappedFile mmfChartData = null!;
+    private readonly MemoryMappedViewAccessor mmvChartData = null!;
     public PlayerConnection()
     {
         _listenerTask = Task.Run(() => StartToListenWebSocket(_lifetimeCts.Token));
+
+        var mmfChartDataFileStream = new FileStream(
+            MajEnv.MmfChartDataPath,
+            FileMode.OpenOrCreate,
+            FileAccess.ReadWrite,
+            FileShare.ReadWrite
+        );
+        if (mmfChartDataFileStream.Length < MajEnv.MmfChartDataCapacity)
+            mmfChartDataFileStream.SetLength(MajEnv.MmfChartDataCapacity);
+        mmfChartData = MemoryMappedFile.CreateFromFile(
+            mmfChartDataFileStream,
+            null,
+            MajEnv.MmfChartDataCapacity,
+            MemoryMappedFileAccess.ReadWrite,
+            HandleInheritability.None,
+            false
+        );
+        mmvChartData = mmfChartData.CreateViewAccessor();
     }
 
     public async Task<bool> ConnectAsync(string? url = null)
@@ -190,13 +213,24 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// 把已解析的 SimaiFile 推给播放器（MemoryPack 二进制）。服务器直接替换内存 DTO，不重新解析。
+    /// 把已解析的谱面推给播放器：分两段写入共享内存——
+    /// 第一段 = SimaiFile 元数据（Charts 已 MemoryPackIgnore，仅元数据 + Commands），
+    /// 第二段 = SimaiChart（当前难度的 NoteTimings/CommaTimings）。
     /// </summary>
-    public async Task UpdateAsync(SimaiFile file, int selectedDifficulty)
+    public async Task UpdateAsync(SimaiFile file, SimaiChart chart, int selectedDifficulty)
     {
+        var fileBytes = MemoryPackSerializer.Serialize(file);
+        var chartBytes = MemoryPackSerializer.Serialize(chart);
+        if (fileBytes.Length + chartBytes.Length > MajEnv.MmfChartDataCapacity)
+            throw new InvalidOperationException(
+                $"chart data too large: {fileBytes.Length + chartBytes.Length} > {MajEnv.MmfChartDataCapacity}");
+
+        mmvChartData.WriteArray(0, fileBytes, 0, fileBytes.Length);
+        mmvChartData.WriteArray(fileBytes.Length, chartBytes, 0, chartBytes.Length);
         var req = new MajWsUpdateRequest()
         {
-            File = MajWsMapper.ToDto(file),
+            FileLength = fileBytes.Length,
+            ChartLength = chartBytes.Length,
             SelectedDifficulty = selectedDifficulty
         };
         await SendAsync(req);

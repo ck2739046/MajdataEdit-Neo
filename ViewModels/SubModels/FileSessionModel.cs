@@ -95,7 +95,7 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
         {
             await AutoSave.OnSimaiFileChangedAsync(Doc.CurrentSimaiFile);
             // 文本变更（已防抖 + 解析完成）-> 推送 Update
-            _ = Playback.PushUpdateAsync(MainWindowViewModel.Ins.Settings.Settings);
+            _ = Playback.PushUpdateAsync();
         };
     }
 

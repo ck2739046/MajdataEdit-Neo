@@ -55,8 +55,11 @@ public static class MajEnv
         }
     }
 
-    public static string MajdataViewTimeFile =>
+    public static string MmfAudioTimePath =>
         Path.Combine(MajdataViewPersistentDataPath, "majdata_time.dat");
+    public const long MmfChartDataCapacity = 64 * 1024 * 1024; //64mb
+    public static string MmfChartDataPath =>
+        Path.Combine(MajdataViewPersistentDataPath, "majdata_chart.dat");
 
     public static string MajdataViewBassDllFile
     {

@@ -229,7 +229,7 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
 
         try
         {
-            var data = await SimaiParser.ParseChartAsync(string.Empty, string.Empty, content);
+            var data = await SimaiParser.ParseChartAsync(metadata.Level, metadata.Designer, content);
 
             if (!ReferenceEquals(CurrentSimaiFile, simaiFile) ||
                 CurrentChartMetadata[difficulty].Fumen != content)
