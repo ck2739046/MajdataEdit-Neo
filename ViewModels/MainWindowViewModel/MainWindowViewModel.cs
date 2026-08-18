@@ -3,10 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Types.Plugin;
-using MajdataEdit_Neo.ViewModels.SubModels;
 using MajdataEdit_Neo.Views;
 using System;
 using System.Diagnostics;
@@ -20,19 +18,13 @@ using static MajdataEdit_Neo.Base.MajEnv;
 namespace MajdataEdit_Neo.ViewModels;
 
 /// <summary>
-/// Composition root: holds and coordinates all sub-models, provides window-level UI state
+/// Composition root: holds and coordinates all editor state, provides window-level UI state.
+/// Split into partial files by function: Document.cs, FileSession.cs, Playback.cs, Tools.cs,
+/// AutoSave.cs, DiscordRpc.cs, Plugin.cs, Settings.cs, Update.cs.
 /// </summary>
 public partial class MainWindowViewModel : ViewModelBase
 {
-    //------sub-models
-
-    public FileSessionModel Session { get; }
-    private readonly ChartEditDatabase _editDb = new(DatabaseFile); //owned by mainwindow
-    public SettingsModel Settings { get; }
-    public UpdateModel Update { get; }
-
     public static MainWindowViewModel Ins { get; private set; } = null!;
-
 
     //------status bar (window-level)
 
@@ -46,8 +38,8 @@ public partial class MainWindowViewModel : ViewModelBase
         get
         {
             var baseTitle = $"MajdataEdit Neo {MAJDATA_VERSION_STRING}";
-            if (Session?.Doc is null) return baseTitle;
-            return baseTitle + Session.Doc.WindowTitleSuffix;
+            if (CurrentSimaiFile is null) return baseTitle;
+            return baseTitle + WindowTitleSuffix;
         }
     }
 
@@ -59,26 +51,28 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Ins = this;
 
-        // Create sub-models (order matters: dependencies first)
-        Session = new FileSessionModel(this, _editDb);
-        Settings = new SettingsModel();
-        Update = new UpdateModel();
+        InitializeDocument();
+        InitializePlayback();
+        InitializeAutoSave();
+        InitializePlugins();
+
+        // Wire document -> window title / auto-save / playback events
+        WireEvents();
 
         // Initialize settings (may signal to open settings window)
-        var needsSettingsWindow = Settings.Initialize();
+        BackgroundImage = _emptyBitmap;
+        var needsSettingsWindow = InitializeSettings();
         if (needsSettingsWindow)
         {
             OpenSettingsWindow();
         }
 
-        Session.DiscordRpc.Initialize();
-
-
+        InitializeDiscordRpc();
 
         // Design-time support
         if (Design.IsDesignMode)
         {
-            Session.Doc.CurrentSimaiFile = MajSimai.SimaiFile.Empty("", "");
+            CurrentSimaiFile = MajSimai.SimaiFile.Empty("", "");
         }
     }
 
@@ -96,17 +90,17 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            Session.SaveEditRecord();
+            SaveEditRecord();
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Failed to save edit record while closing: {ex}");
         }
 
-        await Session.DisposeAsync();
+        await DisposeAsync();
         try
         {
-            Settings.Dispose();
+            DisposeSettings();
         }
         catch (Exception ex)
         {
@@ -149,28 +143,28 @@ public partial class MainWindowViewModel : ViewModelBase
         if (mainWindow is null || mainWindow.MainWindow is null) return;
 
         var settingsViewModel = new SettingsViewModel();
-        settingsViewModel.LoadSettings(Settings.Settings);
+        settingsViewModel.LoadSettings(Settings);
         var window = new SettingsWindow
         {
             DataContext = settingsViewModel
         };
         await window.ShowDialog(mainWindow.MainWindow);
-        Settings.SaveSettings();
+        SaveSettings();
         await Task.Delay(1);
     }
 
     public async void OpenChartInfoWindow()
     {
-        if (Session.Doc.CurrentSimaiFile is null) return;
+        if (CurrentSimaiFile is null) return;
         var mainWindow = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
         if (mainWindow is null || mainWindow.MainWindow is null) return;
         using var chartInfo = new ChartInfoViewModel()
         {
-            Title = Session.Doc.CurrentSimaiFile.Title,
-            Artist = Session.Doc.CurrentSimaiFile.Artist,
-            FinalDesigner = Session.Doc.CurrentSimaiFile.FinalDesigner,
-            SimaiCommands = [.. Session.Doc.CurrentSimaiFile.Commands.Select(c => new MutSimaiCommand(c.Prefix, c.Value))],
-            MaidataDir = Session.MaidataDir
+            Title = CurrentSimaiFile.Title,
+            Artist = CurrentSimaiFile.Artist,
+            FinalDesigner = CurrentSimaiFile.FinalDesigner,
+            SimaiCommands = [.. CurrentSimaiFile.Commands.Select(c => new MutSimaiCommand(c.Prefix, c.Value))],
+            MaidataDir = MaidataDir
         };
         var window = new ChartInfoWindow
         {
@@ -181,16 +175,16 @@ public partial class MainWindowViewModel : ViewModelBase
         if (datacontext is null)
             throw new InvalidOperationException("Chart info window has an unexpected data context.");
 
-        Session.Doc.CurrentSimaiFile.Title = datacontext.Title ?? string.Empty;
-        Session.Doc.CurrentSimaiFile.Artist = datacontext.Artist ?? string.Empty;
-        Session.Doc.CurrentSimaiFile.FinalDesigner = datacontext.FinalDesigner ?? string.Empty;
-        Session.Doc.CurrentSimaiFile.Commands.Clear();
+        CurrentSimaiFile.Title = datacontext.Title ?? string.Empty;
+        CurrentSimaiFile.Artist = datacontext.Artist ?? string.Empty;
+        CurrentSimaiFile.FinalDesigner = datacontext.FinalDesigner ?? string.Empty;
+        CurrentSimaiFile.Commands.Clear();
         foreach (var item in datacontext.SimaiCommands)
-            Session.Doc.CurrentSimaiFile.Commands.Add(item);
+            CurrentSimaiFile.Commands.Add(item);
 
         await Task.Delay(100);
-        Session.Doc.NotifySimaiFileChanged();
-        await Session.Playback.EditorLoad(Session.MaidataDir);
+        NotifySimaiFileChanged();
+        await EditorLoad(MaidataDir);
     }
 
     public async void OpenRecoverWindow()
@@ -198,20 +192,20 @@ public partial class MainWindowViewModel : ViewModelBase
         var desktop = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
         if (desktop?.MainWindow is null) return;
 
-        var maidataDirectory = Session.Doc.IsLoaded ? Session.MaidataDir : null;
-        var recoverViewModel = await RecoverViewModel.CreateAsync(Session.AutoSave, maidataDirectory);
+        var maidataDirectory = IsLoaded ? MaidataDir : null;
+        var recoverViewModel = await RecoverViewModel.CreateAsync(this, maidataDirectory);
         var window = new RecoverWindow(recoverViewModel);
         var result = await window.ShowDialog<RecoverDialogResult?>(desktop.MainWindow);
         if (result is null) return;
 
         if (result.Action == RecoverDialogAction.Load)
         {
-            await Session.OpenFile(result.MaidataPath);
+            await OpenFile(result.MaidataPath);
             return;
         }
 
-        if (!Session.Doc.IsLoaded) return;
-        var currentMaidataPath = Path.GetFullPath(Path.Combine(Session.MaidataDir, "maidata.txt"));
+        if (!IsLoaded) return;
+        var currentMaidataPath = Path.GetFullPath(Path.Combine(MaidataDir, "maidata.txt"));
         var recoveredMaidataPath = Path.GetFullPath(result.MaidataPath);
         var pathComparison = OperatingSystem.IsWindows()
             ? StringComparison.OrdinalIgnoreCase
@@ -221,7 +215,7 @@ public partial class MainWindowViewModel : ViewModelBase
             recoveredMaidataPath,
             pathComparison))
         {
-            await Session.ReloadFile();
+            await ReloadFile();
         }
     }
 
@@ -230,62 +224,6 @@ public partial class MainWindowViewModel : ViewModelBase
         new BpmTapWindow().Show();
     }
 
-    [RelayCommand]
-    public Task NewFile() => Session.NewFile();
-
-    [RelayCommand]
-    public Task OpenFile() => Session.OpenFile();
-
-    [RelayCommand]
-    public Task SaveFile() => Session.SaveFile();
-
-    [RelayCommand]
-    public Task CompressBgVideo() => Session.Tools.CompressBgVideoAsync();
-
-    [RelayCommand]
-    public Task MediaQuickProcess() => Session.Tools.MediaQuickProcessAsync();
-
-    [RelayCommand]
-    public Task NewChartFromVideo() => Session.Tools.NewChartFromVideoAsync();
-
-    [RelayCommand]
-    public void IncreasePlaybackSpeed() => Session.Playback.IncreasePlaybackSpeed();
-
-    [RelayCommand]
-    public void DecreasePlaybackSpeed() => Session.Playback.DecreasePlaybackSpeed();
-
-    [RelayCommand]
-    public void PlayRecord()
-    {
-        if (Session.Doc.CurrentSimaiFile == null) return;
-        _ = Session.Playback.PlayRecord(Settings.Settings, Session.MaidataDir);
-    }
-
-    [RelayCommand]
-    public void PlayIncludeOp()
-    {
-        if (Session.Doc.CurrentSimaiFile == null) return;
-        _ = Session.Playback.PlayIncludeOp(Settings.Settings);
-    }
-
-    [RelayCommand]
-    public void PlayStop()
-    {
-        if (Session.Doc.CurrentSimaiFile == null) return;
-        _ = Session.Playback.PlayStop(Settings.Settings);
-    }
-
-    [RelayCommand]
-    public void PlayPause()
-    {
-        if (Session.Doc.CurrentSimaiFile == null) return;
-        _ = Session.Playback.PlayPause(Settings.Settings);
-    }
-
-    [RelayCommand]
-    public void Stop() => Session.Playback.Stop();
-
-
     public event Action<PluginAction>? RequestPluginActionExecution;
     [RelayCommand]
     public void ExecutePluginAction(PluginAction action)
@@ -293,8 +231,3 @@ public partial class MainWindowViewModel : ViewModelBase
         RequestPluginActionExecution?.Invoke(action);
     }
 }
-
-
-
-
-

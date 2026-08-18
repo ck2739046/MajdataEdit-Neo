@@ -4,9 +4,12 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace MajdataEdit_Neo.ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels;
 
-public class PluginModel()
+/// <summary>
+/// 插件注册与菜单项
+/// </summary>
+public partial class MainWindowViewModel
 {
     public ObservableCollection<object> PluginItems { get; } = new();
 
@@ -24,7 +27,7 @@ public class PluginModel()
         }
     }
 
-    public void RegisterAll()
+    private void RegisterAll()
     {
         var pluginTypes = System.Reflection.Assembly.GetExecutingAssembly().GetTypes()
             .Where(t => typeof(IMajPlugin).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface);
@@ -35,4 +38,6 @@ public class PluginModel()
             method.Invoke(this, null);
         }
     }
+
+    public void InitializePlugins() => RegisterAll();
 }

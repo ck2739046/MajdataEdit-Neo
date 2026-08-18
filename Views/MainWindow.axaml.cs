@@ -24,7 +24,6 @@ using MajdataEdit_Neo.Types.Plugin;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
 using MajdataEdit_Neo.Utils;
 using MajdataEdit_Neo.ViewModels;
-using MajdataEdit_Neo.ViewModels.SubModels;
 using MsBox.Avalonia.Enums;
 using System;
 using System.Collections.Generic;
@@ -62,7 +61,7 @@ public partial class MainWindow : Window
     readonly DispatcherTimer _debounceTimer;
     readonly SemaphoreSlim _analysisGate = new(1, 1);
     CancellationTokenSource? _analysisCts;
-    PlaybackModel? _subscribedPlayback;
+    MainWindowViewModel? _subscribedPlayback;
     bool _isTextChangedBeforeCaretMoving;
     bool _isHandlingCtrlClick;
 
@@ -181,7 +180,7 @@ public partial class MainWindow : Window
 
     private void ExecutePluginAction(string iconKey)
     {
-        var action = viewModel.Session.Plugins.PluginItems
+        var action = viewModel.PluginItems
             .OfType<PluginAction>()
             .FirstOrDefault(item => item.IconKey == iconKey);
 
@@ -193,7 +192,7 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)
     {
-        var setting = viewModel.Settings.Settings.WindowSetting;
+        var setting = viewModel.Settings.WindowSetting;
         this.Position = new PixelPoint(setting.PosX, setting.PosY);
         this.Width = setting.Width;
         this.Height = setting.Height;
@@ -201,11 +200,11 @@ public partial class MainWindow : Window
         LoadPluginsToMenu();
         viewModel.RequestPluginActionExecution += ViewModel_RequestPluginActionExecution;
 
-        if (viewModel.Settings.Settings.EditSetting.AutoCheckUpdatesOnStartup)
+        if (viewModel.Settings.EditSetting.AutoCheckUpdatesOnStartup)
         {
-            await viewModel.Update.CheckUpdateAsync(true);
+            await viewModel.CheckUpdateAsync(true);
         }
-        await viewModel.Session.Playback.ConnectToPlayerAsync();
+        await viewModel.ConnectToPlayerAsync();
     }
 
     private void LoadPluginsToMenu()
@@ -213,7 +212,7 @@ public partial class MainWindow : Window
         MenuItem editMenu = this.FindControl<MenuItem>("EditMenu")!;
         MenuFlyout editorFlyout = (MenuFlyout)this.FindControl<TextEditor>("Editor")!.ContextFlyout!;
 
-        foreach (var item in viewModel.Session.Plugins.PluginItems)
+        foreach (var item in viewModel.PluginItems)
         {
             if (item is PluginAction action)
             {
@@ -272,8 +271,8 @@ public partial class MainWindow : Window
         if (haveAsked) return;
         e.Cancel = true;
         haveAsked = true;
-        viewModel.Settings.SetWindowLastState(this);
-        var shouldClose = !await viewModel.Session.AskSave();
+        viewModel.SetWindowLastState(this);
+        var shouldClose = !await viewModel.AskSave();
         if (shouldClose)
         {
             var viewx = Process.GetProcessesByName("MajdataViewX");
@@ -309,7 +308,7 @@ public partial class MainWindow : Window
 
     private void MainWindow_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && viewModel.Session.Tools.CancelCurrentOperation())
+        if (e.Key == Key.Escape && viewModel.CancelCurrentFFmpeg())
         {
             e.Handled = true;
             return;
@@ -341,7 +340,7 @@ public partial class MainWindow : Window
         var delta = x - lastX;
         if (point.Properties.IsLeftButtonPressed)
         {
-            var docseek = viewModel.Session.Playback.SlideTrackTime((float)delta * 10f / Width, viewModel.Session.SongTrackInfo, viewModel.Session.Doc.CurrentChartData, viewModel.Session.Doc.CurrentSimaiFile?.Offset ?? 0);
+            var docseek = viewModel.SlideTrackTime((float)delta * 10f / Width, viewModel.SongTrackInfo, viewModel.CurrentChartData, viewModel.CurrentSimaiFile?.Offset ?? 0);
             SeekToDocPos(docseek, textEditor);
         }
         lastX = x;
@@ -349,11 +348,11 @@ public partial class MainWindow : Window
 
     private void ZoomIn_Click(object? sender, RoutedEventArgs e)
     {
-        viewModel.Session.Playback.SlideZoomLevel(-0.3f);
+        viewModel.SlideZoomLevel(-0.3f);
     }
     private void ZoomOut_Click(object? sender, RoutedEventArgs e)
     {
-        viewModel.Session.Playback.SlideZoomLevel(0.3f);
+        viewModel.SlideZoomLevel(0.3f);
     }
 
     private void First_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
@@ -381,11 +380,11 @@ public partial class MainWindow : Window
     {
         if (IsCtrlKeyDown)
         {
-            viewModel.Session.Playback.SlideZoomLevel(-0.3f * (float)e.Delta.Y);
+            viewModel.SlideZoomLevel(-0.3f * (float)e.Delta.Y);
         }
         else
         {
-            var docseek = viewModel.Session.Playback.SlideTrackTime(e.Delta.Y, viewModel.Session.SongTrackInfo, viewModel.Session.Doc.CurrentChartData, (viewModel.Session.Doc.CurrentSimaiFile?.Offset ?? 0));
+            var docseek = viewModel.SlideTrackTime(e.Delta.Y, viewModel.SongTrackInfo, viewModel.CurrentChartData, (viewModel.CurrentSimaiFile?.Offset ?? 0));
             SeekToDocPos(docseek, textEditor);
         }
     }
@@ -533,7 +532,7 @@ public partial class MainWindow : Window
             enteredGate = true;
             cancellationToken.ThrowIfCancellationRequested();
 
-            await viewModel.Session.Doc.SetFumenContent(textEditor.Text);
+            await viewModel.SetFumenContent(textEditor.Text);
             cancellationToken.ThrowIfCancellationRequested();
 
             var seek = textEditor.CaretOffset;
@@ -541,8 +540,8 @@ public partial class MainWindow : Window
             UpdateCaretPosition(seek, false);
             _isTextChangedBeforeCaretMoving = false;
 
-            var fumen = viewModel.Session.Doc
-                .CurrentChartMetadata[viewModel.Session.Doc.SelectedDifficulty]
+            var fumen = viewModel
+                .CurrentChartMetadata[viewModel.SelectedDifficulty]
                 .Fumen;
             var diags = await Task.Run(() =>
             {
@@ -553,11 +552,11 @@ public partial class MainWindow : Window
             }, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
-            viewModel.Session.Doc.SimaiDiagnostics = diags;
+            viewModel.SimaiDiagnostics = diags;
             markerService.UpdateDiags(diags);
 
             var signatures = new List<(double, int, int)>();
-            var timingList = viewModel.Session.Doc.CurrentChartData.CommaTimings;
+            var timingList = viewModel.CurrentChartData.CommaTimings;
             if (timingList.Length > 0)
             {
                 var firstTiming = timingList[0];
@@ -581,9 +580,9 @@ public partial class MainWindow : Window
                 signatures.Add((0, 4, 4));
             }
 
-            viewModel.Session.Doc.Signatures = signatures;
+            viewModel.Signatures = signatures;
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
         {
         }
         catch (Exception ex)
@@ -664,7 +663,7 @@ public partial class MainWindow : Window
 
     private void UpdateCaretPosition(int offset, bool setTrackTime)
     {
-        viewModel.Session.Playback.SetCaretPosition(
+        viewModel.SetCaretPosition(
             offset,
             textEditor.TextArea.Caret.Line,
             setTrackTime);
@@ -678,7 +677,7 @@ public partial class MainWindow : Window
 
         if (DataContext is MainWindowViewModel vm)
         {
-            _subscribedPlayback = vm.Session.Playback;
+            _subscribedPlayback = vm;
             _subscribedPlayback.RequestSeekToDocPos += Playback_RequestSeekToDocPos;
         }
     }
@@ -695,7 +694,7 @@ public partial class MainWindow : Window
     {
         _debounceTimer.Stop();
         _analysisCts?.Cancel();
-        viewModel.Session.Tools.CancelCurrentOperation();
+        viewModel.CancelCurrentFFmpeg();
         viewModel.RequestPluginActionExecution -= ViewModel_RequestPluginActionExecution;
         if (_subscribedPlayback is not null)
         {

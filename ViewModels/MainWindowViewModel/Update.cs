@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using MajdataEdit_Neo.Assets.Langs;
+using MajdataEdit_Neo.Utils;
 using MsBox.Avalonia.Enums;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -10,12 +11,13 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using static MajdataEdit_Neo.Base.MajEnv;
-using MajdataEdit_Neo.Utils;
-using Types;
 
-namespace MajdataEdit_Neo.ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels;
 
-public partial class UpdateModel : ViewModelBase
+/// <summary>
+/// 更新检查
+/// </summary>
+public partial class MainWindowViewModel
 {
     private static readonly HttpClient SharedHttpClient = new();
 

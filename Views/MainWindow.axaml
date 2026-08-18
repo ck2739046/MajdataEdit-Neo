@@ -49,7 +49,7 @@
 			</ExperimentalAcrylicBorder.Material>
 		</ExperimentalAcrylicBorder>
 		<Grid RowDefinitions="20,100,*,60,100,20"
-			  ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding Session.Doc.IsLoaded}">
+			  ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
 			<Menu Grid.Row="0" Grid.ColumnSpan="4">
 				<MenuItem Header="{local:I18N Gui_File}" >
 					<MenuItem Header="{local:I18N Gui_New}" Command="{Binding NewFileCommand}"/>
@@ -68,7 +68,7 @@
 				</MenuItem>
 				<MenuItem Header="{local:I18N Gui_Setting}">
 					<MenuItem Header="{local:I18N Gui_Setting}" Command="{Binding OpenSettingsWindow}"/>
-					<MenuItem Header="{local:I18N Gui_CheckUpdate}" Command="{Binding Update.CheckUpdateAsync}" CommandParameter="false"/>
+					<MenuItem Header="{local:I18N Gui_CheckUpdate}" Command="{Binding CheckUpdateAsync}" CommandParameter="false"/>
 				</MenuItem>
 				<MenuItem Header="{local:I18N Gui_Tools}">
 					<MenuItem Header="{local:I18N Gui_BpmTap}" Command="{Binding OpenBpmTapWindow}"/>
@@ -79,9 +79,9 @@
 							<TextBlock Text="{local:I18N Gui_MediaQuickProcessDesc}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0 0 0 10"/>
 							<DockPanel Margin="0 0 0 5">
 								<Label DockPanel.Dock="Left" Content="{local:I18N Gui_BeatsCount}" VerticalAlignment="Center"/>
-								<NumericUpDown Name="BeatsCountBox" Value="{Binding Session.Tools.MediaQuickProcessBeatsCount}" Minimum="1" Maximum="32" Margin="10 0 0 0"/>
+								<NumericUpDown Name="BeatsCountBox" Value="{Binding MediaQuickProcessBeatsCount}" Minimum="1" Maximum="32" Margin="10 0 0 0"/>
 							</DockPanel>
-							<CheckBox Name="FreezeFrameCheckBox" Content="{local:I18N Gui_FreezeFrame}" Margin="0 0 0 10" IsChecked="{Binding Session.Tools.MediaQuickProcessFreezeFrame}"/>
+							<CheckBox Name="FreezeFrameCheckBox" Content="{local:I18N Gui_FreezeFrame}" Margin="0 0 0 10" IsChecked="{Binding MediaQuickProcessFreezeFrame}"/>
 							<Button Content="{local:I18N Gui_Confirm}" HorizontalAlignment="Stretch" Command="{Binding MediaQuickProcessCommand}"/>
 						</StackPanel>
 					</MenuItem>
@@ -101,13 +101,13 @@
 						Margin="6 0 8 0" Width="116">
 
 				<Label Height="90" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
-					   Content="{Binding Session.Playback.DisplayTime}" Padding="0 30 0 0"/>
+					   Content="{Binding DisplayTime}" Padding="0 30 0 0"/>
 				<Label Height="30" Name="LineCombo" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
-					   Content="{Binding Session.Playback.DisplayLineComboText}" Padding="0 0 0 0"/>
+					   Content="{Binding DisplayLineComboText}" Padding="0 0 0 0"/>
 
 				<ComboBox Name="Difficulty"
 						  Width="116" VerticalAlignment="Center"
-						  SelectedIndex="{Binding Session.Doc.SelectedDifficulty}">
+						  SelectedIndex="{Binding SelectedDifficulty}">
 					<ComboBoxItem Content="EASY" />
 					<ComboBoxItem Content="BASIC" />
 					<ComboBoxItem Content="ADVANCED" />
@@ -119,37 +119,37 @@
 
 				<DockPanel Margin="0 8 0 0">
 					<Label VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Level}"/>
-					<TextBox Name="Level" Text="{Binding Session.Doc.Level}" Margin="10 0 0 0"/>
+					<TextBox Name="Level" Text="{Binding Level}" Margin="10 0 0 0"/>
 				</DockPanel>
 
 				<DockPanel Margin="0 8 0 0">
 					<Label  VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Designer}"/>
-					<TextBox  Name="Designer" Text="{Binding Session.Doc.Designer}" Margin="20 0 0 0"/>
+					<TextBox  Name="Designer" Text="{Binding Designer}" Margin="20 0 0 0"/>
 				</DockPanel>
 
 				<DockPanel Margin="0 8 0 0">
 					<Label  VerticalAlignment="Center" Margin="0 10 0 0" Content="{local:I18N Gui_Offset}"/>
-					<NumericUpDown Name="First" Value="{Binding Session.Doc.Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
+					<NumericUpDown Name="First" Value="{Binding Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
 				</DockPanel>
 
 				<DockPanel Margin="0 20 0 0" LastChildFill="True">
 					<Label Content="{local:I18N Gui_Error}" DockPanel.Dock="Left" />
-					<Label Name="ErrorCountLabel" Content="{Binding Session.Doc.SimaiDiagnosticsCount}" HorizontalAlignment="Center"/>
+					<Label Name="ErrorCountLabel" Content="{Binding SimaiDiagnosticsCount}" HorizontalAlignment="Center"/>
 				</DockPanel>
 
 				<DockPanel Margin="0 10 0 0">
 					<Label VerticalAlignment="Center" Content="{local:I18N Gui_PlaybackSpeed}"/>
 					<NumericUpDown Name="Speed" Margin="3 0 0 0"
-								   Value="{Binding Session.Playback.PlaybackSpeed}"
+								   Value="{Binding PlaybackSpeed}"
 								   Minimum="0.1" Increment="0.1"
 								   FormatString="0.##"
 								   ShowButtonSpinner="False"/>
 				</DockPanel>
 
 				<CheckBox Grid.Row="8" Margin="0 10 0 0"
-						  IsChecked="{Binding Session.Playback.IsFollowCursor}" FontSize="12" Content="{local:I18N Gui_FollowCursor}"/>
+						  IsChecked="{Binding IsFollowCursor}" FontSize="12" Content="{local:I18N Gui_FollowCursor}"/>
 				<StackPanel Orientation="Horizontal" Margin="9 0 0 0">
-					<CheckBox IsChecked="{Binding Session.Playback.IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
+					<CheckBox IsChecked="{Binding IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
 					<Button
 						Command="{Binding PlayIncludeOpCommand}" Width="64" Content="{local:I18N Gui_Record}"/>
 				</StackPanel>
@@ -169,12 +169,12 @@
 			</Button>
 
 			<AvaloniaEdit:TextEditor Grid.Column="3" Grid.Row="1" Grid.RowSpan="3"
-									 Document="{Binding Session.Doc.FumenDocument}"
+									 Document="{Binding FumenDocument}"
 									 Name="Editor" BorderBrush="#50FFFFFF" BorderThickness="0.5"
 									 ShowLineNumbers="True" Margin="5 5 5 5" Padding="5"
-									 WordWrap="{Binding Settings.WordWrap}"
+									 WordWrap="{Binding WordWrap}"
 									 FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-									 FontSize="{Binding Settings.FontSize}">
+									 FontSize="{Binding FontSize}">
 				<AvaloniaEdit:TextEditor.ContextFlyout>
 					<MenuFlyout>
 					</MenuFlyout>
@@ -185,10 +185,10 @@
 
 			<controls:SimaiVisualizerControl Name="SimaiVisual"
 											 Height="100" Grid.Row="4" Grid.ColumnSpan="4"
-											 Time="{Binding Session.Playback.TrackTime}" TrackIf="{Binding Session.SongTrackInfo}"
-											 ZoomLevel="{Binding Session.Playback.TrackZoomLevel}" SimaiChart="{Binding Session.Doc.CurrentChartData}"
-											 Offset="{Binding Session.Doc.Offset}" CaretTime="{Binding Session.Playback.CaretTime}"
-											 IsAnimated ="{Binding Settings.IsAnimated}" Signatures="{Binding Session.Doc.Signatures}"/>
+											 Time="{Binding TrackTime}" TrackIf="{Binding SongTrackInfo}"
+											 ZoomLevel="{Binding TrackZoomLevel}" SimaiChart="{Binding CurrentChartData}"
+											 Offset="{Binding Offset}" CaretTime="{Binding CaretTime}"
+											 IsAnimated ="{Binding IsAnimated}" Signatures="{Binding Signatures}"/>
 			<DockPanel Grid.Row="4" >
 				<Button Name="ZoomOut" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
 					<PathIcon Width="8" Data="{StaticResource zoom_out}"/>
@@ -204,8 +204,8 @@
 					<TextBlock.Text>
 						<MultiBinding Converter="{x:Static conv:StatusBarConverter.Instance}">
 							<Binding Path="StatusBarMessage"/>
-							<Binding Path="Session.Playback.CurrentViewState"/>
-							<Binding Path="Session.Playback.IsConnected"/>
+							<Binding Path="CurrentViewState"/>
+							<Binding Path="IsConnected"/>
 							<Binding Path="Culture" Source="{x:Static local:I18N.Ins}"/>
 						</MultiBinding>
 					</TextBlock.Text>
@@ -214,7 +214,7 @@
 		</Grid>
 
 		<Grid RowDefinitions="22.7*,54.6*,22.7*" ColumnDefinitions="19.2*,61.6*,19.2*"
-			  ZIndex="5" IsVisible="{Binding !Session.Doc.IsLoaded}">
+			  ZIndex="5" IsVisible="{Binding !IsLoaded}">
 			<Grid Grid.Row="1" Grid.Column="1" RowDefinitions="1*,2*" ColumnDefinitions="*,*,*,*">
 				<Grid Grid.Column="0" ColumnDefinitions="1*,6*,1*">
 					<Button Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
@@ -253,7 +253,7 @@
 				   HorizontalAlignment="Right"
 				   Margin="0 0 -30 100" ZIndex="-9999"
 				   Opacity="0.5"
-				   Source="{Binding Settings.BackgroundImage}"></Image>
+				   Source="{Binding BackgroundImage}"></Image>
 		</DockPanel>
 
 	</Panel>

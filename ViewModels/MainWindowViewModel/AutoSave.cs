@@ -1,3 +1,4 @@
+using MajdataEdit_Neo.Base;
 using MajdataEdit_Neo.Modules.AutoSave;
 using MajdataEdit_Neo.Modules.AutoSave.Contexts;
 using MajSimai;
@@ -8,14 +9,17 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MajdataEdit_Neo.ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels;
 
-public class AutoSaveModel
+/// <summary>
+/// 自动保存管理
+/// </summary>
+public partial class MainWindowViewModel
 {
-    readonly InternalAutoSaveContext _localContext;
-    readonly InternalAutoSaveContext _globalContext;
+    InternalAutoSaveContext _localContext = null!;
+    InternalAutoSaveContext _globalContext = null!;
     readonly InternalAutoSaveContentProvider _contentProvider = new();
-    readonly AutoSaveManager _manager;
+    AutoSaveManager _manager = null!;
     readonly Lock _syncLock = new();
 
     SimaiFile? _pendingSimaiFile;
@@ -35,8 +39,9 @@ public class AutoSaveModel
         set => _manager.Enabled = value;
     }
 
-    public AutoSaveModel(string baseDirectory)
+    private void InitializeAutoSave()
     {
+        var baseDirectory = MajEnv.MajBase;
         ArgumentException.ThrowIfNullOrWhiteSpace(baseDirectory);
         _localContext = new InternalAutoSaveContext(_contentProvider);
         _globalContext = new InternalAutoSaveContext(_contentProvider)

@@ -9,14 +9,13 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Types;
 
-namespace MajdataEdit_Neo.ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels;
 
 /// <summary>
 /// 谱面文档管理
 /// </summary>
-public partial class DocumentModel : ViewModelBase, IMutableDocument
+public partial class MainWindowViewModel
 {
     public event EventHandler? FumenContentChanged;
 
@@ -45,6 +44,7 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
 
     [ObservableProperty]
     public partial SimaiChart CurrentChartData { get; set; } = SimaiChart.Empty;
+    public TextDocument FumenDocument => _fumenDocument;
 
     //------editor state
 
@@ -87,7 +87,6 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
         }
     }
 
-    public TextDocument FumenDocument => _fumenDocument;
 
     public string CurrentFumen
     {
@@ -163,9 +162,9 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
         set => IsSaved = !value;
     }
 
-    //------constructor
+    //------initialization
 
-    public DocumentModel()
+    private void InitializeDocument()
     {
         for (var i = 0; i < 7; i++) CurrentChartMetadata[i] = new MutSimaiChartMetadata();
     }
@@ -217,7 +216,6 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
             ReadOnlySpan<SimaiTimingPoint>.Empty,
             ReadOnlySpan<SimaiTimingPoint>.Empty);
         UpdateFumenContextChanged();
-        FumenContentChanged?.Invoke(this, EventArgs.Empty);
 
         if (string.IsNullOrEmpty(content))
         {
@@ -245,6 +243,8 @@ public partial class DocumentModel : ViewModelBase, IMutableDocument
         {
             Debug.WriteLine(ex);
         }
+
+        FumenContentChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public SimaiTimingPoint? GetNearestCommaTimingFromPos(int rawPosition)

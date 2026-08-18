@@ -118,7 +118,7 @@ partial class ChartInfoViewModel : ViewModelBase, IDisposable
                     MsBox.Avalonia.Enums.ButtonEnum.YesNo, MsBox.Avalonia.Enums.Icon.Warning);
                 if (result == MsBox.Avalonia.Enums.ButtonResult.Yes)
                 {
-                    await MainWindowViewModel.Ins.Session.Tools.CompressBgVideoAsync();
+                    await MainWindowViewModel.Ins.CompressBgVideoAsync();
                 }
             }
         }

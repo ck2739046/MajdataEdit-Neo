@@ -6,31 +6,22 @@ using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Utils;
 using MajSimai;
-using MajdataEdit_Neo.ViewModels;
 using MsBox.Avalonia.Enums;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using Types;
-using MajdataEdit_Neo.ViewModels.SubModels;
-using MajdataEdit_Neo.Models.Plugins;
-using MajdataEdit_Neo.Base;
+using static MajdataEdit_Neo.Base.MajEnv;
 
-namespace MajdataEdit_Neo.ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels;
 
-public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
+/// <summary>
+/// 文件会话：打开/新建/保存谱面、编辑记录持久化
+/// </summary>
+public partial class MainWindowViewModel
 {
-    //------sub-models (hierarchical ownership)
-    public DocumentModel Doc { get; }
-    public PlaybackModel Playback { get; }
-    public AutoSaveModel AutoSave { get; }
-    public ToolsModel Tools { get; }
-    public PluginModel Plugins { get; }
-    public DiscordRpcModel DiscordRpc { get; }
-
     //------file state
-    readonly ChartEditDatabase _editDb;
+    private readonly ChartEditDatabase _editDb = new(DatabaseFile);
     readonly TrackReader _trackReader = new();
     readonly EditTimer _editTimer = new();
 
@@ -40,68 +31,45 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
     [ObservableProperty]
     private TrackInfo? _songTrackInfo = null;
 
-    private readonly MainWindowViewModel _mainWindow;
-
-    public FileSessionModel(MainWindowViewModel mainWindow, ChartEditDatabase editDb)
-    {
-        _mainWindow = mainWindow;
-        _editDb = editDb;
-
-        // Instantiate Document first
-        Doc = new DocumentModel();
-
-        // Inject readonly interfaces to sub-models
-        Playback = new PlaybackModel(this.Doc, () => this.MaidataDir);
-        // Note: Currently PlaybackModel uses global MainWindowViewModel.Ins.Session.Doc or maybe it doesn't? 
-        // We will refactor PlaybackModel to accept IReadOnlyDocument soon.
-
-        AutoSave = new AutoSaveModel(MajEnv.MajBase);
-        DiscordRpc = new DiscordRpcModel();
-
-        // Inject mutable interface to ToolsModel
-        Tools = new ToolsModel(_mainWindow, this, Doc);
-
-        Plugins = new PluginModel();
-        Plugins.RegisterAll();
-
-        WireEvents();
-    }
+    //------event wiring
 
     private void WireEvents()
     {
         // Doc changes -> update WindowTitle, auto-save, stop playback
-        Doc.PropertyChanged += (s, e) =>
+        PropertyChanged += (s, e) =>
         {
-            if (e.PropertyName == nameof(DocumentModel.CurrentSimaiFile))
+            if (e.PropertyName == nameof(CurrentSimaiFile))
             {
-                _mainWindow.NotifyWindowTitleChanged();
-                Playback.Stop(false);
-                Doc.UpdateFumenContextChanged();
-                AutoSave.IsFileChanged = !Doc.IsSaved;
-                _ = AutoSave.OnSimaiFileChangedAsync(Doc.CurrentSimaiFile);
+                NotifyWindowTitleChanged();
+                Stop(false);
+                UpdateFumenContextChanged();
+                IsFileChanged = !IsSaved;
+                _ = OnSimaiFileChangedAsync(CurrentSimaiFile);
             }
-            else if (e.PropertyName == nameof(DocumentModel.SelectedDifficulty))
+            else if (e.PropertyName == nameof(SelectedDifficulty))
             {
                 SaveEditRecord();
             }
-            else if (e.PropertyName == nameof(DocumentModel.IsSaved))
+            else if (e.PropertyName == nameof(IsSaved))
             {
-                _mainWindow.NotifyWindowTitleChanged();
-                AutoSave.IsFileChanged = !Doc.IsSaved;
+                NotifyWindowTitleChanged();
+                IsFileChanged = !IsSaved;
             }
         };
 
-        Doc.FumenContentChanged += async (s, e) =>
+        FumenContentChanged += async (s, e) =>
         {
-            await AutoSave.OnSimaiFileChangedAsync(Doc.CurrentSimaiFile);
+            await OnSimaiFileChangedAsync(CurrentSimaiFile);
             // 文本变更（已防抖 + 解析完成）-> 推送 Update
-            _ = Playback.PushUpdateAsync();
+            await PushUpdateAsync();
         };
     }
 
+    //------file operations
+
     public async Task<bool> AskSave()
     {
-        if (!Doc.IsSaved)
+        if (!IsSaved)
         {
             var result = await MessageBox.ShowWindowDialogAsync(
                 Langs.Msg_ChartNotSaved,
@@ -150,16 +118,17 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
 
         MaidataDir = directory;
         SongTrackInfo = songTrackInfo;
-        Doc.CurrentChartMetadata = metadata;
-        Doc.CurrentSimaiFile = new SimaiFile("Set Title", "Set Artist", 0, string.Empty, levels, null);
-        Doc.SelectedDifficulty = 0;
-        Doc.IsSaved = false;
-        AutoSave.UpdateContext(MaidataDir);
-        AutoSave.SetContent("");
-        AutoSave.Enabled = true;
-        await Playback.EditorLoad(MaidataDir);
+        CurrentChartMetadata = metadata;
+        CurrentSimaiFile = new SimaiFile("Set Title", "Set Artist", 0, string.Empty, levels, null);
+        SelectedDifficulty = 0;
+        IsSaved = false;
+        UpdateContext(MaidataDir);
+        SetContent("");
+        Enabled = true;
+        await EditorLoad(MaidataDir);
     }
 
+    [RelayCommand]
     public async Task NewFile()
     {
         if (await AskSave()) return;
@@ -189,6 +158,7 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
         }
     }
 
+    [RelayCommand]
     public async Task OpenFile()
     {
         if (await AskSave()) return;
@@ -205,6 +175,7 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
             Debug.WriteLine(e);
         }
     }
+
     public async Task OpenFile(string maidataPath)
     {
         if (await AskSave()) return;
@@ -243,14 +214,14 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
 
         MaidataDir = directory;
         SongTrackInfo = songTrackInfo;
-        Doc.CurrentChartMetadata = metadata;
-        Doc.CurrentSimaiFile = simaiFile;
-        AutoSave.UpdateContext(MaidataDir);
-        AutoSave.SetContent(content);
-        AutoSave.Enabled = true;
+        CurrentChartMetadata = metadata;
+        CurrentSimaiFile = simaiFile;
+        UpdateContext(MaidataDir);
+        SetContent(content);
+        Enabled = true;
 
         LoadEditRecord();
-        await Playback.EditorLoad(MaidataDir);
+        await EditorLoad(MaidataDir);
     }
 
     public void LoadEditRecord()
@@ -260,8 +231,8 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
         var record = _editDb.GetRecord(MaidataDir);
         if (record is not null)
         {
-            Playback.TrackTime = record.TrackTime;
-            Doc.SelectedDifficulty = record.SelectedDifficulty;
+            TrackTime = record.TrackTime;
+            SelectedDifficulty = record.SelectedDifficulty;
             _editTimer.LoadAccumulated(record.TotalEditDuration);
         }
         else
@@ -279,24 +250,25 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
         var record = new ChartEditRecord
         {
             ChartPath = MaidataDir,
-            SelectedDifficulty = Doc.SelectedDifficulty,
-            TrackTime = Playback.TrackTime,
+            SelectedDifficulty = SelectedDifficulty,
+            TrackTime = TrackTime,
             TotalEditDuration = _editTimer.Elapsed
         };
         _editDb.UpsertRecord(record);
     }
 
+    [RelayCommand]
     public async Task SaveFile()
     {
-        if (Doc.CurrentSimaiFile is null) return;
+        if (CurrentSimaiFile is null) return;
 
         for (var i = 0; i < 7; i++)
         {
-            var parsedChart = Doc.CurrentSimaiFile.Charts[i];
-            Doc.CurrentSimaiFile.Charts[i] = new SimaiChart(
-                Doc.CurrentChartMetadata[i].Level,
-                Doc.CurrentChartMetadata[i].Designer,
-                Doc.CurrentChartMetadata[i].Fumen,
+            var parsedChart = CurrentSimaiFile.Charts[i];
+            CurrentSimaiFile.Charts[i] = new SimaiChart(
+                CurrentChartMetadata[i].Level,
+                CurrentChartMetadata[i].Designer,
+                CurrentChartMetadata[i].Fumen,
                 parsedChart.NoteTimings,
                 parsedChart.CommaTimings);
         }
@@ -312,7 +284,7 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
                 4096,
                 FileOptions.Asynchronous | FileOptions.WriteThrough))
             {
-                await SimaiParser.DeparseAsync(Doc.CurrentSimaiFile, stream);
+                await SimaiParser.DeparseAsync(CurrentSimaiFile, stream);
             }
 
             File.Move(tempPath, maidataPath, overwrite: true);
@@ -323,15 +295,17 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
                 File.Delete(tempPath);
         }
 
-        Doc.MarkAsSaved();
-        AutoSave.IsFileChanged = false;
+        MarkAsSaved();
+        IsFileChanged = false;
     }
+
+    //------disposal
 
     public async ValueTask DisposeAsync()
     {
         try
         {
-            await Playback.DisposeAsync();
+            await DisposePlaybackAsync();
         }
         catch (Exception ex)
         {
@@ -349,7 +323,7 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
 
         try
         {
-            DiscordRpc.Dispose();
+            DisposeDiscordRpc();
         }
         catch (Exception ex)
         {
@@ -357,9 +331,3 @@ public partial class FileSessionModel : ViewModelBase, IAsyncDisposable
         }
     }
 }
-
-
-
-
-
-

@@ -1,12 +1,14 @@
 using DiscordRPC;
-
 using System;
 
-namespace MajdataEdit_Neo.ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels;
 
-public class DiscordRpcModel : IDisposable
+/// <summary>
+/// Discord RPC 状态展示
+/// </summary>
+public partial class MainWindowViewModel
 {
-    readonly DiscordRpcClient _client = new("1068882546932326481");
+    readonly DiscordRpcClient _drpcClient = new("1068882546932326481");
     readonly RichPresence _presence = new()
     {
         Details = "Nothing to do",
@@ -19,20 +21,20 @@ public class DiscordRpcModel : IDisposable
         }
     };
 
-    public void Initialize()
+    private void InitializeDiscordRpc()
     {
-        _client.SetPresence(_presence);
+        _drpcClient.SetPresence(_presence);
     }
 
     public void UpdatePresence(string? details = null, string? state = null)
     {
         if (details != null) _presence.Details = details;
         if (state != null) _presence.State = state;
-        _client.SetPresence(_presence);
+        _drpcClient.SetPresence(_presence);
     }
 
-    public void Dispose()
+    private void DisposeDiscordRpc()
     {
-        _client.Dispose();
+        _drpcClient.Dispose();
     }
 }

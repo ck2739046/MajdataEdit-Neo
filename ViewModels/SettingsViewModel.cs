@@ -150,7 +150,7 @@ public partial class SettingItem : ObservableObject
 
                 _prop.SetValue(_owner, converted);
                 OnPropertyChanged();
-                MainWindowViewModel.Ins.Settings.ReloadSettings();
+                MainWindowViewModel.Ins.ReloadSettings();
 
                 if (SelectionValues.Count != 0)
                 {

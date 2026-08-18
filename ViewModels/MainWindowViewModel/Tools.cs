@@ -1,27 +1,23 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Avalonia.Platform.Storage;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MajdataEdit_Neo.Assets.Langs;
+using MajdataEdit_Neo.Models.TrackUtils;
 using MajdataEdit_Neo.Utils;
-using MajdataEdit_Neo.ViewModels;
 using MsBox.Avalonia.Enums;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Types;
 using static MajdataEdit_Neo.Utils.FFmpegChecker;
-using Avalonia.Platform.Storage;
-using MajdataEdit_Neo.Models.TrackUtils;
-using MajdataEdit_Neo.Types;
 
-namespace MajdataEdit_Neo.ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels;
 
-public partial class ToolsModel(
-        MainWindowViewModel _mainWindow,
-        FileSessionModel _session,
-        IMutableDocument _doc
-    ) : ViewModelBase
+/// <summary>
+/// 工具：背景视频压缩、媒体对齐、从视频新建谱面
+/// </summary>
+public partial class MainWindowViewModel
 {
     [ObservableProperty]
     public partial int MediaQuickProcessBeatsCount { get; set; } = 4;
@@ -34,7 +30,16 @@ public partial class ToolsModel(
     private readonly object _ffmpegSync = new();
     private CancellationTokenSource? _ffmpegCts;
 
-    public bool CancelCurrentOperation()
+    [RelayCommand]
+    public Task CompressBgVideo() => CompressBgVideoAsync();
+
+    [RelayCommand]
+    public Task MediaQuickProcess() => MediaQuickProcessAsync();
+
+    [RelayCommand]
+    public Task NewChartFromVideo() => NewChartFromVideoAsync();
+
+    public bool CancelCurrentFFmpeg()
     {
         lock (_ffmpegSync)
         {
@@ -48,7 +53,7 @@ public partial class ToolsModel(
 
     public async Task CompressBgVideoAsync()
     {
-        var maidataDir = _session.MaidataDir;
+        var maidataDir = MaidataDir;
         var bgVideoPath = Path.Combine(maidataDir, "bg.mp4");
         if (!File.Exists(bgVideoPath))
         {
@@ -66,7 +71,7 @@ public partial class ToolsModel(
         var outputPath = Path.Combine(maidataDir, $"{videoBaseName}_compressed.mp4");
         var operation = BeginFfmpegOperation();
 
-        _mainWindow.ShowStatusMessage($"{Langs.Status_Compressing}");
+        ShowStatusMessage($"{Langs.Status_Compressing}");
 
         try
         {
@@ -95,7 +100,7 @@ public partial class ToolsModel(
                 await MessageBox.ShowWindowDialogAsync(
                     $"{Langs.Status_CompressComplete}\n{originalSize:F2}MB �?{newSize:F2}MB",
                     "Success", icon: MsBox.Avalonia.Enums.Icon.Success);
-                await _session.ReloadFile();
+                await ReloadFile();
             }
         }
         catch (OperationCanceledException)
@@ -112,7 +117,7 @@ public partial class ToolsModel(
         finally
         {
             if (CompleteFfmpegOperation(operation))
-                _mainWindow.ResetStatusMessage();
+                ResetStatusMessage();
         }
     }
 
@@ -121,7 +126,7 @@ public partial class ToolsModel(
         CancellationTokenSource? operation = null;
         try
         {
-            if (_doc.CurrentChartData is null || _doc.CurrentChartData.CommaTimings.Length == 0)
+            if (CurrentChartData is null || CurrentChartData.CommaTimings.Length == 0)
             {
                 await MessageBox.ShowWindowDialogAsync(
                     Langs.Msg_NoBpmInChart,
@@ -129,15 +134,15 @@ public partial class ToolsModel(
                     ButtonEnum.Ok, MsBox.Avalonia.Enums.Icon.Error);
                 return;
             }
-            var firstTiming = _doc.CurrentChartData.CommaTimings[0];
-            var bpm = firstTiming.Bpm; var offset = _doc.Offset;
+            var firstTiming = CurrentChartData.CommaTimings[0];
+            var bpm = firstTiming.Bpm; var offset = Offset;
             var beatsCount = MediaQuickProcessBeatsCount; var freezeFrame = MediaQuickProcessFreezeFrame;
             if (!await EnsureFFmpeg()) return;
-            var maidataDir = _session.MaidataDir;
+            var maidataDir = MaidataDir;
             var audioPath = Path.Combine(maidataDir, "track.mp3");
             if (!File.Exists(audioPath)) audioPath = Path.Combine(maidataDir, "track.ogg");
             operation = BeginFfmpegOperation();
-            _mainWindow.ShowStatusMessage($"{Langs.Status_Processing}");
+            ShowStatusMessage($"{Langs.Status_Processing}");
             var completed = await Task.Run(() =>
             {
                 if (!TrackProcessor.AdjustMediaTime(
@@ -174,10 +179,10 @@ public partial class ToolsModel(
                 return;
             }
 
-            _doc.Offset = 0;
-            await _session.SaveFile();
+            Offset = 0;
+            await SaveFile();
             await Task.Delay(30);
-            await _session.ReloadFile();
+            await ReloadFile();
             await MessageBox.ShowWindowDialogAsync(Langs.Msg_MediaProcessComplete, Langs.Gui_Success, ButtonEnum.Ok, MsBox.Avalonia.Enums.Icon.Success);
         }
         catch (OperationCanceledException)
@@ -192,7 +197,7 @@ public partial class ToolsModel(
         finally
         {
             if (operation is not null && CompleteFfmpegOperation(operation))
-                _mainWindow.ResetStatusMessage();
+                ResetStatusMessage();
         }
     }
 
@@ -223,7 +228,7 @@ public partial class ToolsModel(
             }
             if (!await EnsureFFmpeg()) return;
             operation = BeginFfmpegOperation();
-            _mainWindow.ShowStatusMessage($"{Langs.Status_ExtractingAudio}");
+            ShowStatusMessage($"{Langs.Status_ExtractingAudio}");
             var audioPath = Path.Combine(parent, "track.mp3");
             audioTempPath = Path.Combine(parent, $".track.{Guid.NewGuid():N}.tmp.mp3");
             var completed = await Task.Run(
@@ -237,8 +242,8 @@ public partial class ToolsModel(
 
             File.Move(audioTempPath, audioPath, overwrite: true);
             audioTempPath = null;
-            await _session.NewChartFromDir(parent);
-            _mainWindow.OpenChartInfoWindow();
+            await NewChartFromDir(parent);
+            OpenChartInfoWindow();
         }
         catch (OperationCanceledException)
         {
@@ -254,7 +259,7 @@ public partial class ToolsModel(
             if (audioTempPath is not null && File.Exists(audioTempPath))
                 File.Delete(audioTempPath);
             if (operation is not null && CompleteFfmpegOperation(operation))
-                _mainWindow.ResetStatusMessage();
+                ResetStatusMessage();
         }
     }
 
@@ -280,4 +285,3 @@ public partial class ToolsModel(
         }
     }
 }
-

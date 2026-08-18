@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Threading;
-using AvaloniaEdit;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MajdataEdit_Neo.Base;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types;
@@ -9,53 +9,20 @@ using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.MajWs;
 using MajSimai;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Types;
 
-namespace MajdataEdit_Neo.ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels;
 
-public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
+/// <summary>
+/// 播放器连接、播放控制、光标跟随
+/// </summary>
+public partial class MainWindowViewModel
 {
-    private readonly IReadOnlyDocument _doc;
-    private readonly Func<string> _getMaidataDir;
-
-    private readonly MemoryMappedFile mmfAudioTime = null!;
-    private readonly MemoryMappedViewAccessor mmvAudioTime = null!;
-    public PlaybackModel(IReadOnlyDocument doc, Func<string> getMaidataDir)
-    {
-        _doc = doc;
-        _getMaidataDir = getMaidataDir;
-        _playerConnection.OnPlayStarted += OnPlayStarted;
-        _playerConnection.OnPlayStopped += OnPlayStopped;
-        _playerConnection.OnLoadRequired += OnLoadRequired;
-        _playerConnection.OnStopRequired += OnStopRequired;
-        _playerConnection.OnDisconnected += OnDisconnected;
-        _playerConnection.OnViewStateChanged += OnViewStateChanged;
-
-        Directory.CreateDirectory(MajEnv.MajdataViewPersistentDataPath);
-        var mmfAudioTimeFileStream = new FileStream(
-            MajEnv.MmfAudioTimePath,
-            FileMode.OpenOrCreate,
-            FileAccess.ReadWrite,
-            FileShare.ReadWrite
-        );
-        if (mmfAudioTimeFileStream.Length < sizeof(float))
-            mmfAudioTimeFileStream.SetLength(sizeof(float));
-        mmfAudioTime = MemoryMappedFile.CreateFromFile(
-            mmfAudioTimeFileStream,
-            null,
-            sizeof(float),
-            MemoryMappedFileAccess.ReadWrite,
-            HandleInheritability.None,
-            false
-        );
-        mmvAudioTime = mmfAudioTime.CreateViewAccessor();
-    }
+    private MemoryMappedFile mmfAudioTime = null!;
+    private MemoryMappedViewAccessor mmvAudioTime = null!;
 
     [ObservableProperty]
     private float _playbackSpeed = 1f;
@@ -102,6 +69,38 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
 
     public event Action<Point>? RequestSeekToDocPos;
 
+    //------initialization
+
+    private void InitializePlayback()
+    {
+        _playerConnection.OnPlayStarted += OnPlayStarted;
+        _playerConnection.OnPlayStopped += OnPlayStopped;
+        _playerConnection.OnLoadRequired += OnLoadRequired;
+        _playerConnection.OnStopRequired += OnStopRequired;
+        _playerConnection.OnDisconnected += OnDisconnected;
+        _playerConnection.OnViewStateChanged += OnViewStateChanged;
+
+        Directory.CreateDirectory(MajEnv.MajdataViewPersistentDataPath);
+        var mmfAudioTimeFileStream = new FileStream(
+            MajEnv.MmfAudioTimePath,
+            FileMode.OpenOrCreate,
+            FileAccess.ReadWrite,
+            FileShare.ReadWrite
+        );
+        if (mmfAudioTimeFileStream.Length < sizeof(float))
+            mmfAudioTimeFileStream.SetLength(sizeof(float));
+        mmfAudioTime = MemoryMappedFile.CreateFromFile(
+            mmfAudioTimeFileStream,
+            null,
+            sizeof(float),
+            MemoryMappedFileAccess.ReadWrite,
+            HandleInheritability.None,
+            false
+        );
+        mmvAudioTime = mmfAudioTime.CreateViewAccessor();
+    }
+
+    //------derived properties
 
     public bool IsConnected => _playerConnection.IsConnected;
 
@@ -116,6 +115,8 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
             return string.Format("{0}:{1:00}", minute, second);
         }
     }
+
+    //------player connection
 
     public async Task<bool> ConnectToPlayerAsync()
     {
@@ -141,6 +142,8 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         OnPropertyChanged(nameof(IsConnected));
         return true;
     }
+
+    //------playback control
 
     public void SlideZoomLevel(float delta)
     {
@@ -181,10 +184,13 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         return new Point(nearestNote.RawTextPositionX, nearestNote.RawTextPositionY - 1);
     }
 
+    [RelayCommand]
     public void IncreasePlaybackSpeed()
     {
         PlaybackSpeed += 0.1f;
     }
+
+    [RelayCommand]
     public void DecreasePlaybackSpeed()
     {
         var speed = PlaybackSpeed - 0.1f;
@@ -196,32 +202,34 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
     {
         CaretLine = line;
 
-        var chartData = _doc.CurrentChartData;
+        var chartData = CurrentChartData;
 
-        var timings = chartData.CommaTimings;
-        var nearestTiming = timings.Length > 0 ? timings[0] : default;
-        foreach (var timing in timings)
+        var commaTs = chartData.CommaTimings;
+        var nearestTiming = commaTs.Length > 0 ? commaTs[0] : default;
+        foreach (var commaT in commaTs)
         {
-            if (timing.RawTextPosition >= rawPosition)
+            if (commaT.RawTextPosition >= rawPosition)
             {
-                nearestTiming = timing;
+                nearestTiming = commaT;
                 break;
             }
         }
         CaretTime = nearestTiming?.Timing ?? 0;
 
-        var notes = chartData.NoteTimings;
+        var noteTs = chartData.NoteTimings;
         var currentCombo = 0;
-        foreach (var note in notes)
+        foreach (var noteT in noteTs)
         {
-            if (note.RawTextPosition >= rawPosition) break;
-            currentCombo += note.Notes.Length;
+            if (noteT.RawTextPosition >= rawPosition) break;
+            foreach (var note in noteT.Notes)
+                if (note.Type is SimaiNoteType.Slide) CurrentCombo++;
+            currentCombo += noteT.Notes.Length;
         }
         CurrentCombo = currentCombo;
 
         if (setTrackTime)
         {
-            TrackTime = CaretTime + _doc.Offset;
+            TrackTime = CaretTime + Offset;
         }
     }
 
@@ -245,6 +253,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
                 return;
             }
             await _playerConnection.LoadAsync(trackPath, bgPath, pvPath);
+            await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
         }
         catch (Exception ex)
         {
@@ -254,7 +263,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
 
     public async Task PushUpdateAsync(bool force = false)
     {
-        var simai = _doc.CurrentSimaiFile;
+        var simai = CurrentSimaiFile;
         if (simai is null || !_playerConnection.IsConnected)
             return;
 
@@ -265,66 +274,57 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         }
 
         _updateDirty = false;
-        await _playerConnection.UpdateAsync(simai, _doc.CurrentChartData, _doc.SelectedDifficulty);
+        await _playerConnection.UpdateAsync(simai, CurrentChartData, SelectedDifficulty);
     }
 
-    public async Task PlayPause(MajSetting settings)
+    //------commands
+
+    [RelayCommand]
+    public void PlayRecord()
+    {
+        if (CurrentSimaiFile == null) return;
+        _ = PlayRecord(Settings, MaidataDir);
+    }
+
+    public async Task PlayRecord(MajSetting settings, string maidataDir)
     {
         if (!await CheckPlayerConnectionAndReconnect(true))
         {
             return;
         }
 
-        switch (_playerConnection.State)
+        _playStartTime = TrackTime;
+        if (_updateDirty) await PushUpdateAsync(force: true);
+        await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
+        await _playerConnection.PlayAsync(PlaybackMode.Record, _playStartTime, PlaybackSpeed, maidataDir);
+        _isLastPlayIncludeOp = false;
+    }
+
+    [RelayCommand]
+    public void PlayIncludeOp()
+    {
+        if (CurrentSimaiFile == null) return;
+        _ = PlayIncludeOp(Settings);
+    }
+
+    public async Task PlayIncludeOp(MajSetting settings)
+    {
+        if (!await CheckPlayerConnectionAndReconnect(true))
         {
-            case ViewStatus.Playing:
-                await _playerConnection.PauseAsync();
-                return;
+            return;
         }
         _playStartTime = TrackTime;
         if (_updateDirty) await PushUpdateAsync(force: true);
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-        await _playerConnection.PlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed);
-        _isLastPlayIncludeOp = false;
+        await _playerConnection.PlayAsync(PlaybackMode.IncludeOp, _playStartTime, PlaybackSpeed);
+        _isLastPlayIncludeOp = true;
     }
 
-    public async void Pause()
+    [RelayCommand]
+    public void PlayStop()
     {
-        if (!await CheckPlayerConnectionAndReconnect(true))
-        {
-            return;
-        }
-
-        switch (_playerConnection.State)
-        {
-            case ViewStatus.Playing:
-                await _playerConnection.PauseAsync();
-                return;
-            case ViewStatus.Paused:
-                return;
-        }
-    }
-
-    public async void Stop(bool toStart = true)
-    {
-        try
-        {
-            _isStopping = true;
-            _isBackToStartOnPlayStop = toStart;
-
-            if (!await CheckPlayerConnectionAndReconnect())
-            {
-                if (toStart)
-                    TrackTime = _playStartTime;
-                return;
-            }
-
-            await _playerConnection.StopAsync();
-        }
-        finally
-        {
-            _isStopping = false;
-        }
+        if (CurrentSimaiFile == null) return;
+        _ = PlayStop(Settings);
     }
 
     public async Task PlayStop(MajSetting settings)
@@ -349,33 +349,76 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         _isLastPlayIncludeOp = false;
     }
 
-    public async Task PlayIncludeOp(MajSetting settings)
+    [RelayCommand]
+    public void PlayPause()
     {
-        if (!await CheckPlayerConnectionAndReconnect(true))
-        {
-            return;
-        }
-        _playStartTime = TrackTime;
-        if (_updateDirty) await PushUpdateAsync(force: true);
-        await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-        await _playerConnection.PlayAsync(PlaybackMode.IncludeOp, _playStartTime, PlaybackSpeed);
-        _isLastPlayIncludeOp = true;
+        if (CurrentSimaiFile == null) return;
+        _ = PlayPause(Settings);
     }
 
-    public async Task PlayRecord(MajSetting settings, string maidataDir)
+    public async Task PlayPause(MajSetting settings)
     {
         if (!await CheckPlayerConnectionAndReconnect(true))
         {
             return;
         }
 
+        switch (_playerConnection.State)
+        {
+            case ViewStatus.Playing:
+                await _playerConnection.PauseAsync();
+                return;
+        }
         _playStartTime = TrackTime;
         if (_updateDirty) await PushUpdateAsync(force: true);
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
-        await _playerConnection.PlayAsync(PlaybackMode.Record, _playStartTime, PlaybackSpeed, maidataDir);
+        await _playerConnection.PlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed);
         _isLastPlayIncludeOp = false;
     }
 
+    [RelayCommand]
+    public void Stop() => Stop(true);
+
+    public async void Stop(bool toStart = true)
+    {
+        try
+        {
+            _isStopping = true;
+            _isBackToStartOnPlayStop = toStart;
+
+            if (!await CheckPlayerConnectionAndReconnect())
+            {
+                if (toStart)
+                    TrackTime = _playStartTime;
+                return;
+            }
+
+            await _playerConnection.StopAsync();
+        }
+        finally
+        {
+            _isStopping = false;
+        }
+    }
+
+    public async void Pause()
+    {
+        if (!await CheckPlayerConnectionAndReconnect(true))
+        {
+            return;
+        }
+
+        switch (_playerConnection.State)
+        {
+            case ViewStatus.Playing:
+                await _playerConnection.PauseAsync();
+                return;
+            case ViewStatus.Paused:
+                return;
+        }
+    }
+
+    //------player events
 
     private async void OnPlayStarted(object sender, MajWsResponseType e)
     {
@@ -438,7 +481,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
 
     private async void OnLoadRequired(object? sender, EventArgs e)
     {
-        await EditorLoad(_getMaidataDir());
+        await EditorLoad(MaidataDir);
     }
 
     private void OnStopRequired(object? sender, EventArgs e)
@@ -456,6 +499,8 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
     {
         Dispatcher.UIThread.Post(() => CurrentViewState = e);
     }
+
+    //------playback tracking
 
     private async Task TrackPlaybackAsync(CancellationToken cancellationToken)
     {
@@ -485,12 +530,12 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
 
     private Point? GetFollowCursorPoint(double trackTime)
     {
-        var chart = _doc.CurrentChartData;
+        var chart = CurrentChartData;
         var timings = chart.CommaTimings;
         if (timings.Length == 0)
             return null;
 
-        var chartTime = trackTime - _doc.Offset;
+        var chartTime = trackTime - Offset;
         if (!ReferenceEquals(chart, _followChart) ||
             chartTime < _lastFollowChartTime ||
             chartTime - _lastFollowChartTime > 0.5 ||
@@ -562,7 +607,7 @@ public partial class PlaybackModel : ViewModelBase, IAsyncDisposable
         return result;
     }
 
-    public async ValueTask DisposeAsync()
+    private async ValueTask DisposePlaybackAsync()
     {
         if (_disposed)
             return;

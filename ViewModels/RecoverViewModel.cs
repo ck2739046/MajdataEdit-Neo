@@ -1,6 +1,5 @@
 using MajdataEdit_Neo.Assets.Langs;
 using MajdataEdit_Neo.Modules.AutoSave;
-using MajdataEdit_Neo.ViewModels.SubModels;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,7 +23,7 @@ public sealed partial class RecoverViewModel : ViewModelBase
         "ORIGINAL"
     ];
 
-    private readonly AutoSaveModel _autoSave;
+    private readonly MainWindowViewModel _mainWindow;
     private RecoverAutoSaveItem? _selectedAutoSave;
     private string _content = string.Empty;
     private IReadOnlyList<RecoverDifficultyItem> _difficulties = [];
@@ -64,25 +63,25 @@ public sealed partial class RecoverViewModel : ViewModelBase
     public string? RecoveredMaidataPath => SelectedAutoSave?.MaidataPath;
 
     private RecoverViewModel(
-        AutoSaveModel autoSave,
+        MainWindowViewModel mainWindow,
         IReadOnlyList<RecoverAutoSaveItem> autoSaves)
     {
-        _autoSave = autoSave;
+        _mainWindow = mainWindow;
         AutoSaves = autoSaves;
         SelectedAutoSave = autoSaves.FirstOrDefault();
     }
 
     public static async Task<RecoverViewModel> CreateAsync(
-        AutoSaveModel autoSave,
+        MainWindowViewModel mainWindow,
         string? maidataDirectory)
     {
         var candidates = new List<(AutoSaveFileInfo File, RecoverAutoSaveSource Source)>();
-        candidates.AddRange(autoSave.GetGlobalAutoSaves()
+        candidates.AddRange(mainWindow.GetGlobalAutoSaves()
             .Select(file => (file, RecoverAutoSaveSource.Global)));
 
         if (!string.IsNullOrWhiteSpace(maidataDirectory))
         {
-            candidates.AddRange(autoSave.GetLocalAutoSaves()
+            candidates.AddRange(mainWindow.GetLocalAutoSaves()
                 .Select(file => (file, RecoverAutoSaveSource.Local)));
         }
 
@@ -109,13 +108,13 @@ public sealed partial class RecoverViewModel : ViewModelBase
             }
         }
 
-        return new RecoverViewModel(autoSave, autoSaves);
+        return new RecoverViewModel(mainWindow, autoSaves);
     }
 
     public bool Recover()
     {
         return SelectedAutoSave is not null &&
-               _autoSave.RecoverFile(SelectedAutoSave.FileInfo);
+               _mainWindow.RecoverFile(SelectedAutoSave.FileInfo);
     }
 
     private static RecoverAutoSaveItem CreateAutoSaveItem(

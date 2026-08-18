@@ -1,19 +1,21 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MajdataEdit_Neo.Types.MajSetting;
 using Newtonsoft.Json;
 using System;
 using System.Globalization;
 using System.IO;
-using Avalonia.Platform;
 using static MajdataEdit_Neo.Base.MajEnv;
-using Types;
 
-namespace MajdataEdit_Neo.ViewModels.SubModels;
+namespace MajdataEdit_Neo.ViewModels;
 
-public partial class SettingsModel : ViewModelBase, IDisposable
+/// <summary>
+/// 设置加载/保存/应用
+/// </summary>
+public partial class MainWindowViewModel
 {
     //reload setting required
     [ObservableProperty] public partial MajSetting Settings { get; set; }
@@ -22,19 +24,13 @@ public partial class SettingsModel : ViewModelBase, IDisposable
     [ObservableProperty] public partial Bitmap BackgroundImage { get; set; }
     [ObservableProperty] public partial bool WordWrap { get; set; }
 
-
     private readonly WriteableBitmap _emptyBitmap =
         new(new PixelSize(1, 1), new Vector(96, 96), PixelFormat.Bgra8888);
     private string? _loadedBackgroundPath;
 
-    public SettingsModel()
+    private bool InitializeSettings()
     {
         BackgroundImage = _emptyBitmap;
-    }
-
-
-    public bool Initialize()
-    {
         if (!File.Exists(SettingsFile))
         {
             CreateSettings();
@@ -77,6 +73,8 @@ public partial class SettingsModel : ViewModelBase, IDisposable
                 previous.Dispose();
         }
         WordWrap = Settings.EditSetting.WordWrap;
+
+        _ = _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
     }
 
     public void SetWindowLastState(Window window)
@@ -96,7 +94,7 @@ public partial class SettingsModel : ViewModelBase, IDisposable
         File.WriteAllText(SettingsFile, JsonConvert.SerializeObject(Settings, Formatting.Indented));
     }
 
-    public void Dispose()
+    private void DisposeSettings()
     {
         if (!ReferenceEquals(BackgroundImage, _emptyBitmap))
             BackgroundImage.Dispose();
