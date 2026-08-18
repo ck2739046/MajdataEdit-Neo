@@ -55,7 +55,7 @@ public partial class MainWindowViewModel
         SaveSettings();
     }
 
-    public void ReloadSettings()
+    public void ReloadSettings(bool update = false)
     {
         I18N.Ins.Culture = new CultureInfo(Settings.EditSetting.Language);
         FontSize = Settings.EditSetting.FontSize;
@@ -75,6 +75,8 @@ public partial class MainWindowViewModel
         WordWrap = Settings.EditSetting.WordWrap;
 
         _ = _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
+        if (update)
+            _ = _playerConnection.UpdateAsync(CurrentSimaiFile!, CurrentChartData, SelectedDifficulty);
     }
 
     public void SetWindowLastState(Window window)

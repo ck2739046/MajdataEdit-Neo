@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using MajdataEdit_Neo.Base;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types;
@@ -222,8 +223,8 @@ public partial class MainWindowViewModel
         {
             if (noteT.RawTextPosition >= rawPosition) break;
             foreach (var note in noteT.Notes)
-                if (note.Type is SimaiNoteType.Slide) CurrentCombo++;
-            currentCombo += noteT.Notes.Length;
+                if (note.Type is SimaiNoteType.Slide && !note.IsSlideNoHead) currentCombo += 2;
+                else currentCombo++;
         }
         CurrentCombo = currentCombo;
 
@@ -444,6 +445,8 @@ public partial class MainWindowViewModel
             trackingTask = TrackPlaybackAsync(cancellationToken);
             _playbackTrackingTask = trackingTask;
         }
+
+        WeakReferenceMessenger.Default.Send(new FocusEditorMsg());
 
         try
         {

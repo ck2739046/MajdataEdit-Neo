@@ -12,6 +12,7 @@ using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using MajdataEdit_Neo.Assets.Langs;
 using MajdataEdit_Neo.Base;
 using MajdataEdit_Neo.Controls;
@@ -36,8 +37,6 @@ using System.Threading.Tasks;
 using TextMateSharp.Grammars;
 using TextMateSharp.Registry;
 using static MajdataEdit_Neo.Base.MajEnv;
-using static MajdataEdit_Neo.Utils.FFmpegChecker;
-using MsBoxIcon = MsBox.Avalonia.Enums.Icon;
 
 namespace MajdataEdit_Neo.Views;
 
@@ -139,6 +138,10 @@ public partial class MainWindow : Window
         //setup debounce timer
         _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(114.514) };
         _debounceTimer.Tick += _debounceTimer_Tick;
+
+        WeakReferenceMessenger.Default.Register<FocusEditorMsg>(this, (_, _) =>
+            Dispatcher.UIThread.Post(() => { textEditor.TextArea.Focus(); })
+        );
     }
 
     private void ConfigureKeyBindings()
@@ -703,13 +706,4 @@ public partial class MainWindow : Window
         }
     }
 }
-
-
-
-
-
-
-
-
-
 
