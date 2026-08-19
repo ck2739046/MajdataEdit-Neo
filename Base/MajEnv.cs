@@ -1,11 +1,13 @@
 using Semver;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace MajdataEdit_Neo.Base;
 
-public static class MajEnv
+public static partial class MajEnv
 {
     private const string ViewCompanyName = "bbben";
     private const string ViewProductName = "MajdataViewX";
@@ -107,6 +109,42 @@ public static class MajEnv
     public static string CrashFile => GetPath("crash.log");
     public static string DatabaseFile => GetPath("editor.db");
     public static string CompletionFile => GetPath("completions.json");
+
+    public static void ActivateProcessWindow(Process? process)
+    {
+        if (process == null || process.HasExited) return;
+
+        if (OperatingSystem.IsWindows())
+        {
+            IntPtr hWnd = process.MainWindowHandle;
+            if (hWnd != IntPtr.Zero)
+            {
+                // 9 = SW_RESTORE（如果被最小化，先还原）
+                ShowWindow(hWnd, 9);
+                SetForegroundWindow(hWnd);
+            }
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            // 滚
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            string script = $"tell application \"{process.ProcessName}\" to activate";
+            Process.Start("osascript", $"-e \"{script}\"");
+        }
+    }
+
+    //尽量少使用预编译，不指望到了每个平台再来纠正编译错误，只有必要场合/性能热点使用
+#if WINDOWS
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetForegroundWindow(IntPtr hWnd);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
+#endif
 
     public static readonly string MAJDATA_VERSION_STRING = $"v{Assembly.GetExecutingAssembly().GetName().Version!.ToString(3)}";
     public static readonly SemVersion MAJDATA_VERSION = SemVersion.Parse(MAJDATA_VERSION_STRING, SemVersionStyles.Any);

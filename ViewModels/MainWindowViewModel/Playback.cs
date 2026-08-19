@@ -3,15 +3,20 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using MajdataEdit_Neo.Assets.Langs;
 using MajdataEdit_Neo.Base;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.MajWs;
+using MajdataEdit_Neo.Utils;
 using MajSimai;
+using MsBox.Avalonia.Enums;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -449,6 +454,7 @@ public partial class MainWindowViewModel
         }
 
         WeakReferenceMessenger.Default.Send(new FocusEditorMsg());
+        MajEnv.ActivateProcessWindow(Process.GetProcessesByName("MajdataViewX").FirstOrDefault());
 
         try
         {
