@@ -222,6 +222,7 @@ public partial class MainWindowViewModel
             simaiFile.Charts[difficulty] = SimaiChart.Empty;
             if (ReferenceEquals(CurrentSimaiFile, simaiFile) && SelectedDifficulty == difficulty)
                 CurrentChartData = SimaiChart.Empty;
+            FumenContentChanged?.Invoke(this, EventArgs.Empty);
             return;
         }
 
