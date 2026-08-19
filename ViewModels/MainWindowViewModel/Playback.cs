@@ -14,6 +14,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace MajdataEdit_Neo.ViewModels;
 
@@ -231,6 +232,7 @@ public partial class MainWindowViewModel
         if (setTrackTime)
         {
             TrackTime = CaretTime + Offset;
+            mmvAudioTime.Write(0, (float)TrackTime);
         }
     }
 
