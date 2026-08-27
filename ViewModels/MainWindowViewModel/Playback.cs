@@ -282,7 +282,7 @@ public partial class MainWindowViewModel
         }
 
         _updateDirty = false;
-        await _playerConnection.UpdateAsync(simai, CurrentChartData, SelectedDifficulty);
+        await _playerConnection.UpdateAsync(simai, CurrentChartData, SelectedDifficulty, PvOffset);
     }
 
     //------commands

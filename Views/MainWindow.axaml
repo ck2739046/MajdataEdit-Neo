@@ -128,8 +128,13 @@
 				</DockPanel>
 
 				<DockPanel Margin="0 8 0 0">
-					<Label  VerticalAlignment="Center" Margin="0 10 0 0" Content="{local:I18N Gui_Offset}"/>
+					<Label  VerticalAlignment="Center" Margin="0 10 0 0" Content="Note Offset"/>
 					<NumericUpDown Name="First" Value="{Binding Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
+				</DockPanel>
+
+				<DockPanel Margin="0 8 0 0">
+					<Label VerticalAlignment="Center" Content="PV Offset"/>
+					<NumericUpDown Name="PvOffset" Value="{Binding PvOffset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
 				</DockPanel>
 
 				<DockPanel Margin="0 20 0 0" LastChildFill="True">

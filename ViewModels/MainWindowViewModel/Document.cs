@@ -29,7 +29,15 @@ public partial class MainWindowViewModel
     [NotifyPropertyChangedFor(nameof(CurrentFumen))]
     public partial SimaiFile? CurrentSimaiFile { get; set; } = null;
 
-    partial void OnCurrentSimaiFileChanged(SimaiFile? value) => RefreshFumenDocument();
+    partial void OnCurrentSimaiFileChanged(SimaiFile? value)
+    {
+        if (_pvOffset != 0)
+        {
+            _pvOffset = 0;
+            OnPropertyChanged(nameof(PvOffset));
+        }
+        RefreshFumenDocument();
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Level))]
@@ -65,6 +73,15 @@ public partial class MainWindowViewModel
     internal readonly Lock _fumenContentChangedSyncLock = new();
     readonly string[] _level = new string[7];
     float _offset = 0;
+
+    [ObservableProperty]
+    private float _pvOffset;
+
+    partial void OnPvOffsetChanged(float value)
+    {
+        _updateDirty = true;
+        _ = PushUpdateAsync();
+    }
 
     public string OriginFumen { get; set; } = string.Empty;
 
