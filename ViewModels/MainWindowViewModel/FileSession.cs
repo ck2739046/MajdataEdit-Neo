@@ -41,7 +41,7 @@ public partial class MainWindowViewModel
             if (e.PropertyName == nameof(CurrentSimaiFile))
             {
                 NotifyWindowTitleChanged();
-                Stop(false);
+                _ = StopAsync(false);
                 UpdateFumenContextChanged();
                 IsFileChanged = !IsSaved;
                 _ = OnSimaiFileChangedAsync(CurrentSimaiFile);

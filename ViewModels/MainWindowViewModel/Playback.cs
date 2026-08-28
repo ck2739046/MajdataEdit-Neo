@@ -62,7 +62,6 @@ public partial class MainWindowViewModel
     internal readonly PlayerConnection _playerConnection = new();
     internal double _playStartTime = 0d;
     internal bool _isBackToStartOnPlayStop = false;
-    internal bool _isStopping = false;
     internal bool _isLastPlayIncludeOp = false;
     private bool _updateDirty; // 播放中收到的文本变更标记，停播/播放前补发
     private readonly Lock _playbackTrackingLock = new();
@@ -83,7 +82,6 @@ public partial class MainWindowViewModel
         _playerConnection.OnPlayStarted += OnPlayStarted;
         _playerConnection.OnPlayStopped += OnPlayStopped;
         _playerConnection.OnLoadRequired += OnLoadRequired;
-        _playerConnection.OnStopRequired += OnStopRequired;
         _playerConnection.OnDisconnected += OnDisconnected;
         _playerConnection.OnViewStateChanged += OnViewStateChanged;
 
@@ -385,28 +383,20 @@ public partial class MainWindowViewModel
     }
 
     [RelayCommand]
-    public void Stop() => Stop(true);
+    public void Stop() => _ = StopAsync(true);
 
-    public async void Stop(bool toStart = true)
+    public async Task StopAsync(bool toStart = true)
     {
-        try
-        {
-            _isStopping = true;
-            _isBackToStartOnPlayStop = toStart;
+        _isBackToStartOnPlayStop = toStart;
 
-            if (!await CheckPlayerConnectionAndReconnect())
-            {
-                if (toStart)
-                    TrackTime = _playStartTime;
-                return;
-            }
-
-            await _playerConnection.StopAsync();
-        }
-        finally
+        if (!await CheckPlayerConnectionAndReconnect())
         {
-            _isStopping = false;
+            if (toStart)
+                TrackTime = _playStartTime;
+            return;
         }
+
+        await _playerConnection.StopAsync();
     }
 
     public async void Pause()
@@ -493,11 +483,6 @@ public partial class MainWindowViewModel
     private async void OnLoadRequired(object? sender, EventArgs e)
     {
         await EditorLoad(MaidataDir);
-    }
-
-    private void OnStopRequired(object? sender, EventArgs e)
-    {
-        Stop();
     }
 
     private void OnDisconnected(object? sender, EventArgs e)
@@ -635,7 +620,6 @@ public partial class MainWindowViewModel
         _playerConnection.OnPlayStarted -= OnPlayStarted;
         _playerConnection.OnPlayStopped -= OnPlayStopped;
         _playerConnection.OnLoadRequired -= OnLoadRequired;
-        _playerConnection.OnStopRequired -= OnStopRequired;
         _playerConnection.OnDisconnected -= OnDisconnected;
         _playerConnection.OnViewStateChanged -= OnViewStateChanged;
         try

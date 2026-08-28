@@ -50,7 +50,6 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
     public event EventHandler<ViewStatus>? OnViewStateChanged;
 
     public event EventHandler? OnLoadRequired;
-    public event EventHandler? OnStopRequired;
     public event EventHandler? OnLoadFinished;
     public event EventHandler? OnDisconnected;
 
@@ -58,6 +57,7 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
     readonly object _connectionSync = new();
     readonly CancellationTokenSource _lifetimeCts = new();
     readonly SemaphoreSlim _connectGate = new(1, 1);
+    readonly SemaphoreSlim _sendGate = new(1, 1);
     readonly SemaphoreSlim _messageSignal = new(0);
     readonly SemaphoreSlim _stateChangedSignal = new(0, 1);
     readonly Task _listenerTask;
@@ -182,18 +182,18 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
                                        string coverPath,
                                        string mvPath)
     {
-        if (State == ViewStatus.Error) await StopAsync();
+        if (State == ViewStatus.Error)
+            await StopAsync();
 
-        if (State != ViewStatus.Loaded)
+        // 等待上一段播放完全停止后再加载，避免 Stop 与 Load 竞态
+        while (State is ViewStatus.Playing or ViewStatus.Paused or ViewStatus.Busy)
         {
-            if (State is ViewStatus.Paused or ViewStatus.Playing)
-            {
-                OnStopRequired?.Invoke(this, new EventArgs());
-            }
+            if (State is ViewStatus.Playing or ViewStatus.Paused)
+                await StopAsync();
 
-            //if busy, wait
-            await WaitUntilNotBusyAsync();
+            await WaitUntilNotActiveAsync();
         }
+
         var req = new MajWsLoadRequest()
         {
             TrackPath = trackPath,
@@ -273,18 +273,35 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
     }
     async Task SendAsync(MajWsRequest req)
     {
-        var client = _client;
-        if (client is null || !client.IsAlive)
-            throw new PlayerNotConnectedException();
-
         var bytes = MemoryPackSerializer.Serialize<MajWsRequest>(req);
-        await Task.Run(() => client.Send(bytes));
+
+        await _sendGate.WaitAsync(_lifetimeCts.Token);
+        try
+        {
+            var client = _client;
+            if (client is null || !client.IsAlive)
+                throw new PlayerNotConnectedException();
+
+            await Task.Run(() => client.Send(bytes), _lifetimeCts.Token);
+        }
+        finally
+        {
+            _sendGate.Release();
+        }
         Debug.WriteLine($"Player request sent: {req.GetType().Name}");
     }
     private async Task WaitUntilNotBusyAsync()
     {
         while (State == ViewStatus.Busy)
             await _stateChangedSignal.WaitAsync(_lifetimeCts.Token);
+    }
+
+    private async Task WaitUntilNotActiveAsync()
+    {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+        while (State is ViewStatus.Playing or ViewStatus.Paused or ViewStatus.Busy)
+            await _stateChangedSignal.WaitAsync(timeoutCts.Token);
     }
 
     async Task StartToListenWebSocket(CancellationToken cancellationToken)
