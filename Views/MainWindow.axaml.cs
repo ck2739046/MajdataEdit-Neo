@@ -3,12 +3,14 @@ using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
+using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
 using CommunityToolkit.Mvvm.Input;
@@ -66,6 +68,8 @@ public partial class MainWindow : Window
 
 
     string? _currentTooltipMessage;
+    LineNumberMargin? _lineNumberMargin;
+    PointerHoverLogic? _lineNumberHoverLogic;
     private readonly HashSet<Key> _pressedKeys = new();
     bool IsCtrlKeyDown => _pressedKeys.Contains(Key.LeftCtrl) || _pressedKeys.Contains(Key.RightCtrl);
 
@@ -111,6 +115,17 @@ public partial class MainWindow : Window
         markerService = new TextMarkerService(textEditor.Document, textEditor.TextArea.TextView);
         textEditor.TextArea.TextView.BackgroundRenderers.Add(markerService);
         textEditor.PointerMoved += TextEditor_PointerMoved;
+        var lineNumberMargin = textEditor.TextArea.LeftMargins.OfType<LineNumberMargin>().FirstOrDefault();
+        if (lineNumberMargin != null)
+        {
+            _lineNumberMargin = lineNumberMargin;
+            // 禁用 Tooltip 自动服务，改由 PointerHoverLogic 手动控制，避免自动服务用旧内容提前打开
+            ToolTip.SetServiceEnabled(lineNumberMargin, false);
+            _lineNumberHoverLogic = new PointerHoverLogic(lineNumberMargin);
+            _lineNumberHoverLogic.PointerHover += LineNumberMargin_PointerHover;
+            _lineNumberHoverLogic.PointerHoverStopped += LineNumberMargin_PointerHoverStopped;
+        }
+        textEditor.TextArea.TextView.ScrollOffsetChanged += TextView_ScrollOffsetChanged;
         InputMethod.SetIsInputMethodEnabled(textEditor.TextArea, false);
         ConfigureKeyBindings();
         //setup visualizer
@@ -511,6 +526,7 @@ public partial class MainWindow : Window
 
     private void TextEditor_TextChanged(object? sender, EventArgs e)
     {
+        CloseLineNumberToolTip();
         _analysisCts?.Cancel();
         _isTextChangedBeforeCaretMoving = true;
         _debounceTimer.Stop();
@@ -605,6 +621,16 @@ public partial class MainWindow : Window
     {
         var textView = textEditor.TextArea.TextView;
         var pos = e.GetPosition(textView);
+        // 行号区域由行号悬停 Tooltip 负责，避免诊断 Tooltip 在此打开并相互遮挡
+        if (pos.X < 0)
+        {
+            if (_currentTooltipMessage != null)
+            {
+                _currentTooltipMessage = null;
+                ToolTip.SetIsOpen(textEditor.TextArea, false);
+            }
+            return;
+        }
         var visualPos = textView.GetPosition(pos + textView.ScrollOffset);
 
         string? newMessage = null;
@@ -628,6 +654,50 @@ public partial class MainWindow : Window
                 ToolTip.SetIsOpen(textEditor.TextArea, false);
             }
         }
+    }
+
+    private void LineNumberMargin_PointerHover(object? sender, PointerEventArgs e)
+    {
+        if (_lineNumberMargin == null)
+            return;
+
+        var textView = textEditor.TextArea.TextView;
+        var point = e.GetPosition(_lineNumberMargin);
+        var visualLine = textView.GetVisualLineFromVisualTop(point.Y + textView.VerticalOffset);
+        if (visualLine == null)
+        {
+            CloseLineNumberToolTip();
+            return;
+        }
+
+        var measure = BpmMeasureCalculator.ComputeMeasureAtOffset(
+            textEditor.Document.Text,
+            visualLine.FirstDocumentLine.Offset);
+        var text = BpmMeasureCalculator.FormatMeasure(measure);
+        // 每次使用全新内容控件，强制 Popup 重新测量，避免复用实例时的宽度缓存导致尾部被裁掉
+        ToolTip.SetTip(_lineNumberMargin, new TextBlock { Text = text, TextWrapping = TextWrapping.NoWrap });
+        ToolTip.SetPlacement(_lineNumberMargin, PlacementMode.Pointer);
+        ToolTip.SetHorizontalOffset(_lineNumberMargin, 0);
+        ToolTip.SetVerticalOffset(_lineNumberMargin, 16);
+        ToolTip.SetIsOpen(_lineNumberMargin, true);
+    }
+
+    private void LineNumberMargin_PointerHoverStopped(object? sender, PointerEventArgs e)
+    {
+        CloseLineNumberToolTip();
+    }
+
+    private void TextView_ScrollOffsetChanged(object? sender, EventArgs e)
+    {
+        CloseLineNumberToolTip();
+    }
+
+    private void CloseLineNumberToolTip()
+    {
+        if (_lineNumberMargin == null)
+            return;
+
+        ToolTip.SetIsOpen(_lineNumberMargin, false);
     }
 
     private void TextEditor_TextArea_TextEntered(object? sender, TextInputEventArgs e)
@@ -695,6 +765,15 @@ public partial class MainWindow : Window
 
     private void DetachEventHandlers()
     {
+        CloseLineNumberToolTip();
+        textEditor.TextArea.TextView.ScrollOffsetChanged -= TextView_ScrollOffsetChanged;
+        if (_lineNumberHoverLogic != null)
+        {
+            _lineNumberHoverLogic.PointerHover -= LineNumberMargin_PointerHover;
+            _lineNumberHoverLogic.PointerHoverStopped -= LineNumberMargin_PointerHoverStopped;
+            _lineNumberHoverLogic.Dispose();
+            _lineNumberHoverLogic = null;
+        }
         _debounceTimer.Stop();
         _analysisCts?.Cancel();
         viewModel.CancelCurrentFFmpeg();
