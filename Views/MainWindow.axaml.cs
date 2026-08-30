@@ -330,7 +330,7 @@ public partial class MainWindow : Window
 
         if (fontSizeDelta == 0) return;
 
-        viewModel.ChangeFontSize(fontSizeDelta);
+        viewModel.ChangeFontSizeCommand.Execute(fontSizeDelta);
         e.Handled = true;
     }
 

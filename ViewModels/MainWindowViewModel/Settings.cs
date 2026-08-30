@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MajdataEdit_Neo.Types.MajSetting;
 using Newtonsoft.Json;
 using System;
@@ -80,6 +81,7 @@ public partial class MainWindowViewModel
             _ = _playerConnection.UpdateAsync(CurrentSimaiFile!, CurrentChartData, SelectedDifficulty);
     }
 
+    [RelayCommand]
     public void ChangeFontSize(int delta)
     {
         var fontSize = Math.Clamp(Settings.EditSetting.FontSize + delta, 1f, 100f);
