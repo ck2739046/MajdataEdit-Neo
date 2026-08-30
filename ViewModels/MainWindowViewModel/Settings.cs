@@ -58,6 +58,7 @@ public partial class MainWindowViewModel
     public void ReloadSettings(bool update = false)
     {
         I18N.Ins.Culture = new CultureInfo(Settings.EditSetting.Language);
+        Settings.EditSetting.FontSize = Math.Clamp(Settings.EditSetting.FontSize, 1f, 100f);
         FontSize = Settings.EditSetting.FontSize;
         IsAnimated = Settings.EditSetting.WaveAnimated;
         var bgPath = GetPath(Settings.EditSetting.BackgroundImagePath);
@@ -77,6 +78,16 @@ public partial class MainWindowViewModel
         _ = _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
         if (update)
             _ = _playerConnection.UpdateAsync(CurrentSimaiFile!, CurrentChartData, SelectedDifficulty);
+    }
+
+    public void ChangeFontSize(int delta)
+    {
+        var fontSize = Math.Clamp(Settings.EditSetting.FontSize + delta, 1f, 100f);
+        if (fontSize == Settings.EditSetting.FontSize) return;
+
+        Settings.EditSetting.FontSize = fontSize;
+        FontSize = fontSize;
+        SaveSettings();
     }
 
     public void SetWindowLastState(Window window)
