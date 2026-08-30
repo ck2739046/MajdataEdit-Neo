@@ -7,9 +7,12 @@ using MajdataEdit_Neo.Utils;
 using MajdataEdit_Neo.ViewModels;
 using MsBox.Avalonia.Enums;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using TextMateSharp.Grammars;
+using TextMateSharp.Internal.Themes;
+using TextMateSharp.Themes;
 
 namespace MajdataEdit_Neo.Views;
 
@@ -27,7 +30,47 @@ public partial class RecoverWindow : Window
         var installation = TextMate.InstallTextMate(_editor, registryOptions);
         installation.SetGrammarFile(
             Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "simai.tmLanguage.json"));
+        installation.SetTheme(CreateClassicTheme());
     }
+
+    // Extends the default DarkPlus theme in place with the classic MajdataEdit
+    // colors. Scopes the old highlighter did not cover keep DarkPlus defaults.
+    private static IRawTheme CreateClassicTheme() => new ThemeRaw
+    {
+        ["name"] = "MajdataEdit Classic",
+        ["include"] = "dark_plus.json",
+        ["tokenColors"] = new List<IRawThemeSetting>
+        {
+            Rule("comment.line.double-pipe.simai", "#6A9955"),
+            Rule("meta.bpm.simai", "#FFF036"),
+            Rule("constant.numeric.bpm-value.simai", "#FFF036"),
+            Rule("punctuation.definition.bpm.begin.simai", "#FFFFFF"),
+            Rule("punctuation.definition.bpm.end.simai", "#FFFFFF"),
+            Rule("meta.measure.simai", "#DA70D6"),
+            Rule("support.function.measure-value.simai", "#DA70D6"),
+            Rule("punctuation.definition.measure.begin.simai", "#FFFFFF"),
+            Rule("punctuation.definition.measure.end.simai", "#FFFFFF"),
+            Rule("entity.name.variable.tap.simai", "#9CDCFE"),
+            Rule("entity.name.variable.tap-double.simai", "#9CDCFE"),
+            Rule("entity.name.class.hold.simai", "#4EC9B0"),
+            Rule("entity.name.type.touch.simai", "#B5CEA8"),
+            Rule("entity.name.type.touch-hold.simai", "#B5CEA8"),
+            Rule("entity.name.function.slidecode.simai", "#DCDCAA"),
+            Rule("entity.name.function.slidecode-star.simai", "#DCDCAA"),
+            Rule("entity.name.function.slidecode-break.simai", "#DCDCAA"),
+            Rule("entity.name.function.slide-star.simai", "#DCDCAA"),
+            Rule("entity.name.function.slide.simai", "#DCDCAA"),
+            Rule("keyword.operator.each.simai", "#FFFFFF"),
+            Rule("keyword.operator.pseudo-each.simai", "#D88164"),
+            Rule("keyword.operator.modifier.simai", "#D88164"),
+        }
+    };
+
+    private static IRawThemeSetting Rule(string scope, string foreground) => new ThemeRaw
+    {
+        ["scope"] = scope,
+        ["settings"] = new ThemeRaw { ["foreground"] = foreground }
+    };
 
     public RecoverWindow(RecoverViewModel viewModel) : this()
     {

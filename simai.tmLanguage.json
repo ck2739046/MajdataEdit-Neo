@@ -98,52 +98,96 @@
     "slide-code": {
       "comment": "SlideCode pattern like 5Q9A1P98CQ49K5, 1K2, 7K4 - command letters A/B/C/P/Q with digits 0-9, ending with K+digit",
       "name": "entity.name.function.slidecode.simai",
-      "match": "[1-8]([ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bxmc]*[!?@]?[bxmc]*"
+      "match": "([1-8](?:[ABCPQ][0-9]*)*K[1-8])([bxmc]*[!?@]?[bxmc]*)(?:\\[[^\\]]*\\])?([bxmc]*[!?@]?[bxmc]*)",
+      "captures": {
+        "2": { "name": "keyword.operator.modifier.simai" },
+        "3": { "name": "keyword.operator.modifier.simai" }
+      }
     },
     "slide-code-star": {
       "comment": "SlideCode with star connector like *P7K6, *Q1K6, *P77CQ3K2",
       "name": "entity.name.function.slidecode-star.simai",
-      "match": "\\*(?:[ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bxmc]*[!?@]?[bxmc]*"
+      "match": "(\\*(?:[ABCPQ][0-9]*)*K[1-8])([bxmc]*[!?@]?[bxmc]*)(?:\\[[^\\]]*\\])?([bxmc]*[!?@]?[bxmc]*)",
+      "captures": {
+        "2": { "name": "keyword.operator.modifier.simai" },
+        "3": { "name": "keyword.operator.modifier.simai" }
+      }
     },
     "slide-code-break": {
       "comment": "SlideCode with break flag like bP46824K3, bQ1K6",
       "name": "entity.name.function.slidecode-break.simai",
-      "match": "b(?:[ABCPQ][0-9]*)*K[1-8](\\[[^\\]]*\\])?[bxmc]*[!?@]?[bxmc]*"
+      "match": "(b(?:[ABCPQ][0-9]*)*K[1-8])([bxmc]*[!?@]?[bxmc]*)(?:\\[[^\\]]*\\])?([bxmc]*[!?@]?[bxmc]*)",
+      "captures": {
+        "2": { "name": "keyword.operator.modifier.simai" },
+        "3": { "name": "keyword.operator.modifier.simai" }
+      }
     },
     "slide-with-star": {
       "comment": "Star slide connector like *>6p1, *V53, *<2p5, *-3[0##0.01]",
       "name": "entity.name.function.slide-star.simai",
-      "match": "\\*([<>^\\-qpwszvV][qp]?[1-8*]+)+(\\[[^\\]]*\\])?[bxmc]*[!?@]?[bxmc]*"
+      "match": "(\\*(?:[<>^\\-qpwszvV][qp]?[1-8*]+)+)([bxmc]*[!?@]?[bxmc]*)(?:\\[[^\\]]*\\])?([bxmc]*[!?@]?[bxmc]*)",
+      "captures": {
+        "2": { "name": "keyword.operator.modifier.simai" },
+        "3": { "name": "keyword.operator.modifier.simai" }
+      }
     },
     "slide-complex": {
       "comment": "Complex slide patterns: 2?>4q2>4q2, 1-4[4:1], 1qq7[0##0.02]b, 7<5[0##0.01]b, 5@-6[1:1] (flags b/x/m combinable, at most one of !/?/@)",
       "name": "entity.name.function.slide.simai",
-      "match": "[1-8*][bxmc]*[!?@]?[bxmc]*([<>^\\-qpwszvV][qp]?[1-8*]+)+(\\[[^\\]]*\\])?[bxmc]*[!?@]?[bxmc]*"
+      "match": "([1-8*])([bxmc]*[!?@]?[bxmc]*)((?:[<>^\\-qpwszvV][qp]?[1-8*]+)+)([bxmc]*[!?@]?[bxmc]*)(?:\\[[^\\]]*\\])?([bxmc]*[!?@]?[bxmc]*)",
+      "captures": {
+        "2": { "name": "keyword.operator.modifier.simai" },
+        "4": { "name": "keyword.operator.modifier.simai" },
+        "5": { "name": "keyword.operator.modifier.simai" }
+      }
     },
     "touch-hold": {
       "comment": "Touch hold notes like B2bh[4:2], Cbh[4:2], E4bh, A5bh[1:3]",
       "name": "entity.name.type.touch-hold.simai",
-      "match": "[ABCDE][1-8]?[bfxmc]*h(\\[[^\\]]*\\])?[bfxmc]*"
+      "match": "([ABCDE][1-8]?)([bfxmc]*)(h)([bfxmc]*)(?:\\[[^\\]]*\\])?([bfxmc]*)",
+      "captures": {
+        "2": { "name": "keyword.operator.modifier.simai" },
+        "4": { "name": "keyword.operator.modifier.simai" },
+        "5": { "name": "keyword.operator.modifier.simai" }
+      }
     },
     "touch": {
       "comment": "Touch notes like A1, B2, Cf, E4f, E6f, B7f",
       "name": "entity.name.type.touch.simai",
-      "match": "[ABCDE][1-8]?[bfxhmc]*(\\[[^\\]]*\\])?(?=[,/`\\s<]|$)"
+      "match": "([ABCDE][1-8]?)([bfxhmc]*)(?:\\[[^\\]]*\\])?(?=[,/`\\s<]|$)",
+      "captures": {
+        "2": { "name": "keyword.operator.modifier.simai" }
+      }
     },
     "hold": {
       "comment": "Hold notes like 1h[4:4], 5bh[4:2], 4bh[4:1], 6h[8:2]",
       "name": "entity.name.class.hold.simai",
-      "match": "[1-8][1-8]?[bx!mc]*h(\\[[^\\]]*\\])?[bx!mc]*"
+      "match": "([1-8][1-8]?)([bx!mc]*)(h)([bx!mc]*)(?:\\[[^\\]]*\\])?([bx!mc]*)",
+      "captures": {
+        "2": { "name": "keyword.operator.modifier.simai" },
+        "4": { "name": "keyword.operator.modifier.simai" },
+        "5": { "name": "keyword.operator.modifier.simai" }
+      }
     },
     "tap-double": {
       "comment": "Double tap (each shorthand) like 73, 36, 12, 17b, 2$/6$",
       "name": "entity.name.variable.tap-double.simai",
-      "match": "[1-8][1-8]([bx!mc](?![ABCPQ]))*(?:\\$\\$?)?([bx!mc](?![ABCPQ]))*(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)"
+      "match": "([1-8][1-8])((?:[bx!mc](?![ABCPQ]))*)(\\$\\$?)?((?:[bx!mc](?![ABCPQ]))*)(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)",
+      "captures": {
+        "2": { "name": "keyword.operator.modifier.simai" },
+        "3": { "name": "keyword.operator.modifier.simai" },
+        "4": { "name": "keyword.operator.modifier.simai" }
+      }
     },
     "tap-single": {
       "comment": "Single tap like 1, 2b, 3x, 4!, 5bx, 2$, 3$$",
       "name": "entity.name.variable.tap.simai",
-      "match": "[1-8]([bx!mc](?![ABCPQ]))*(?:\\$\\$?)?([bx!mc](?![ABCPQ]))*(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)"
+      "match": "([1-8])((?:[bx!mc](?![ABCPQ]))*)(\\$\\$?)?((?:[bx!mc](?![ABCPQ]))*)(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)",
+      "captures": {
+        "2": { "name": "keyword.operator.modifier.simai" },
+        "3": { "name": "keyword.operator.modifier.simai" },
+        "4": { "name": "keyword.operator.modifier.simai" }
+      }
     },
     "each-separator": {
       "comment": "Each note separator /",
