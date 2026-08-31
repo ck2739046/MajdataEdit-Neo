@@ -385,6 +385,43 @@ public partial class MainWindowViewModel
     [RelayCommand]
     public void Stop() => _ = StopAsync(true);
 
+    private bool _resettingToStart;
+
+    [RelayCommand]
+    public async Task ResetToStartAndPause()
+    {
+        if (CurrentSimaiFile is null || _resettingToStart)
+            return;
+
+        _resettingToStart = true;
+        try
+        {
+            if (!await CheckPlayerConnectionAndReconnect())
+                return;
+
+            if (_playerConnection.State == ViewStatus.Busy)
+                return;
+
+            if (_playerConnection.State == ViewStatus.Playing)
+            {
+                await _playerConnection.PauseAsync();
+                if (!await _playerConnection.WaitUntilStateAsync(ViewStatus.Paused, TimeSpan.FromSeconds(5)))
+                    return;
+            }
+
+            _ = CancelPlaybackTracking();
+
+            _playStartTime = 0;
+            TrackTime = 0;
+            mmvAudioTime.Write(0, 0f);
+            ResetFollowCursorIndex();
+        }
+        finally
+        {
+            _resettingToStart = false;
+        }
+    }
+
     public async Task StopAsync(bool toStart = true)
     {
         _isBackToStartOnPlayStop = toStart;

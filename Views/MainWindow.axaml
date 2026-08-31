@@ -49,8 +49,8 @@
 			</ExperimentalAcrylicBorder.Material>
 		</ExperimentalAcrylicBorder>
 		<Grid RowDefinitions="20,100,*,60,100,20"
-			  ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
-			<Menu Grid.Row="0" Grid.ColumnSpan="4">
+			  ColumnDefinitions="5,60,60,60,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
+			<Menu Grid.Row="0" Grid.ColumnSpan="5">
 				<MenuItem Header="{local:I18N Gui_File}" >
 					<MenuItem Header="{local:I18N Gui_New}" Command="{Binding NewFileCommand}"/>
 					<MenuItem Header="{local:I18N Gui_Open}" Command="{Binding OpenFileCommand}"/>
@@ -166,16 +166,21 @@
 
 
 			<Button Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
+					Command="{Binding ResetToStartAndPauseCommand}">
+				<TextBlock Text="↺" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+			</Button>
+
+			<Button Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
 					Command="{Binding StopCommand}">
 				<PathIcon Width="13" Data="{StaticResource stop}"/>
 			</Button>
 
-			<Button Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
+			<Button Grid.Row="3" Grid.Column="3" Height="50" Width="50" Margin="5"
 					Command="{Binding PlayPauseCommand}">
 				<PathIcon Data="{StaticResource play_pause}"/>
 			</Button>
 
-			<AvaloniaEdit:TextEditor Grid.Column="3" Grid.Row="1" Grid.RowSpan="3"
+			<AvaloniaEdit:TextEditor Grid.Column="4" Grid.Row="1" Grid.RowSpan="3"
 									 Document="{Binding FumenDocument}"
 									 Name="Editor" BorderBrush="#50FFFFFF" BorderThickness="0.5"
 									 ShowLineNumbers="True" Margin="5 5 5 5" Padding="5"
@@ -191,7 +196,7 @@
 
 
 			<controls:SimaiVisualizerControl Name="SimaiVisual"
-											 Height="100" Grid.Row="4" Grid.ColumnSpan="4"
+											 Height="100" Grid.Row="4" Grid.ColumnSpan="5"
 											 Time="{Binding TrackTime}" TrackIf="{Binding SongTrackInfo}"
 											 ZoomLevel="{Binding TrackZoomLevel}" SimaiChart="{Binding CurrentChartData}"
 											 Offset="{Binding Offset}" CaretTime="{Binding CaretTime}"
@@ -206,7 +211,7 @@
 			</DockPanel>
 
 			<!-- Status Bar -->
-			<Border Grid.Row="5" Grid.ColumnSpan="4" Background="#20FFFFFF" BorderThickness="0,1,0,0" BorderBrush="#30FFFFFF">
+			<Border Grid.Row="5" Grid.ColumnSpan="5" Background="#20FFFFFF" BorderThickness="0,1,0,0" BorderBrush="#30FFFFFF">
 				<TextBlock VerticalAlignment="Center" Margin="10,0" FontSize="12" Opacity="0.8">
 					<TextBlock.Text>
 						<MultiBinding Converter="{x:Static conv:StatusBarConverter.Instance}">

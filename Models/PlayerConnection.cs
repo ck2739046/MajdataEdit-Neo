@@ -266,6 +266,27 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
         var req = new MajWsPauseRequest();
         await SendAsync(req);
     }
+
+    public async Task<bool> WaitUntilStateAsync(ViewStatus state, TimeSpan timeout)
+    {
+        if (State == state)
+            return true;
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token);
+        timeoutCts.CancelAfter(timeout);
+        try
+        {
+            while (State != state)
+                await _stateChangedSignal.WaitAsync(timeoutCts.Token);
+
+            return true;
+        }
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+        {
+            return State == state;
+        }
+    }
+
     public async Task StopAsync()
     {
         var req = new MajWsStopRequest();
