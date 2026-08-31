@@ -471,4 +471,37 @@
   <data name="Set_ExportQuality" xml:space="preserve">
     <value>导出质量</value>
   </data>
+  <data name="Gui_ShortcutOverview" xml:space="preserve">
+    <value>快捷键一览</value>
+  </data>
+  <data name="Win_Shortcuts" xml:space="preserve">
+    <value>快捷键一览</value>
+  </data>
+  <data name="Gui_Function" xml:space="preserve">
+    <value>功能</value>
+  </data>
+  <data name="Gui_ShortcutKey" xml:space="preserve">
+    <value>快捷键</value>
+  </data>
+  <data name="Shortcut_Undo" xml:space="preserve">
+    <value>撤销</value>
+  </data>
+  <data name="Shortcut_Redo" xml:space="preserve">
+    <value>重做</value>
+  </data>
+  <data name="Shortcut_PlayStop" xml:space="preserve">
+    <value>播放 / 停止</value>
+  </data>
+  <data name="Shortcut_PlayPause" xml:space="preserve">
+    <value>播放 / 暂停</value>
+  </data>
+  <data name="Shortcut_PlayIncludeOp" xml:space="preserve">
+    <value>开始录制模式</value>
+  </data>
+  <data name="Shortcut_IncreasePlaybackSpeed" xml:space="preserve">
+    <value>加速播放</value>
+  </data>
+  <data name="Shortcut_DecreasePlaybackSpeed" xml:space="preserve">
+    <value>减速播放</value>
+  </data>
 </root>
