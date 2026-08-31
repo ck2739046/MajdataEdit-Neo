@@ -27,7 +27,7 @@ public class MajEditSetting
 
     [Display(Name = nameof(Langs.Set_WaveAnimated))]
     [SettingControl(SettingControlType.Toggle)]
-    public bool WaveAnimated { get; set; } = true;
+    public bool WaveAnimated { get; set; } = false;
 
 
     [Display(Name = nameof(Langs.Set_WordWrap))]
