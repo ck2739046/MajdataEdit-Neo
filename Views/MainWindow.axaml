@@ -66,8 +66,8 @@
 					<MenuItem Header="{local:I18N Gui_FindAndReplace}" PointerPressed="FindReplace_PointerPressed"/>
 					<Separator/>
 				</MenuItem>
-				<MenuItem Header="{local:I18N Gui_Setting}">
-					<MenuItem Header="{local:I18N Gui_Setting}" Command="{Binding OpenSettingsWindow}"/>
+				<MenuItem Header="{local:I18N Gui_Setting}" Command="{Binding OpenSettingsWindow}">
+					<!--<MenuItem Header="{local:I18N Gui_Setting}" Command="{Binding OpenSettingsWindow}"/>-->
 					<!--<MenuItem Header="{local:I18N Gui_CheckUpdate}" Command="{Binding CheckUpdateAsync}" CommandParameter="false"/>-->
 				</MenuItem>
 				<MenuItem Header="{local:I18N Gui_Tools}">
