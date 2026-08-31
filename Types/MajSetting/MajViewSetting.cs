@@ -100,12 +100,15 @@ public partial class MajViewSetting
     [SettingUnbrowsable]
     public bool ResizeBg { get; set; } = false;
 
+    /*
     [Display(Name = nameof(Langs.Set_UIType))]
     [SettingControl(SettingControlType.Selection,
         Values = new object[] { UIType.Legacy,
                                 UIType.TrgUI },
         Labels = new[] {        "Legacy",
                                 "TrgUI" })]
+    */
+    [SettingUnbrowsable]
     public UIType UIType { get; set; } = UIType.Legacy;
 
     [Display(Name = nameof(Langs.Set_GlobalAudioOffset))]
