@@ -252,10 +252,12 @@ public partial class MainWindow : Window
         LoadPluginsToMenu();
         viewModel.RequestPluginActionExecution += ViewModel_RequestPluginActionExecution;
 
+        /*
         if (viewModel.Settings.EditSetting.AutoCheckUpdatesOnStartup)
         {
             await viewModel.CheckUpdateAsync(true);
         }
+        */
         await viewModel.ConnectToPlayerAsync();
     }
 

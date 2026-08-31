@@ -21,9 +21,11 @@ public class MajEditSetting
     [SettingControl(SettingControlType.Numeric, Max = 100, Min = 1, Step = 1)]
     public float FontSize { get; set; } = 14f;
 
+    /*
     [Display(Name = nameof(Langs.Set_AutoCheckUpdatesOnStartup))]
     [SettingControl(SettingControlType.Toggle)]
     public bool AutoCheckUpdatesOnStartup { get; set; } = true;
+    */
 
     [Display(Name = nameof(Langs.Set_WaveAnimated))]
     [SettingControl(SettingControlType.Toggle)]

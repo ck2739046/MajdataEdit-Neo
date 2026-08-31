@@ -1,3 +1,4 @@
+/*
 using CommunityToolkit.Mvvm.ComponentModel;
 using MajdataEdit_Neo.Assets.Langs;
 using MajdataEdit_Neo.Utils;
@@ -110,3 +111,4 @@ public partial class MainWindowViewModel
         }
     }
 }
+*/
