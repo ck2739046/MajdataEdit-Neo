@@ -46,7 +46,7 @@ public partial class MainWindowViewModel
     private double _caretTime = 0d;
 
     [ObservableProperty]
-    private bool _isFollowCursor;
+    private bool _isFollowCursor = true;
 
     [ObservableProperty]
     private ViewStatus _currentViewState = ViewStatus.Idle;
