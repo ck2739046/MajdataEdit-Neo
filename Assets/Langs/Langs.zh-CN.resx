@@ -151,19 +151,19 @@
     <value>编辑</value>
   </data>
   <data name="Gui_MirrorHorizontally" xml:space="preserve">
-    <value>左右翻转选择</value>
+    <value>左右镜像</value>
   </data>
   <data name="Gui_MirrorVertically" xml:space="preserve">
-    <value>上下翻转选择</value>
+    <value>上下镜像</value>
   </data>
   <data name="Gui_Mirror180" xml:space="preserve">
-    <value>180°翻转选择</value>
+    <value>中心对称镜像</value>
   </data>
   <data name="Gui_Rotate45" xml:space="preserve">
-    <value>45°顺时针旋转选择</value>
+    <value>顺时针旋转45度</value>
   </data>
   <data name="Gui_RotateNeg45" xml:space="preserve">
-    <value>45°逆时针旋转选择</value>
+    <value>逆时针旋转45度</value>
   </data>
   <data name="Gui_Subdivide1p5x" xml:space="preserve">
     <value>将乐句1.5倍细分</value>

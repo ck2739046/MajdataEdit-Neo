@@ -157,13 +157,13 @@
     <value>Mirror Vertically</value>
   </data>
   <data name="Gui_Mirror180" xml:space="preserve">
-    <value>Mirror 180°</value>
+    <value>Center Symmetric Mirror</value>
   </data>
   <data name="Gui_Rotate45" xml:space="preserve">
-    <value>Rotate 45°</value>
+    <value>Rotate 45° CW</value>
   </data>
   <data name="Gui_RotateNeg45" xml:space="preserve">
-    <value>Rotate -45°</value>
+    <value>Rotate 45° CCW</value>
   </data>
   <data name="Gui_Subdivide1p5x" xml:space="preserve">
     <value>Subdivide 1.5 Times</value>
