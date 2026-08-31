@@ -93,8 +93,11 @@ public partial class MajViewSetting
                                 "Ultra" })]
     public ExportQuality ExportQuality { get; set; } = ExportQuality.High;
 
+    /*
     [Display(Name = nameof(Langs.Set_ResizeBg))]
     [SettingControl(SettingControlType.Toggle)]
+    */
+    [SettingUnbrowsable]
     public bool ResizeBg { get; set; } = false;
 
     [Display(Name = nameof(Langs.Set_UIType))]
