@@ -68,7 +68,7 @@ public partial class MainWindowViewModel : ViewModelBase
             OpenSettingsWindow();
         }
 
-        InitializeDiscordRpc();
+        // InitializeDiscordRpc();
 
         // Design-time support
         if (Design.IsDesignMode)

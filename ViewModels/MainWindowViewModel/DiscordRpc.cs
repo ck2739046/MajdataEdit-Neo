@@ -1,3 +1,4 @@
+/*
 using DiscordRPC;
 using System;
 
@@ -38,3 +39,4 @@ public partial class MainWindowViewModel
         _drpcClient.Dispose();
     }
 }
+*/

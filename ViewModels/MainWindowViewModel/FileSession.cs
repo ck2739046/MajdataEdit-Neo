@@ -321,6 +321,7 @@ public partial class MainWindowViewModel
             Debug.WriteLine($"Failed to dispose audio resources: {ex}");
         }
 
+        /*
         try
         {
             DisposeDiscordRpc();
@@ -329,5 +330,6 @@ public partial class MainWindowViewModel
         {
             Debug.WriteLine($"Failed to dispose Discord RPC: {ex}");
         }
+        */
     }
 }
