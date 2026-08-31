@@ -471,4 +471,37 @@ Do you want to download the latest update of Majdata?</value>
   <data name="Set_ExportQuality" xml:space="preserve">
     <value>Export Quality</value>
   </data>
+  <data name="Gui_ShortcutOverview" xml:space="preserve">
+    <value>Keyboard Shortcuts</value>
+  </data>
+  <data name="Win_Shortcuts" xml:space="preserve">
+    <value>Keyboard Shortcuts</value>
+  </data>
+  <data name="Gui_Function" xml:space="preserve">
+    <value>Function</value>
+  </data>
+  <data name="Gui_ShortcutKey" xml:space="preserve">
+    <value>Shortcut</value>
+  </data>
+  <data name="Shortcut_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="Shortcut_Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="Shortcut_PlayStop" xml:space="preserve">
+    <value>Play / Stop</value>
+  </data>
+  <data name="Shortcut_PlayPause" xml:space="preserve">
+    <value>Play / Pause</value>
+  </data>
+  <data name="Shortcut_PlayIncludeOp" xml:space="preserve">
+    <value>Start Recording Mode</value>
+  </data>
+  <data name="Shortcut_IncreasePlaybackSpeed" xml:space="preserve">
+    <value>Increase Playback Speed</value>
+  </data>
+  <data name="Shortcut_DecreasePlaybackSpeed" xml:space="preserve">
+    <value>Decrease Playback Speed</value>
+  </data>
 </root>
