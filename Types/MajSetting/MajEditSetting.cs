@@ -35,5 +35,5 @@ public class MajEditSetting
     public bool WordWrap { get; set; } = true;
 
     [Display(Name = nameof(Langs.Set_BackgroundImagePath))]
-    public string BackgroundImagePath { get; set; } = "xxlb.png";
+    public string BackgroundImagePath { get; set; } = "";
 }
