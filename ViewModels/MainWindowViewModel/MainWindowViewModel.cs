@@ -112,7 +112,16 @@ public partial class MainWindowViewModel : ViewModelBase
     private void OnHachimiLoad(object? sender, HachimiDX_ipc.LoadCommandEventArgs e)
     {
         Dispatcher.UIThread.InvokeAsync(async () =>
-            await LoadChartFromHachimiAsync(e.Folder, e.Maidata, e.Track, e.Pv));
+        {
+            try
+            {
+                await LoadChartFromHachimiAsync(e.Folder, e.Maidata, e.Track, e.Pv);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"HachimiDX load failed: {ex}");
+            }
+        });
     }
 
     private void OnHachimiReset(object? sender, EventArgs e)

@@ -209,7 +209,9 @@ public partial class MainWindowViewModel
         var fileInfo = new FileInfo(maidataPath);
         var directory = fileInfo.Directory?.FullName;
         if (directory is null) return;
-        var songTrackInfo = _trackReader.ReadTrack(directory);
+        var songTrackInfo = explicitTrackPath is not null
+            ? _trackReader.ReadTrackFromPath(explicitTrackPath)
+            : _trackReader.ReadTrack(directory);
         var content = await File.ReadAllTextAsync(maidataPath);
 
         MaidataDir = directory;
