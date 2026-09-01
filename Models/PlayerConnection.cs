@@ -71,6 +71,7 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
     {
         _listenerTask = Task.Run(() => StartToListenWebSocket(_lifetimeCts.Token));
 
+        Directory.CreateDirectory(MajEnv.SharedMemoryPath);
         var mmfChartDataFileStream = new FileStream(
             MajEnv.MmfChartDataPath,
             FileMode.OpenOrCreate,

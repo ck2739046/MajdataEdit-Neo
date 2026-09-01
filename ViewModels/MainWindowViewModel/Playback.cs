@@ -87,7 +87,7 @@ public partial class MainWindowViewModel
         _playerConnection.OnDisconnected += OnDisconnected;
         _playerConnection.OnViewStateChanged += OnViewStateChanged;
 
-        Directory.CreateDirectory(MajEnv.MajdataViewPersistentDataPath);
+        Directory.CreateDirectory(MajEnv.SharedMemoryPath);
         var mmfAudioTimeFileStream = new FileStream(
             MajEnv.MmfAudioTimePath,
             FileMode.OpenOrCreate,
