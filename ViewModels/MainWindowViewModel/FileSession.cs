@@ -189,7 +189,7 @@ public partial class MainWindowViewModel
         }
     }
 
-    private async Task LoadChart(string maidataPath)
+    private async Task LoadChart(string maidataPath, string? explicitTrackPath = null, string? explicitPvPath = null)
     {
         SaveEditRecord();
 
@@ -221,7 +221,15 @@ public partial class MainWindowViewModel
         Enabled = true;
 
         LoadEditRecord();
-        await EditorLoad(MaidataDir);
+        await EditorLoad(MaidataDir, explicitTrackPath, explicitPvPath);
+    }
+
+    public async Task LoadChartFromHachimiAsync(string folder, string maidataFilename, string trackFilename, string? pvFilename)
+    {
+        var maidataPath = Path.Combine(folder, maidataFilename);
+        var trackPath = Path.Combine(folder, trackFilename);
+        var pvPath = string.IsNullOrWhiteSpace(pvFilename) ? string.Empty : Path.Combine(folder, pvFilename);
+        await LoadChart(maidataPath, trackPath, pvPath);
     }
 
     public void LoadEditRecord()

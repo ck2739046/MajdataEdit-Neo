@@ -1,11 +1,14 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Types.Plugin;
 using MajdataEdit_Neo.Views;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -26,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     public static MainWindowViewModel Ins { get; private set; } = null!;
     private ShortcutWindow? _shortcutWindow;
+    private readonly HachimiDX_ipc _hachimiDxIpc = new();
 
     //------status bar (window-level)
 
@@ -56,6 +60,7 @@ public partial class MainWindowViewModel : ViewModelBase
         InitializePlayback();
         InitializeAutoSave();
         InitializePlugins();
+        InitializeHachimiDxIpc();
 
         // Wire document -> window title / auto-save / playback events
         WireEvents();
@@ -82,6 +87,50 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(WindowTitle));
     }
 
+    //------HachimiDX IPC
+
+    private void InitializeHachimiDxIpc()
+    {
+        if (Design.IsDesignMode)
+            return;
+
+        _hachimiDxIpc.LoadRequested += OnHachimiLoad;
+        _hachimiDxIpc.ResetRequested += OnHachimiReset;
+        _hachimiDxIpc.ExitRequested += OnHachimiExit;
+        try
+        {
+            _hachimiDxIpc.Start();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"HachimiDX_ipc start failed: {ex}");
+        }
+    }
+
+    public void BroadcastToHachimi(JObject payload) => _hachimiDxIpc.SendEvent(payload);
+
+    private void OnHachimiLoad(object? sender, HachimiDX_ipc.LoadCommandEventArgs e)
+    {
+        Dispatcher.UIThread.InvokeAsync(async () =>
+            await LoadChartFromHachimiAsync(e.Folder, e.Maidata, e.Track, e.Pv));
+    }
+
+    private void OnHachimiReset(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.InvokeAsync(async () => await ResetToInitialStateAsync());
+    }
+
+    private void OnHachimiExit(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(CloseMainWindow);
+    }
+
+    private void CloseMainWindow()
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.MainWindow?.Close();
+    }
+
     //------window-level methods
 
     public void ShowStatusMessage(string message) => StatusBarMessage = message;
@@ -102,6 +151,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         await DisposeAsync();
+        _hachimiDxIpc.Dispose();
         try
         {
             DisposeSettings();

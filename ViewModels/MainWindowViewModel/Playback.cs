@@ -12,6 +12,7 @@ using MajdataEdit_Neo.Types.MajWs;
 using MajdataEdit_Neo.Utils;
 using MajSimai;
 using MsBox.Avalonia.Enums;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -148,6 +149,34 @@ public partial class MainWindowViewModel
         return true;
     }
 
+    //------HachimiDX broadcast
+
+    private void BroadcastPlay(double position, float speed, double delaySeconds) =>
+        BroadcastToHachimi(new JObject
+        {
+            ["type"] = "play",
+            ["position"] = position,
+            ["speed"] = speed,
+            ["delaySeconds"] = delaySeconds,
+            ["pvOffset"] = PvOffset
+        });
+
+    private void BroadcastPause(double position) =>
+        BroadcastToHachimi(new JObject
+        {
+            ["type"] = "pause",
+            ["position"] = position,
+            ["pvOffset"] = PvOffset
+        });
+
+    private void BroadcastSeek(double position) =>
+        BroadcastToHachimi(new JObject
+        {
+            ["type"] = "seek",
+            ["position"] = position,
+            ["pvOffset"] = PvOffset
+        });
+
     //------playback control
 
     public void SlideZoomLevel(float delta)
@@ -170,6 +199,7 @@ public partial class MainWindowViewModel
         }
         TrackTime = time;
         mmvAudioTime.Write(0, (float)time);
+        BroadcastSeek(time);
 
         if (chartData is null) return new Point();
         var timings = chartData.CommaTimings;
@@ -236,23 +266,43 @@ public partial class MainWindowViewModel
         {
             TrackTime = CaretTime + Offset;
             mmvAudioTime.Write(0, (float)TrackTime);
+            BroadcastSeek(TrackTime);
         }
     }
 
-    public async Task EditorLoad(string maidataDir)
+    public async Task EditorLoad(string maidataDir) =>
+        await EditorLoad(maidataDir, null, null);
+
+    public async Task EditorLoad(string maidataDir, string? explicitTrackPath, string? explicitPvPath)
     {
         try
         {
-            var useOgg = System.IO.File.Exists(maidataDir + "/track.ogg");
-            var trackPath = maidataDir + "/track" + (useOgg ? ".ogg" : ".mp3");
+            string trackPath;
+            if (explicitTrackPath is not null)
+            {
+                trackPath = explicitTrackPath;
+            }
+            else
+            {
+                var useOgg = System.IO.File.Exists(maidataDir + "/track.ogg");
+                trackPath = maidataDir + "/track" + (useOgg ? ".ogg" : ".mp3");
+            }
 
             var bgPath = maidataDir + "/bg.jpg";
             if (!System.IO.File.Exists(bgPath)) bgPath = maidataDir + "/bg.png";
             if (!System.IO.File.Exists(bgPath)) bgPath = "";
 
-            var pvPath = maidataDir + "/pv.mp4";
-            if (!System.IO.File.Exists(pvPath)) pvPath = maidataDir + "/bg.mp4";
-            if (!System.IO.File.Exists(pvPath)) pvPath = "";
+            string pvPath;
+            if (explicitPvPath is not null)
+            {
+                pvPath = explicitPvPath;
+            }
+            else
+            {
+                pvPath = maidataDir + "/pv.mp4";
+                if (!System.IO.File.Exists(pvPath)) pvPath = maidataDir + "/bg.mp4";
+                if (!System.IO.File.Exists(pvPath)) pvPath = "";
+            }
 
             if (!await CheckPlayerConnectionAndReconnect())
             {
@@ -324,6 +374,7 @@ public partial class MainWindowViewModel
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
         await _playerConnection.PlayAsync(PlaybackMode.IncludeOp, _playStartTime, PlaybackSpeed);
         _isLastPlayIncludeOp = true;
+        BroadcastPlay(_playStartTime, PlaybackSpeed, 5.0);
     }
 
     [RelayCommand]
@@ -353,6 +404,7 @@ public partial class MainWindowViewModel
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
         await _playerConnection.PlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed);
         _isLastPlayIncludeOp = false;
+        BroadcastPlay(_playStartTime, PlaybackSpeed, 0.0);
     }
 
     [RelayCommand]
@@ -373,6 +425,7 @@ public partial class MainWindowViewModel
         {
             case ViewStatus.Playing:
                 await _playerConnection.PauseAsync();
+                BroadcastPause(TrackTime);
                 return;
         }
         _playStartTime = TrackTime;
@@ -380,6 +433,7 @@ public partial class MainWindowViewModel
         await _playerConnection.SettingAsync(settings.ViewSetting, settings.VolumeSetting);
         await _playerConnection.PlayAsync(PlaybackMode.Normal, _playStartTime, PlaybackSpeed);
         _isLastPlayIncludeOp = false;
+        BroadcastPlay(_playStartTime, PlaybackSpeed, 0.0);
     }
 
     [RelayCommand]
@@ -405,6 +459,7 @@ public partial class MainWindowViewModel
             if (_playerConnection.State == ViewStatus.Playing)
             {
                 await _playerConnection.PauseAsync();
+                BroadcastPause(0);
                 if (!await _playerConnection.WaitUntilStateAsync(ViewStatus.Paused, TimeSpan.FromSeconds(5)))
                     return;
             }
@@ -414,6 +469,7 @@ public partial class MainWindowViewModel
             _playStartTime = 0;
             TrackTime = 0;
             mmvAudioTime.Write(0, 0f);
+            BroadcastSeek(0);
             ResetFollowCursorIndex();
         }
         finally
@@ -434,6 +490,7 @@ public partial class MainWindowViewModel
         }
 
         await _playerConnection.StopAsync();
+        BroadcastPause(TrackTime);
     }
 
     public async void Pause()
@@ -447,10 +504,46 @@ public partial class MainWindowViewModel
         {
             case ViewStatus.Playing:
                 await _playerConnection.PauseAsync();
+                BroadcastPause(TrackTime);
                 return;
             case ViewStatus.Paused:
                 return;
         }
+    }
+
+    /// <summary>回到刚启动时的初始界面：清空谱面/音频，并让 ViewX 全清空。</summary>
+    public async Task ResetToInitialStateAsync()
+    {
+        SaveEditRecord();
+        _ = CancelPlaybackTracking();
+
+        if (_playerConnection.IsConnected)
+        {
+            try
+            {
+                await _playerConnection.StopAsync();
+                await _playerConnection.UpdateAsync(
+                    SimaiFile.Empty(string.Empty, string.Empty), SimaiChart.Empty, 0, 0f);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Reset to initial state failed: {ex}");
+            }
+        }
+
+        IsSaved = true;
+        CurrentSimaiFile = null;
+        MaidataDir = "";
+        SongTrackInfo = null;
+        SelectedDifficulty = 0;
+        TrackTime = 0;
+        CaretTime = 0;
+        _playStartTime = 0;
+        for (var i = 0; i < 7; i++)
+            CurrentChartMetadata[i] = new MutSimaiChartMetadata();
+        mmvAudioTime.Write(0, 0f);
+        ResetFollowCursorIndex();
+        Enabled = false;
     }
 
     //------player events
