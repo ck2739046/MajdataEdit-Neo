@@ -187,7 +187,7 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
-        ///   查找类似 Des 的本地化字符串。
+        ///   查找类似 &amp;des 的本地化字符串。
         /// </summary>
         internal static string Gui_Designer {
             get {
@@ -295,7 +295,7 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
-        ///   查找类似 Level 的本地化字符串。
+        ///   查找类似 &amp;lv 的本地化字符串。
         /// </summary>
         internal static string Gui_Level {
             get {
@@ -385,6 +385,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 pv offset 的本地化字符串。
+        /// </summary>
+        internal static string Gui_PvOffset {
+            get {
+                return ResourceManager.GetString("Gui_PvOffset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Open 的本地化字符串。
         /// </summary>
         internal static string Gui_Open {
@@ -394,7 +403,7 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
-        ///   查找类似 Speed 的本地化字符串。
+        ///   查找类似 speed 的本地化字符串。
         /// </summary>
         internal static string Gui_PlaybackSpeed {
             get {

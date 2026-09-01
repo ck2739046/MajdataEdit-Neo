@@ -49,7 +49,7 @@
 			</ExperimentalAcrylicBorder.Material>
 		</ExperimentalAcrylicBorder>
 		<Grid RowDefinitions="20,100,*,60,100,20"
-			  ColumnDefinitions="5,60,60,60,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
+			  ColumnDefinitions="5,38,38,38,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
 			<Menu Grid.Row="0" Grid.ColumnSpan="5">
 				<MenuItem Header="{local:I18N Gui_File}" >
 					<MenuItem Header="{local:I18N Gui_New}" Command="{Binding NewFileCommand}"/>
@@ -99,83 +99,93 @@
 				</MenuItem>
 			</Menu>
 
-			<StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="8"
-						Margin="6 0 8 0" Width="116">
+			<Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="8"
+				  Margin="6 0 8 0" Width="110" RowDefinitions="65,*">
+				<Label Grid.Row="0" Height="65" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
+					   Content="{Binding DisplayTime}" Padding="0 10 0 0"/>
+				<LayoutTransformControl Grid.Row="1" HorizontalAlignment="Stretch">
+					<LayoutTransformControl.LayoutTransform>
+						<ScaleTransform ScaleX="0.8" ScaleY="0.8"/>
+					</LayoutTransformControl.LayoutTransform>
 
-				<Label Height="90" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
-					   Content="{Binding DisplayTime}" Padding="0 30 0 0"/>
-				<Label Height="30" Name="LineCombo" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
-					   Content="{Binding DisplayLineComboText}" Padding="0 0 0 0"/>
+					<StackPanel HorizontalAlignment="Stretch" Margin="0 0 1 0">
+						<Grid Height="25" HorizontalAlignment="Stretch">
+							<Label Name="LineCombo" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"
+								   Content="{Binding DisplayLineComboText}" Padding="0"/>
+						</Grid>
+						<StackPanel Height="25" Orientation="Horizontal" HorizontalAlignment="Center">
+							<TextBlock Text="Error " FontSize="17" VerticalAlignment="Center"/>
+							<TextBlock Text="{Binding SimaiDiagnosticsCount}" FontSize="17" VerticalAlignment="Center"/>
+						</StackPanel>
 
-				<ComboBox Name="Difficulty"
-						  Width="116" VerticalAlignment="Center"
-						  SelectedIndex="{Binding SelectedDifficulty}">
-					<ComboBoxItem Content="EASY" />
-					<ComboBoxItem Content="BASIC" />
-					<ComboBoxItem Content="ADVANCED" />
-					<ComboBoxItem Content="EXPERT" />
-					<ComboBoxItem Content="MASTER" />
-					<ComboBoxItem Content="Re:MASTER" />
-					<ComboBoxItem Content="ORIGINAL" />
-				</ComboBox>
+						<ComboBox Name="Difficulty" MinWidth="0" Margin="0 4 0 0"
+								  HorizontalAlignment="Stretch" VerticalAlignment="Center"
+								  SelectedIndex="{Binding SelectedDifficulty}">
+							<ComboBoxItem Content="EASY" />
+							<ComboBoxItem Content="BASIC" />
+							<ComboBoxItem Content="ADVANCED" />
+							<ComboBoxItem Content="EXPERT" />
+							<ComboBoxItem Content="MASTER" />
+							<ComboBoxItem Content="Re:MASTER" />
+							<ComboBoxItem Content="ORIGINAL" />
+						</ComboBox>
 
-				<DockPanel Margin="0 8 0 0">
-					<Label VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Level}"/>
-					<TextBox Name="Level" Text="{Binding Level}" Margin="10 0 0 0"/>
-				</DockPanel>
+						<Grid Margin="0 9 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,*" ColumnSpacing="6">
+							<Label Grid.Column="0" FontSize="17" VerticalAlignment="Center" Content="&amp;lv"/>
+							<TextBox Grid.Column="1" Name="Level" MinWidth="0" HorizontalAlignment="Stretch" Text="{Binding Level}"/>
+						</Grid>
 
-				<DockPanel Margin="0 8 0 0">
-					<Label  VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Designer}"/>
-					<TextBox  Name="Designer" Text="{Binding Designer}" Margin="20 0 0 0"/>
-				</DockPanel>
+						<Grid Margin="0 9 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,*" ColumnSpacing="6">
+							<Label Grid.Column="0" FontSize="17" VerticalAlignment="Center" Content="&amp;des"/>
+							<TextBox Grid.Column="1" Name="Designer" MinWidth="0" HorizontalAlignment="Stretch" Text="{Binding Designer}"/>
+						</Grid>
 
-				<DockPanel Margin="0 8 0 0">
-					<Label  VerticalAlignment="Center" Margin="0 10 0 0" Content="Note Offset"/>
-					<NumericUpDown Name="First" Value="{Binding Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
-				</DockPanel>
+						<Grid Margin="0 9 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,*" ColumnSpacing="6">
+							<Label Grid.Column="0" FontSize="17" VerticalAlignment="Center" Content="&amp;first"/>
+							<NumericUpDown Grid.Column="1" Name="First" MinWidth="0" HorizontalAlignment="Stretch" Increment="0.005" Value="{Binding Offset}" ShowButtonSpinner="False"/>
+						</Grid>
 
-				<DockPanel Margin="0 8 0 0">
-					<Label VerticalAlignment="Center" Content="PV Offset"/>
-					<NumericUpDown Name="PvOffset" Value="{Binding PvOffset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
-				</DockPanel>
+						<Grid Margin="0 11 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,*" ColumnSpacing="6">
+							<Label Grid.Column="0" FontSize="17" VerticalAlignment="Center" Content="{local:I18N Gui_PlaybackSpeed}"/>
+							<NumericUpDown Grid.Column="1" Name="Speed" MinWidth="0" HorizontalAlignment="Stretch"
+										   Value="{Binding PlaybackSpeed}"
+										   Minimum="0.1" Increment="0.1"
+										   FormatString="P0"
+										   ShowButtonSpinner="False"/>
+						</Grid>
 
-				<DockPanel Margin="0 20 0 0" LastChildFill="True">
-					<Label Content="{local:I18N Gui_Error}" DockPanel.Dock="Left" />
-					<Label Name="ErrorCountLabel" Content="{Binding SimaiDiagnosticsCount}" HorizontalAlignment="Center"/>
-				</DockPanel>
+						<StackPanel Margin="0 9 0 0" HorizontalAlignment="Stretch">
+							<Label FontSize="17" VerticalAlignment="Center" Content="{local:I18N Gui_PvOffset}"/>
+							<NumericUpDown Name="PvOffset" MinWidth="0" HorizontalAlignment="Stretch" Increment="0.005" Value="{Binding PvOffset}" ShowButtonSpinner="False"/>
+						</StackPanel>
 
-				<DockPanel Margin="0 10 0 0">
-					<Label VerticalAlignment="Center" Content="{local:I18N Gui_PlaybackSpeed}"/>
-					<NumericUpDown Name="Speed" Margin="3 0 0 0"
-								   Value="{Binding PlaybackSpeed}"
-								   Minimum="0.1" Increment="0.1"
-								   FormatString="0.##"
-								   ShowButtonSpinner="False"/>
-				</DockPanel>
-
-				<CheckBox Grid.Row="8" Margin="0 10 0 0"
-						  IsChecked="{Binding IsFollowCursor}" FontSize="12" Content="{local:I18N Gui_FollowCursor}"/>
-				<StackPanel Orientation="Horizontal" Margin="9 0 0 0">
-					<CheckBox IsChecked="{Binding IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
-					<Button
-						Command="{Binding PlayIncludeOpCommand}" Width="64" Content="{local:I18N Gui_Record}"/>
-				</StackPanel>
-				<Label Content="{local:I18N Gui_Connected}" FontSize="8" Margin="-4 -11 0 0"/>
-			</StackPanel>
-
+						<CheckBox Grid.Row="8" HorizontalAlignment="Center" Margin="0 11 0 0"
+								  IsChecked="{Binding IsFollowCursor}" FontSize="17" Content="{local:I18N Gui_FollowCursor}"/>
+						<Grid Margin="0 11 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="30,*" ColumnSpacing="4">
+							<StackPanel Grid.Column="0" Width="30" HorizontalAlignment="Center" VerticalAlignment="Center">
+								<CheckBox IsChecked="{Binding IsConnected}" IsEnabled="False" Width="20" HorizontalAlignment="Center" Margin="0 -3 0 -5"/>
+								<Label Content="{local:I18N Gui_Connected}" FontSize="8" HorizontalAlignment="Center" Margin="0 -4 0 0"/>
+							</StackPanel>
+							<Button Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Center"
+								Command="{Binding PlayIncludeOpCommand}" Content="{local:I18N Gui_Record}"/>
+						</Grid>
+					</StackPanel>
+				</LayoutTransformControl>
+			</Grid>
 
 
-			<Button Grid.Row="3" Grid.Column="1" Height="50" Width="50" Margin="5"
+
+			<Button Grid.Row="3" Grid.Column="1" Height="34" Width="34" Margin="2"
 					Command="{Binding ResetToStartAndPauseCommand}">
-				<TextBlock Text="↺" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+				<TextBlock Text="↺" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 			</Button>
 
-			<Button Grid.Row="3" Grid.Column="2" Height="50" Width="50" Margin="5"
+			<Button Grid.Row="3" Grid.Column="2" Height="34" Width="34" Margin="2"
 					Command="{Binding StopCommand}">
 				<PathIcon Width="13" Data="{StaticResource stop}"/>
 			</Button>
 
-			<Button Grid.Row="3" Grid.Column="3" Height="50" Width="50" Margin="5"
+			<Button Grid.Row="3" Grid.Column="3" Height="34" Width="34" Margin="2"
 					Command="{Binding PlayPauseCommand}">
 				<PathIcon Data="{StaticResource play_pause}"/>
 			</Button>

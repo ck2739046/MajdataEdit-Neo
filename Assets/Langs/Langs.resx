@@ -193,13 +193,16 @@
     <value>About</value>
   </data>
   <data name="Gui_Level" xml:space="preserve">
-    <value>Level</value>
+    <value>&amp;lv</value>
   </data>
   <data name="Gui_Designer" xml:space="preserve">
-    <value>Des</value>
+    <value>&amp;des</value>
   </data>
   <data name="Gui_Offset" xml:space="preserve">
     <value>Offset</value>
+  </data>
+  <data name="Gui_PvOffset" xml:space="preserve">
+    <value>pv offset</value>
   </data>
   <data name="Gui_Error" xml:space="preserve">
     <value>Error</value>
@@ -211,7 +214,7 @@
     <value>Record</value>
   </data>
   <data name="Gui_Connected" xml:space="preserve">
-    <value>Connected</value>
+    <value>ViewX</value>
   </data>
   <data name="Gui_SelectBgImage" xml:space="preserve">
     <value>Select Background Image</value>
@@ -427,7 +430,7 @@ Do you want to download the latest update of Majdata?</value>
     <value>Editor Background Image</value>
   </data>
   <data name="Gui_PlaybackSpeed" xml:space="preserve">
-    <value>Speed</value>
+    <value>speed</value>
   </data>
   <data name="Set_ShowHand" xml:space="preserve">
     <value>Show Autoplay's Hand</value>

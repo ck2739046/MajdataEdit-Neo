@@ -109,7 +109,7 @@ public partial class MainWindowViewModel
 
     public bool IsConnected => _playerConnection.IsConnected;
 
-    public string DisplayLineComboText => $"L {CaretLine}  Cb {CurrentCombo}";
+    public string DisplayLineComboText => $"LE {CaretLine}  CB {CurrentCombo}";
 
     public string DisplayTime
     {

@@ -57,6 +57,7 @@ public partial class MainWindow : Window
     readonly Button zoomIn, zoomOut;
 
     readonly NumericUpDown first;
+    readonly NumericUpDown pvOffset;
     readonly NumericUpDown speed;
 
 
@@ -144,7 +145,9 @@ public partial class MainWindow : Window
         zoomOut.Click += ZoomOut_Click;
         //setup control panel
         first = this.FindControl<NumericUpDown>("First")!;
-        first.PointerWheelChanged += First_PointerWheelChanged;
+        first.AddHandler(InputElement.PointerWheelChangedEvent, First_PointerWheelChanged, RoutingStrategies.Tunnel);
+        pvOffset = this.FindControl<NumericUpDown>("PvOffset")!;
+        pvOffset.AddHandler(InputElement.PointerWheelChangedEvent, PvOffset_PointerWheelChanged, RoutingStrategies.Tunnel);
         speed = this.FindControl<NumericUpDown>("Speed")!;
         speed.PointerWheelChanged += Speed_PointerWheelChanged;
         //this window
@@ -425,7 +428,13 @@ public partial class MainWindow : Window
 
     private void First_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
-        first.Value += (decimal)(e.Delta.Y / 100d);
+        first.Value += (decimal)(e.Delta.Y / 200d);
+        e.Handled = true;
+    }
+
+    private void PvOffset_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        pvOffset.Value += (decimal)(e.Delta.Y / 200d);
         e.Handled = true;
     }
 
