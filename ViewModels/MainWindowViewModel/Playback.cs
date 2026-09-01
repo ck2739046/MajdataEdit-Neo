@@ -481,7 +481,7 @@ public partial class MainWindowViewModel
         }
 
         WeakReferenceMessenger.Default.Send(new FocusEditorMsg());
-        MajEnv.ActivateProcessWindow(Process.GetProcessesByName("MajdataViewX").FirstOrDefault());
+        // MajEnv.ActivateProcessWindow(Process.GetProcessesByName("MajdataViewX").FirstOrDefault());
 
         try
         {
