@@ -243,7 +243,7 @@
 			</Border>
 		</Grid>
 
-		<Grid RowDefinitions="22.7*,54.6*,22.7*" ColumnDefinitions="19.2*,61.6*,19.2*"
+		<Grid RowDefinitions="22.7*,54.6*,22.7*" ColumnDefinitions="10*,80*,10*"
 			  ZIndex="5" IsVisible="{Binding !IsLoaded}">
 			<Grid Grid.Row="1" Grid.Column="1" RowDefinitions="1*,2*" ColumnDefinitions="*,*,*,*">
 				<Grid Grid.Column="0" ColumnDefinitions="1*,6*,1*">
