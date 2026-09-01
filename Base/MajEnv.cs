@@ -9,59 +9,17 @@ namespace MajdataEdit_Neo.Base;
 
 public static partial class MajEnv
 {
-    private const string ViewCompanyName = "bbben";
-    private const string ViewProductName = "MajdataViewX";
-
     public static string MajBase => AppDomain.CurrentDomain.BaseDirectory;
     public static string GetPath(string relativePath) => Path.Combine(MajBase, relativePath);
 
-    public static string MajdataViewPersistentDataPath
-    {
-        get
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                var localAppData = Environment.GetFolderPath(
-                    Environment.SpecialFolder.LocalApplicationData);
-                var appData = Directory.GetParent(localAppData)?.FullName
-                    ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                return Path.Combine(
-                    appData,
-                    "LocalLow",
-                    ViewCompanyName,
-                    ViewProductName);
-            }
-
-            if (OperatingSystem.IsMacOS())
-            {
-                return Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    "Library",
-                    "Application Support",
-                    ViewCompanyName,
-                    ViewProductName);
-            }
-
-            var configHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
-            if (string.IsNullOrWhiteSpace(configHome))
-            {
-                configHome = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    ".config");
-            }
-            return Path.Combine(
-                configHome,
-                "unity3d",
-                ViewCompanyName,
-                ViewProductName);
-        }
-    }
+    // 共享内存文件目录：与 ViewX exe 同目录（假设两者 exe 在同一目录）
+    public static string SharedMemoryPath => GetPath("SharedMemory");
 
     public static string MmfAudioTimePath =>
-        Path.Combine(MajdataViewPersistentDataPath, "majdata_time.dat");
+        Path.Combine(SharedMemoryPath, "majdata_time.dat");
     public const long MmfChartDataCapacity = 64 * 1024 * 1024; //64mb
     public static string MmfChartDataPath =>
-        Path.Combine(MajdataViewPersistentDataPath, "majdata_chart.dat");
+        Path.Combine(SharedMemoryPath, "majdata_chart.dat");
 
     public static string MajdataViewBassDllFile
     {
