@@ -196,6 +196,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 &amp;first 的本地化字符串。
+        /// </summary>
+        internal static string Gui_First {
+            get {
+                return ResourceManager.GetString("Gui_First", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Difficulty 的本地化字符串。
         /// </summary>
         internal static string Gui_Difficulty {

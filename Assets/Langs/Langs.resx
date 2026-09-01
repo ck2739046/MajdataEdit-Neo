@@ -198,11 +198,14 @@
   <data name="Gui_Designer" xml:space="preserve">
     <value>&amp;des</value>
   </data>
+  <data name="Gui_First" xml:space="preserve">
+    <value>&amp;first</value>
+  </data>
   <data name="Gui_Offset" xml:space="preserve">
     <value>Offset</value>
   </data>
   <data name="Gui_PvOffset" xml:space="preserve">
-    <value>pv offset</value>
+    <value>pv diff</value>
   </data>
   <data name="Gui_TapSpeed" xml:space="preserve">
     <value>tap spd: </value>

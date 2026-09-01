@@ -110,12 +110,12 @@
 
 					<StackPanel HorizontalAlignment="Stretch" Margin="0 0 1 0">
 						<Grid Height="25" HorizontalAlignment="Stretch">
-							<Label Name="LineCombo" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"
+							<Label Name="LineCombo" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"
 								   Content="{Binding DisplayLineComboText}" Padding="0"/>
 						</Grid>
 						<StackPanel Height="25" Orientation="Horizontal" HorizontalAlignment="Center">
-							<TextBlock Text="Error " FontSize="17" VerticalAlignment="Center"/>
-							<TextBlock Text="{Binding SimaiDiagnosticsCount}" FontSize="17" VerticalAlignment="Center"/>
+							<TextBlock Text="Error " FontSize="16" VerticalAlignment="Center"/>
+							<TextBlock Text="{Binding SimaiDiagnosticsCount}" FontSize="16" VerticalAlignment="Center"/>
 						</StackPanel>
 
 						<ComboBox Name="Difficulty" MinWidth="0" Margin="0 4 0 0"
@@ -131,22 +131,22 @@
 						</ComboBox>
 
 						<Grid Margin="0 9 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,*" ColumnSpacing="6">
-							<Label Grid.Column="0" FontSize="17" VerticalAlignment="Center" Content="&amp;lv"/>
+							<Label Grid.Column="0" FontSize="16" VerticalAlignment="Center" Content="{local:I18N Gui_Level}"/>
 							<TextBox Grid.Column="1" Name="Level" MinWidth="0" HorizontalAlignment="Stretch" Text="{Binding Level}"/>
 						</Grid>
 
 						<Grid Margin="0 9 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,*" ColumnSpacing="6">
-							<Label Grid.Column="0" FontSize="17" VerticalAlignment="Center" Content="&amp;des"/>
+							<Label Grid.Column="0" FontSize="16" VerticalAlignment="Center" Content="{local:I18N Gui_Designer}"/>
 							<TextBox Grid.Column="1" Name="Designer" MinWidth="0" HorizontalAlignment="Stretch" Text="{Binding Designer}"/>
 						</Grid>
 
 						<Grid Margin="0 9 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,*" ColumnSpacing="6">
-							<Label Grid.Column="0" FontSize="17" VerticalAlignment="Center" Content="&amp;first"/>
+							<Label Grid.Column="0" FontSize="16" VerticalAlignment="Center" Content="{local:I18N Gui_First}"/>
 							<NumericUpDown Grid.Column="1" Name="First" MinWidth="0" HorizontalAlignment="Stretch" Increment="0.005" Value="{Binding Offset}" ShowButtonSpinner="False"/>
 						</Grid>
 
 						<Grid Margin="0 11 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,*" ColumnSpacing="6">
-							<Label Grid.Column="0" FontSize="17" VerticalAlignment="Center" Content="{local:I18N Gui_PlaybackSpeed}"/>
+							<Label Grid.Column="0" FontSize="16" VerticalAlignment="Center" Content="{local:I18N Gui_PlaybackSpeed}"/>
 							<NumericUpDown Grid.Column="1" Name="Speed" MinWidth="0" HorizontalAlignment="Stretch"
 										   Value="{Binding PlaybackSpeed}"
 										   Minimum="0.1" Increment="0.1"
@@ -154,13 +154,13 @@
 										   ShowButtonSpinner="False"/>
 						</Grid>
 
-						<StackPanel Margin="0 9 0 0" HorizontalAlignment="Stretch">
-							<Label FontSize="17" VerticalAlignment="Center" Content="{local:I18N Gui_PvOffset}"/>
-							<NumericUpDown Name="PvOffset" MinWidth="0" HorizontalAlignment="Stretch" Increment="0.005" Value="{Binding PvOffset}" ShowButtonSpinner="False"/>
-						</StackPanel>
+						<Grid Margin="0 9 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,*" ColumnSpacing="6">
+							<Label Grid.Column="0" FontSize="16" VerticalAlignment="Center" Content="{local:I18N Gui_PvOffset}"/>
+							<NumericUpDown Grid.Column="1" Name="PvOffset" MinWidth="0" HorizontalAlignment="Stretch" Increment="0.005" Value="{Binding PvOffset}" ShowButtonSpinner="False"/>
+						</Grid>
 
 						<CheckBox Grid.Row="8" HorizontalAlignment="Center" Margin="0 11 0 0"
-								  IsChecked="{Binding IsFollowCursor}" FontSize="17" Content="{local:I18N Gui_FollowCursor}"/>
+								  IsChecked="{Binding IsFollowCursor}" FontSize="16" Content="{local:I18N Gui_FollowCursor}"/>
 						<Grid Margin="0 11 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="30,*" ColumnSpacing="4">
 							<StackPanel Grid.Column="0" Width="30" HorizontalAlignment="Center" VerticalAlignment="Center">
 								<CheckBox IsChecked="{Binding IsConnected}" IsEnabled="False" Width="20" HorizontalAlignment="Center" Margin="0 -3 0 -5"/>
@@ -169,11 +169,11 @@
 							<Button Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Center"
 								Command="{Binding PlayIncludeOpCommand}" Content="{local:I18N Gui_Record}"/>
 						</Grid>
-						<TextBlock Name="TapSpeedText" FontSize="17" HorizontalAlignment="Center" Margin="0 11 0 0"
+						<TextBlock Name="TapSpeedText" FontSize="16" HorizontalAlignment="Center" Margin="0 11 0 0"
 								   Cursor="Hand"
 								   ToolTip.Tip="{local:I18N Gui_AdjustSpeedByWheel}" ToolTip.ShowDelay="500"
 								   PointerPressed="SpeedText_PointerPressed" PointerWheelChanged="TapSpeedText_PointerWheelChanged"/>
-						<TextBlock Name="TouchSpeedText" FontSize="17" HorizontalAlignment="Center" Margin="0 11 0 0"
+						<TextBlock Name="TouchSpeedText" FontSize="16" HorizontalAlignment="Center" Margin="0 11 0 0"
 								   Cursor="Hand"
 								   ToolTip.Tip="{local:I18N Gui_AdjustSpeedByWheel}" ToolTip.ShowDelay="500"
 								   PointerPressed="SpeedText_PointerPressed" PointerWheelChanged="TouchSpeedText_PointerWheelChanged"/>
