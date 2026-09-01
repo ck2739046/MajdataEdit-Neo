@@ -254,6 +254,12 @@ public partial class MainWindow : Window
 
         LoadPluginsToMenu();
         viewModel.RequestPluginActionExecution += ViewModel_RequestPluginActionExecution;
+        I18N.Ins.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(I18N.Culture))
+                RefreshSpeedTexts();
+        };
+        RefreshSpeedTexts();
 
         /*
         if (viewModel.Settings.EditSetting.AutoCheckUpdatesOnStartup)
@@ -451,6 +457,38 @@ public partial class MainWindow : Window
             speed.Value = value;
             e.Handled = true;
         }
+    }
+
+    private void RefreshSpeedTexts()
+    {
+        TapSpeedText.Text = $"{Langs.Gui_TapSpeed}{viewModel.Settings.ViewSetting.TapSpeed:0.00}";
+        TouchSpeedText.Text = $"{Langs.Gui_TouchSpeed}{viewModel.Settings.ViewSetting.TouchSpeed:0.00}";
+    }
+
+    private void SpeedText_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        viewModel.OpenSettingsWindow();
+        e.Handled = true;
+    }
+
+    private void TapSpeedText_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        var setting = viewModel.Settings.ViewSetting;
+        setting.TapSpeed = Math.Clamp(setting.TapSpeed + Math.Sign(e.Delta.Y) * 0.25f, 0f, 20f);
+        viewModel.SaveSettings();
+        viewModel.ReloadSettings();
+        RefreshSpeedTexts();
+        e.Handled = true;
+    }
+
+    private void TouchSpeedText_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        var setting = viewModel.Settings.ViewSetting;
+        setting.TouchSpeed = Math.Clamp(setting.TouchSpeed + Math.Sign(e.Delta.Y) * 0.25f, 0f, 20f);
+        viewModel.SaveSettings();
+        viewModel.ReloadSettings();
+        RefreshSpeedTexts();
+        e.Handled = true;
     }
 
     private void SimaiVisual_PointerWheelChanged(object? sender, PointerWheelEventArgs e)

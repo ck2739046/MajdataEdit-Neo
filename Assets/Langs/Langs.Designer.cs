@@ -394,6 +394,33 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 tap spd:  的本地化字符串。
+        /// </summary>
+        internal static string Gui_TapSpeed {
+            get {
+                return ResourceManager.GetString("Gui_TapSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 touch spd:  的本地化字符串。
+        /// </summary>
+        internal static string Gui_TouchSpeed {
+            get {
+                return ResourceManager.GetString("Gui_TouchSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Use mouse wheel to adjust 的本地化字符串。
+        /// </summary>
+        internal static string Gui_AdjustSpeedByWheel {
+            get {
+                return ResourceManager.GetString("Gui_AdjustSpeedByWheel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Open 的本地化字符串。
         /// </summary>
         internal static string Gui_Open {

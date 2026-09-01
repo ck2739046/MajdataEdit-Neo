@@ -204,6 +204,15 @@
   <data name="Gui_PvOffset" xml:space="preserve">
     <value>pv offset</value>
   </data>
+  <data name="Gui_TapSpeed" xml:space="preserve">
+    <value>tap spd: </value>
+  </data>
+  <data name="Gui_TouchSpeed" xml:space="preserve">
+    <value>touch spd: </value>
+  </data>
+  <data name="Gui_AdjustSpeedByWheel" xml:space="preserve">
+    <value>Use mouse wheel to adjust</value>
+  </data>
   <data name="Gui_Error" xml:space="preserve">
     <value>Error</value>
   </data>

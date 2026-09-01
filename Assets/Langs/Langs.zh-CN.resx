@@ -204,6 +204,15 @@
   <data name="Gui_PvOffset" xml:space="preserve">
     <value>pv offset</value>
   </data>
+  <data name="Gui_TapSpeed" xml:space="preserve">
+    <value>tap 流速: </value>
+  </data>
+  <data name="Gui_TouchSpeed" xml:space="preserve">
+    <value>touch 流速: </value>
+  </data>
+  <data name="Gui_AdjustSpeedByWheel" xml:space="preserve">
+    <value>使用鼠标滚轮调整数值</value>
+  </data>
   <data name="Gui_Error" xml:space="preserve">
     <value>Error</value>
   </data>

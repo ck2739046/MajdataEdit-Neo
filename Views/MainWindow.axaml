@@ -169,6 +169,14 @@
 							<Button Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Center"
 								Command="{Binding PlayIncludeOpCommand}" Content="{local:I18N Gui_Record}"/>
 						</Grid>
+						<TextBlock Name="TapSpeedText" FontSize="17" HorizontalAlignment="Center" Margin="0 11 0 0"
+								   Cursor="Hand"
+								   ToolTip.Tip="{local:I18N Gui_AdjustSpeedByWheel}" ToolTip.ShowDelay="500"
+								   PointerPressed="SpeedText_PointerPressed" PointerWheelChanged="TapSpeedText_PointerWheelChanged"/>
+						<TextBlock Name="TouchSpeedText" FontSize="17" HorizontalAlignment="Center" Margin="0 11 0 0"
+								   Cursor="Hand"
+								   ToolTip.Tip="{local:I18N Gui_AdjustSpeedByWheel}" ToolTip.ShowDelay="500"
+								   PointerPressed="SpeedText_PointerPressed" PointerWheelChanged="TouchSpeedText_PointerWheelChanged"/>
 					</StackPanel>
 				</LayoutTransformControl>
 			</Grid>
