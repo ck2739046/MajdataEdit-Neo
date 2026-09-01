@@ -83,6 +83,7 @@ public partial class MainWindow : Window
         var isMac = OperatingSystem.IsMacOS();
         var isLinux = OperatingSystem.IsLinux();
 
+        /*
         //pull up MajdataView
         var viewPath = GetPath(isMac || isLinux ? "MajdataViewX" : "MajdataViewX.exe");
         if (File.Exists(viewPath) &&
@@ -91,6 +92,7 @@ public partial class MainWindow : Window
         {
             Process.Start(viewPath);
         }
+        */
 
         // 补齐mac环境变量
         if (isMac)
@@ -338,6 +340,7 @@ public partial class MainWindow : Window
         var shouldClose = !await viewModel.AskSave();
         if (shouldClose)
         {
+            /*
             var viewx = Process.GetProcessesByName("MajdataViewX");
             if (viewx.Length > 0)
             {
@@ -351,6 +354,7 @@ public partial class MainWindow : Window
                     viewx.FirstOrDefault()?.Kill();
                 }
             }
+            */
 
             DetachEventHandlers();
             await viewModel.OnWindowClosingAsync();
