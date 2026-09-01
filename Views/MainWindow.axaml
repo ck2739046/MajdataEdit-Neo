@@ -15,9 +15,14 @@
 		x:DataType="vm:MainWindowViewModel"
 		Icon="/Assets/favicon.ico"
 		Title="{Binding WindowTitle}"
-		TransparencyLevelHint="AcrylicBlur"
-		Background="Transparent"
+		TransparencyLevelHint="None"
+		Background="#262626"
 		ExtendClientAreaToDecorationsHint="False">
+
+	<!--
+	TransparencyLevelHint="AcrylicBlur"
+	Background="Transparent"
+	-->
 
 	<Design.DataContext>
 		<!-- This only sets the DataContext for the previewer in an IDE,
@@ -39,6 +44,7 @@
 		<StreamGeometry x:Key="video">M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h480q33 0 56.5 23.5T720-720v480q0 33-23.5 56.5T640-160H160Zm0-80h480v-480H160v480Zm200-40 200-160-200-160v320Z</StreamGeometry>
 	</Window.Resources>
 	<Panel>
+		<!--
 		<ExperimentalAcrylicBorder IsHitTestVisible="False">
 			<ExperimentalAcrylicBorder.Material>
 				<ExperimentalAcrylicMaterial
@@ -48,6 +54,7 @@
 					MaterialOpacity="0.75" />
 			</ExperimentalAcrylicBorder.Material>
 		</ExperimentalAcrylicBorder>
+		-->
 		<Grid RowDefinitions="20,100,*,60,100,20"
 			  ColumnDefinitions="5,38,38,38,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
 			<Menu Grid.Row="0" Grid.ColumnSpan="5">
