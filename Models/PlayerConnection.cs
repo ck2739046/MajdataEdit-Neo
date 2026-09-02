@@ -293,6 +293,12 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
         var req = new MajWsStopRequest();
         await SendAsync(req);
     }
+
+    public async Task ResetAsync()
+    {
+        var req = new MajWsResetRequest();
+        await SendAsync(req);
+    }
     async Task SendAsync(MajWsRequest req)
     {
         var bytes = MemoryPackSerializer.Serialize<MajWsRequest>(req);

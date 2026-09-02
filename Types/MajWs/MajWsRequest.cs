@@ -5,7 +5,7 @@ namespace MajdataEdit_Neo.Types.MajWs;
 
 /// <summary>
 /// 请求信封（线格式）。union tag 即请求类型，tag 与成员顺序必须与 ViewX 端一致：
-/// 0=Setting, 1=Load, 2=Update, 3=Play, 4=Pause, 5=Stop, 6=State。
+/// 0=Setting, 1=Load, 2=Update, 3=Play, 4=Pause, 5=Stop, 6=State, 7=Reset。
 /// </summary>
 [MemoryPackable]
 [MemoryPackUnion(0, typeof(MajWsSettingRequest))]
@@ -15,6 +15,7 @@ namespace MajdataEdit_Neo.Types.MajWs;
 [MemoryPackUnion(4, typeof(MajWsPauseRequest))]
 [MemoryPackUnion(5, typeof(MajWsStopRequest))]
 [MemoryPackUnion(6, typeof(MajWsStateRequest))]
+[MemoryPackUnion(7, typeof(MajWsResetRequest))]
 internal abstract partial class MajWsRequest
 {
 }
@@ -67,5 +68,10 @@ internal partial class MajWsStopRequest : MajWsRequest
 
 [MemoryPackable]
 internal partial class MajWsStateRequest : MajWsRequest
+{
+}
+
+[MemoryPackable]
+internal partial class MajWsResetRequest : MajWsRequest
 {
 }

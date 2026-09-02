@@ -534,9 +534,7 @@ public partial class MainWindowViewModel
         {
             try
             {
-                await _playerConnection.StopAsync();
-                await _playerConnection.UpdateAsync(
-                    SimaiFile.Empty(string.Empty, string.Empty), SimaiChart.Empty, 0, 0f);
+                await _playerConnection.ResetAsync();
             }
             catch (Exception ex)
             {
@@ -552,6 +550,9 @@ public partial class MainWindowViewModel
         TrackTime = 0;
         CaretTime = 0;
         _playStartTime = 0;
+        _updateDirty = false;
+        CurrentViewState = ViewStatus.Idle;
+        ClearExplicitMediaCache();
         for (var i = 0; i < 7; i++)
             CurrentChartMetadata[i] = new MutSimaiChartMetadata();
         mmvAudioTime.Write(0, 0f);
