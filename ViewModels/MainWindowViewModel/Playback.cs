@@ -277,10 +277,19 @@ public partial class MainWindowViewModel
     {
         try
         {
+            // HachimiDX 显式 load 过、目录未变时，空路径重载复用缓存而非自动查找
+            var useCached = explicitTrackPath is null &&
+                            _explicitTrackDir == maidataDir &&
+                            _explicitTrackPath is not null;
+
             string trackPath;
             if (explicitTrackPath is not null)
             {
                 trackPath = explicitTrackPath;
+            }
+            else if (useCached)
+            {
+                trackPath = _explicitTrackPath!;
             }
             else
             {
@@ -296,6 +305,10 @@ public partial class MainWindowViewModel
             if (explicitPvPath is not null)
             {
                 pvPath = explicitPvPath;
+            }
+            else if (useCached)
+            {
+                pvPath = _explicitPvPath;
             }
             else
             {

@@ -31,6 +31,18 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private TrackInfo? _songTrackInfo = null;
 
+    // HachimiDX 显式加载过的媒体路径缓存，供空路径重载（OnLoadRequired 等）复用
+    private string _explicitTrackDir = "";
+    private string? _explicitTrackPath = null;
+    private string _explicitPvPath = ""; // 可能为空字符串，表示没有 PV
+
+    private void ClearExplicitMediaCache()
+    {
+        _explicitTrackDir = "";
+        _explicitTrackPath = null;
+        _explicitPvPath = "";
+    }
+
     //------event wiring
 
     private void WireEvents()
@@ -102,6 +114,7 @@ public partial class MainWindowViewModel
     public async Task NewChartFromDir(string directory)
     {
         SaveEditRecord();
+        ClearExplicitMediaCache();
 
         File.Create(Path.Combine(directory, "maidata.txt")).Dispose();
         var levels = new SimaiChart[7];
@@ -209,6 +222,16 @@ public partial class MainWindowViewModel
         var fileInfo = new FileInfo(maidataPath);
         var directory = fileInfo.Directory?.FullName;
         if (directory is null) return;
+        if (explicitTrackPath is not null)
+        {
+            _explicitTrackDir = directory;
+            _explicitTrackPath = explicitTrackPath;
+            _explicitPvPath = explicitPvPath ?? "";
+        }
+        else
+        {
+            ClearExplicitMediaCache();
+        }
         var songTrackInfo = explicitTrackPath is not null
             ? _trackReader.ReadTrackFromPath(explicitTrackPath)
             : _trackReader.ReadTrack(directory);
