@@ -79,14 +79,14 @@ public partial class MainWindowViewModel
 
     //------file operations
 
-    public async Task<bool> AskSave()
+    public async Task<bool> AskSave(bool yesNoOnly = false)
     {
         if (!IsSaved)
         {
             var result = await MessageBox.ShowWindowDialogAsync(
                 Langs.Msg_ChartNotSaved,
                 Langs.Gui_Warning,
-                ButtonEnum.YesNoCancel,
+                yesNoOnly ? ButtonEnum.YesNo : ButtonEnum.YesNoCancel,
                 Icon.Warning);
 
             switch (result)
@@ -101,21 +101,6 @@ public partial class MainWindowViewModel
             }
         }
         return false;
-    }
-
-    // HachimiDX 请求 load 前询问是否保存；无论结果都继续加载
-    public async Task AskSaveForHachimiLoad()
-    {
-        if (!IsSaved)
-        {
-            var result = await MessageBox.ShowWindowDialogAsync(
-                Langs.Msg_ChartNotSaved,
-                Langs.Gui_Warning,
-                ButtonEnum.YesNo,
-                Icon.Warning);
-            if (result == ButtonResult.Yes)
-                await SaveFile();
-        }
     }
 
     public async Task ReloadFile()
@@ -266,7 +251,8 @@ public partial class MainWindowViewModel
 
     public async Task LoadChartFromHachimiAsync(string folder, string maidataFilename, string trackFilename, string? pvFilename)
     {
-        await AskSaveForHachimiLoad();
+        // HachimiDX load 前询问是否保存；YesNo 模式下 AskSave 永不取消，故继续加载
+        await AskSave(true);
 
         var maidataPath = Path.Combine(folder, maidataFilename);
         var trackPath = Path.Combine(folder, trackFilename);

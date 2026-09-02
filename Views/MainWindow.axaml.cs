@@ -337,7 +337,7 @@ public partial class MainWindow : Window
         e.Cancel = true;
         haveAsked = true;
         viewModel.SetWindowLastState(this);
-        var shouldClose = !await viewModel.AskSave();
+        var shouldClose = !await viewModel.AskSave(viewModel.IsExitRequestedByHachimi);
         if (shouldClose)
         {
             /*

@@ -50,6 +50,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public bool IsPointerPressedSimaiVisual { get; set; }
 
+    /// <summary>收到 HachimiDX 的 exit 指令时置为 true，用于关闭时决定保存弹窗按钮。</summary>
+    public bool IsExitRequestedByHachimi { get; private set; }
+
     //------constructor
 
     public MainWindowViewModel()
@@ -132,6 +135,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private void OnHachimiExit(object? sender, EventArgs e)
     {
         Dispatcher.UIThread.Post(CloseMainWindow);
+        IsExitRequestedByHachimi = true;
     }
 
     private void CloseMainWindow()
