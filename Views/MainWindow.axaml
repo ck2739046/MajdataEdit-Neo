@@ -55,7 +55,7 @@
 			</ExperimentalAcrylicBorder.Material>
 		</ExperimentalAcrylicBorder>
 		-->
-		<Grid RowDefinitions="20,100,*,60,100,20"
+		<Grid RowDefinitions="20,100,*,60,100"
 			  ColumnDefinitions="5,38,38,38,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
 			<Menu Grid.Row="0" Grid.ColumnSpan="5">
 				<MenuItem Header="{local:I18N Gui_File}" >
@@ -106,11 +106,23 @@
 				</MenuItem>
 			</Menu>
 
-			<Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="8"
+			<Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="2"
 				  Margin="6 0 8 0" Width="110" RowDefinitions="65,*">
 				<Label Grid.Row="0" Height="65" Name="Time" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
 					   Content="{Binding DisplayTime}" Padding="0 10 0 0"/>
-				<LayoutTransformControl Grid.Row="1" HorizontalAlignment="Stretch">
+				<DockPanel Grid.Row="1">
+					<!-- 状态文字钉在底部，上方空白随窗口高度伸缩 -->
+					<TextBlock DockPanel.Dock="Bottom" FontSize="12" Opacity="0.8" HorizontalAlignment="Center" Margin="0 6 0 0">
+						<TextBlock.Text>
+							<MultiBinding Converter="{x:Static conv:StatusBarConverter.Instance}">
+								<Binding Path="StatusBarMessage"/>
+								<Binding Path="CurrentViewState"/>
+								<Binding Path="IsConnected"/>
+								<Binding Path="Culture" Source="{x:Static local:I18N.Ins}"/>
+							</MultiBinding>
+						</TextBlock.Text>
+					</TextBlock>
+					<LayoutTransformControl HorizontalAlignment="Stretch">
 					<LayoutTransformControl.LayoutTransform>
 						<ScaleTransform ScaleX="0.8" ScaleY="0.8"/>
 					</LayoutTransformControl.LayoutTransform>
@@ -186,6 +198,7 @@
 								   PointerPressed="SpeedText_PointerPressed" PointerWheelChanged="TouchSpeedText_PointerWheelChanged"/>
 					</StackPanel>
 				</LayoutTransformControl>
+				</DockPanel>
 			</Grid>
 
 
@@ -235,19 +248,6 @@
 				</Button>
 			</DockPanel>
 
-			<!-- Status Bar -->
-			<Border Grid.Row="5" Grid.ColumnSpan="5" Background="#20FFFFFF" BorderThickness="0,1,0,0" BorderBrush="#30FFFFFF">
-				<TextBlock VerticalAlignment="Center" Margin="10,0" FontSize="12" Opacity="0.8">
-					<TextBlock.Text>
-						<MultiBinding Converter="{x:Static conv:StatusBarConverter.Instance}">
-							<Binding Path="StatusBarMessage"/>
-							<Binding Path="CurrentViewState"/>
-							<Binding Path="IsConnected"/>
-							<Binding Path="Culture" Source="{x:Static local:I18N.Ins}"/>
-						</MultiBinding>
-					</TextBlock.Text>
-				</TextBlock>
-			</Border>
 		</Grid>
 
 		<Grid RowDefinitions="22.7*,54.6*,22.7*" ColumnDefinitions="10*,80*,10*"
