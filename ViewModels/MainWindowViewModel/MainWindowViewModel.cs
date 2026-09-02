@@ -134,8 +134,21 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void OnHachimiExit(object? sender, EventArgs e)
     {
-        Dispatcher.UIThread.Post(CloseMainWindow);
         IsExitRequestedByHachimi = true;
+        Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            // 与收到 reset 一致：通知 viewx 重置自己
+            try
+            {
+                if (_playerConnection.IsConnected)
+                    await _playerConnection.ResetAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"HachimiDX exit reset failed: {ex}");
+            }
+            CloseMainWindow();
+        });
     }
 
     private void CloseMainWindow()
