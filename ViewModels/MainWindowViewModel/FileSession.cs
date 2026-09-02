@@ -103,6 +103,21 @@ public partial class MainWindowViewModel
         return false;
     }
 
+    // HachimiDX 请求 load 前询问是否保存；无论结果都继续加载
+    public async Task AskSaveForHachimiLoad()
+    {
+        if (!IsSaved)
+        {
+            var result = await MessageBox.ShowWindowDialogAsync(
+                Langs.Msg_ChartNotSaved,
+                Langs.Gui_Warning,
+                ButtonEnum.YesNo,
+                Icon.Warning);
+            if (result == ButtonResult.Yes)
+                await SaveFile();
+        }
+    }
+
     public async Task ReloadFile()
     {
         if (string.IsNullOrEmpty(MaidataDir)) return;
@@ -251,6 +266,8 @@ public partial class MainWindowViewModel
 
     public async Task LoadChartFromHachimiAsync(string folder, string maidataFilename, string trackFilename, string? pvFilename)
     {
+        await AskSaveForHachimiLoad();
+
         var maidataPath = Path.Combine(folder, maidataFilename);
         var trackPath = Path.Combine(folder, trackFilename);
         var pvPath = string.IsNullOrWhiteSpace(pvFilename) ? string.Empty : Path.Combine(folder, pvFilename);
