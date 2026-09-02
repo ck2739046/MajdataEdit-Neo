@@ -553,11 +553,15 @@ public partial class MainWindowViewModel
         _updateDirty = false;
         CurrentViewState = ViewStatus.Idle;
         ClearExplicitMediaCache();
+        _trackReader.ReleaseTrack();
+        _editTimer.Reset();
+        CurrentCombo = 0;
         for (var i = 0; i < 7; i++)
             CurrentChartMetadata[i] = new MutSimaiChartMetadata();
         mmvAudioTime.Write(0, 0f);
         ResetFollowCursorIndex();
         Enabled = false;
+        SetContent("");
     }
 
     //------player events

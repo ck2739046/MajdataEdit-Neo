@@ -42,6 +42,15 @@ class TrackReader : IDisposable
         Bass.ChannelStop(bgmStream);
     }
 
+    public void ReleaseTrack()
+    {
+        if (bgmStream is not 0)
+        {
+            Bass.StreamFree(bgmStream);
+            bgmStream = 0;
+        }
+    }
+
     public double CurrentPosition()
     {
         return Bass.ChannelBytes2Seconds(bgmStream, Bass.ChannelGetPosition(bgmStream));
