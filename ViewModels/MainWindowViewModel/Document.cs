@@ -129,6 +129,7 @@ public partial class MainWindowViewModel
             CurrentSimaiFile.Offset = value;
             SetProperty(ref _offset, value);
             OnPropertyChanged(nameof(CurrentSimaiFile));
+            _ = PushUpdateAsync();
         }
     }
 
