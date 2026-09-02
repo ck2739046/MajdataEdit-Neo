@@ -6,6 +6,7 @@ using MajSimai;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,17 +26,13 @@ public partial class MainWindowViewModel
     [NotifyPropertyChangedFor(nameof(Level))]
     [NotifyPropertyChangedFor(nameof(Designer))]
     [NotifyPropertyChangedFor(nameof(Offset))]
+    [NotifyPropertyChangedFor(nameof(PvOffset))]
     [NotifyPropertyChangedFor(nameof(IsLoaded))]
     [NotifyPropertyChangedFor(nameof(CurrentFumen))]
     public partial SimaiFile? CurrentSimaiFile { get; set; } = null;
 
     partial void OnCurrentSimaiFileChanged(SimaiFile? value)
     {
-        if (_pvOffset != 0)
-        {
-            _pvOffset = 0;
-            OnPropertyChanged(nameof(PvOffset));
-        }
         RefreshFumenDocument();
     }
 
@@ -74,13 +71,30 @@ public partial class MainWindowViewModel
     readonly string[] _level = new string[7];
     float _offset = 0;
 
-    [ObservableProperty]
-    private float _pvOffset;
-
-    partial void OnPvOffsetChanged(float value)
+    public float PvOffset
     {
-        _updateDirty = true;
-        _ = PushUpdateAsync();
+        get
+        {
+            if (CurrentSimaiFile is null) return 0f;
+            var command = CurrentSimaiFile.Commands.FirstOrDefault(c => c.Prefix == "pv_offset");
+            return command.Prefix == "pv_offset" &&
+                   float.TryParse(command.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+                ? value
+                : 0f;
+        }
+        set
+        {
+            if (CurrentSimaiFile is null) return;
+
+            var commands = CurrentSimaiFile.Commands.Where(c => c.Prefix != "pv_offset").ToList();
+            commands.Add(new SimaiCommand("pv_offset", value.ToString("R", CultureInfo.InvariantCulture)));
+            CurrentSimaiFile.Commands.Clear();
+            foreach (var command in commands)
+                CurrentSimaiFile.Commands.Add(command);
+
+            OnPropertyChanged(nameof(CurrentSimaiFile));
+            _ = PushUpdateAsync();
+        }
     }
 
     public string OriginFumen { get; set; } = string.Empty;

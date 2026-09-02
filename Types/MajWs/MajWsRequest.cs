@@ -43,7 +43,6 @@ internal partial class MajWsUpdateRequest : MajWsRequest
     public long FileLength { get; set; }
     public long ChartLength { get; set; }
     public int SelectedDifficulty { get; set; }
-    public float PvOffset { get; set; }
 }
 
 /// <summary>Play 只带播放参数，图数据由 Update 提供。</summary>

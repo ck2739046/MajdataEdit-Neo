@@ -78,7 +78,7 @@ public partial class MainWindowViewModel
 
         _ = _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
         if (update)
-            _ = _playerConnection.UpdateAsync(CurrentSimaiFile!, CurrentChartData, SelectedDifficulty, PvOffset);
+            _ = _playerConnection.UpdateAsync(CurrentSimaiFile!, CurrentChartData, SelectedDifficulty);
     }
 
     [RelayCommand]

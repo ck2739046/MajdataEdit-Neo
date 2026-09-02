@@ -218,7 +218,7 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
     /// 第一段 = SimaiFile 元数据（Charts 已 MemoryPackIgnore，仅元数据 + Commands），
     /// 第二段 = SimaiChart（当前难度的 NoteTimings/CommaTimings）。
     /// </summary>
-    public async Task UpdateAsync(SimaiFile file, SimaiChart chart, int selectedDifficulty, float pvOffset)
+    public async Task UpdateAsync(SimaiFile file, SimaiChart chart, int selectedDifficulty)
     {
         var fileBytes = MemoryPackSerializer.Serialize(file);
         var chartBytes = MemoryPackSerializer.Serialize(chart);
@@ -232,8 +232,7 @@ internal class PlayerConnection : IDisposable, IAsyncDisposable
         {
             FileLength = fileBytes.Length,
             ChartLength = chartBytes.Length,
-            SelectedDifficulty = selectedDifficulty,
-            PvOffset = pvOffset
+            SelectedDifficulty = selectedDifficulty
         };
         await SendAsync(req);
     }
